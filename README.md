@@ -1,7 +1,7 @@
 FairyGUI-starling
 ====
 
-A flexible UI framework for Flash AS3, working with the professional Game UI Editor: FairyGUI Editor.
+A flexible UI framework for Starling, working with the professional Game UI Editor: FairyGUI Editor.
 Download the editor from here: [www.fairygui.org](http://www.fairygui.org/index.php/download)
 
 ![](http://www.fairygui.com/wp-content/uploads/2015/09/show2.jpg)  
