@@ -1,7 +1,7 @@
-package
+package fairygui.event
 {
 	import starling.events.Event;
-
+	
 	public class DropEvent extends Event
 	{
 		public static const DROP:String = "__drop";

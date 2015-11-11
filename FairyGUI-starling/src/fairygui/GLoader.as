@@ -326,10 +326,13 @@ package fairygui
 			}
 			else
 				_container.addChild(_content);
-			MovieClip(_content).interval = pi.interval;
-			MovieClip(_content).frames = pi.frames;
+			
 			_contentSourceWidth = pi.width;
 			_contentSourceHeight = pi.height;
+			MovieClip(_content).interval = pi.interval;
+			MovieClip(_content).frames = pi.frames;
+			MovieClip(_content).boundsRect = new Rectangle(0,0,_contentSourceWidth,_contentSourceHeight);
+			
 			updateLayout();
 		}
 		

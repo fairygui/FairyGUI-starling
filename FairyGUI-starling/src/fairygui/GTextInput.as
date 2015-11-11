@@ -21,6 +21,7 @@ package fairygui
 		{
 			super();
 			
+			this.focusable = true;
 			_editable = true;
 			_canvas.touchable = true;
 			_nativeTextField = new TextField();
