@@ -167,7 +167,7 @@ package fairygui
 			if(_selected!=val)
 			{
 				_selected = val;
-				if(this.grayed && _buttonController.hasPage(DISABLED))
+				if(this.grayed && _buttonController && _buttonController.hasPage(DISABLED))
 				{
 					if(_selected)
 						setState(SELECTED_DISABLED);
@@ -302,7 +302,7 @@ package fairygui
 		
 		override protected function handleGrayChanged():void
 		{
-			if(_buttonController.hasPage(DISABLED))
+			if(_buttonController && _buttonController.hasPage(DISABLED))
 			{
 				if(this.grayed) {
 					if(_selected)
@@ -394,7 +394,7 @@ package fairygui
 		
 		private function __rollover(evt:GTouchEvent):void
 		{
-			if(!_buttonController.hasPage(OVER))
+			if(!_buttonController || !_buttonController.hasPage(OVER))
 				return;
 			
 			_over = true;
@@ -409,7 +409,7 @@ package fairygui
 		
 		private function __rollout(evt:GTouchEvent):void
 		{
-			if(!_buttonController.hasPage(OVER))
+			if(!_buttonController || !_buttonController.hasPage(OVER))
 				return;
 			
 			_over = false;
@@ -426,7 +426,7 @@ package fairygui
 		{
 			if(_mode==ButtonMode.Common)
 			{
-				if(this.grayed && _buttonController.hasPage(DISABLED))
+				if(this.grayed && _buttonController && _buttonController.hasPage(DISABLED))
 					setState(SELECTED_DISABLED);
 				else
 					setState(DOWN);
@@ -449,7 +449,7 @@ package fairygui
 		{
 			if(_mode==ButtonMode.Common)
 			{
-				if(this.grayed && _buttonController.hasPage(DISABLED))
+				if(this.grayed && _buttonController && _buttonController.hasPage(DISABLED))
 					setState(DISABLED);
 				else if (_over)
 					setState(OVER);
