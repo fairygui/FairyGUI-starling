@@ -64,7 +64,11 @@ package fairygui.display
 			{
 				var bw:int, bh:int;
 				bw = getNextPowerOfTwo(nw);
+				if(bw>2048)
+					bw = 2048;
 				bh = getNextPowerOfTwo(textHeight);
+				if(bh>2048)
+					bh = 2048;
 				var bmd:BitmapData =  new BitmapData(bw,bh,true,0);
 				
 				//bmd.drawWithQuality(nativeTextField, null, null, null, null, false, StageQuality.MEDIUM);
