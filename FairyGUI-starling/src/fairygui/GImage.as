@@ -99,8 +99,8 @@ package fairygui
 		
 		override protected function handleSizeChanged():void
 		{
-			_content.scaleX = this.width/_sourceWidth*this.scaleX*GRoot.contentScaleFactor;
-			_content.scaleY = this.height/_sourceHeight*this.scaleY*GRoot.contentScaleFactor;
+			_content.scaleX = this.width/_sourceWidth*this.scaleX;
+			_content.scaleY = this.height/_sourceHeight*this.scaleY;
 		}
 		
 		override public function setup_beforeAdd(xml:XML):void

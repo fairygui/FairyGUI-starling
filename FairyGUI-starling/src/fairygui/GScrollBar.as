@@ -99,15 +99,18 @@ package fairygui
 			
 			evt.stopPropagation();
 			
-			_dragOffset.x = evt.stageX/GRoot.contentScaleFactor-_grip.x;
-			_dragOffset.y = evt.stageY/GRoot.contentScaleFactor-_grip.y;
+			this.globalToLocal(evt.stageX, evt.stageY, _dragOffset);
+			_dragOffset.x -= _grip.x;
+			_dragOffset.y -= _grip.y;
 		}
 		
+		private var sHelperPoint:Point = new Point();
 		private function __gripDragging(evt:GTouchEvent):void
 		{
+			var pt:Point = this.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
 			if(_vertical)
 			{
-				var curY:Number = evt.stageY/GRoot.contentScaleFactor-_dragOffset.y;
+				var curY:Number = pt.y-_dragOffset.y;
 				var diff:Number = _bar.height-_grip.height;
 				if(diff==0)
 					_target.setPercY(0, false);
@@ -116,7 +119,7 @@ package fairygui
 			}
 			else
 			{
-				var curX:Number = evt.stageX/GRoot.contentScaleFactor-_dragOffset.x;
+				var curX:Number = pt.x-_dragOffset.x;
 				diff = _bar.width-_grip.width;
 				if(diff==0)
 					_target.setPercX(0, false);
@@ -145,22 +148,19 @@ package fairygui
 				_target.scrollRight();
 		}
 		
-		private var sHelperPoint:Point = new Point();
 		private function __barMouseDown(evt:GTouchEvent):void
 		{
-			sHelperPoint.x = evt.stageX;
-			sHelperPoint.y = evt.stageY;
-			_grip.displayObject.globalToLocal(sHelperPoint, sHelperPoint);
+			var pt:Point = _grip.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
 			if(_vertical)
 			{
-				if(sHelperPoint.y<0)
+				if(pt.y<0)
 					_target.scrollUp(4);
 				else
 					_target.scrollDown(4);
 			}
 			else
 			{
-				if(sHelperPoint.x<0)
+				if(pt.x<0)
 					_target.scrollLeft(4);
 				else
 					_target.scrollRight(4);

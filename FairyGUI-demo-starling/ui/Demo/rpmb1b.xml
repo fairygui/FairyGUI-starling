@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<component size="640,960">
+<component size="640,890">
   <controller name="单选组" pages="0,,1,,2," selected="0"/>
   <controller name="tab" pages="0,,1,,2," selected="0"/>
   <displayList>

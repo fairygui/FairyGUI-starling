@@ -100,6 +100,8 @@ package fairygui
 			else
 				contentScaleFactor = 1;
 			this.setSize(Math.round(w/contentScaleFactor),Math.round(h/contentScaleFactor));
+			this.scaleX = contentScaleFactor;
+			this.scaleY = contentScaleFactor;
 		}
 		
 		public function enableFocusManagement():void
@@ -249,14 +251,14 @@ package fairygui
 			var sizeW:int, sizeH:int;
 			if(target)
 			{
-				pos = target.localToGlobal();
+				pos = target.localToRoot(0,0,sHelperPoint);
 				sizeW = target.width;
 				sizeH = target.height;
 			}
 			else
 			{
-				pos = new Point(Starling.current.nativeStage.mouseX/contentScaleFactor,
-					Starling.current.nativeStage.mouseY/contentScaleFactor);
+				pos = this.globalToLocal(Starling.current.nativeStage.mouseX,
+					Starling.current.nativeStage.mouseY, sHelperPoint);
 			}
 			var xx:Number, yy:Number;
 			xx = pos.x;
@@ -351,14 +353,17 @@ package fairygui
 			var yy:int;
 			if(position==null)
 			{
-				xx = (Starling.current.nativeStage.mouseX+10)/contentScaleFactor;
-				yy = (Starling.current.nativeStage.mouseY+20)/contentScaleFactor;
+				xx = Starling.current.nativeStage.mouseX+10;
+				yy = Starling.current.nativeStage.mouseY+20;
 			}
 			else
 			{
 				xx = position.x;
 				yy = position.y;
 			}
+			var pt:Point = this.globalToLocal(xx, yy, sHelperPoint);
+			xx = pt.x;
+			yy = pt.y;
 
 			if(xx+_tooltipWin.width>this.width)
 			{
@@ -547,6 +552,7 @@ package fairygui
 			}
 		}
 		
+		private static var sHelperPoint:Point = new Point();
 		private function __stageMouseDownCapture(evt:MouseEvent):void 
 		{
 			ctrlKeyDown = evt.ctrlKey;
@@ -560,14 +566,15 @@ package fairygui
 			if(cnt>0) 
 			{
 				//这里的evt.target永远是Stage，是得不到实际点击的对象的，所以只能用范围来判断了
-				var globalX:Number = evt.stageX/GRoot.contentScaleFactor;
-				var globalY:Number = evt.stageY/GRoot.contentScaleFactor;
+				var pt:Point = this.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
+				var thisX:Number = pt.x;
+				var thisY:Number = pt.y;
 				var handled:Boolean = false;
 				for(var i:int=cnt-1;i>=0;i--)
 				{
 					var popup:GObject = _popupStack[i];
-					if(globalX>=popup.x && globalY>=popup.y
-						&& globalX<popup.x+popup.actualWidth && globalY<popup.y+popup.actualHeight)
+					if(thisX>=popup.x && thisY>=popup.y
+						&& thisX<popup.x+popup.actualWidth && thisY<popup.y+popup.actualHeight)
 					{
 						for(var j:int=cnt-1;j>i;j--)
 						{

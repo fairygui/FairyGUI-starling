@@ -116,8 +116,6 @@ package fairygui
 			_shape.rotation = this.normalizeRotation;
 			_shape.visible = this.visible;
 			_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
-			_shape.scaleX = GRoot.contentScaleFactor;
-			_shape.scaleY = GRoot.contentScaleFactor;
 			
 			return _shape;
 		}

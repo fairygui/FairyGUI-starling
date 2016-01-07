@@ -929,37 +929,65 @@ package fairygui
 			return sDragging==this;
 		}
 		
-		public function localToGlobal(ax:Number=0, ay:Number=0):Point
+		public function localToGlobal(ax:Number=0, ay:Number=0, resultPonit:Point=null):Point
 		{
-			sHelperPoint.x = ax*GRoot.contentScaleFactor;
-			sHelperPoint.y = ay*GRoot.contentScaleFactor;
-			var ret:Point = _displayObject.localToGlobal(sHelperPoint);
-			ret.x /= GRoot.contentScaleFactor;
-			ret.y /= GRoot.contentScaleFactor;
-			return ret;
+			sHelperPoint.x = ax;
+			sHelperPoint.y = ay;
+			return _displayObject.localToGlobal(sHelperPoint, resultPonit);
 		}
 		
-		public function globalToLocal(ax:Number=0, ay:Number=0):Point
+		public function globalToLocal(ax:Number=0, ay:Number=0, resultPonit:Point=null):Point
 		{
-			sHelperPoint.x = ax*GRoot.contentScaleFactor;
-			sHelperPoint.y = ay*GRoot.contentScaleFactor;
-			var ret:Point = _displayObject.globalToLocal(sHelperPoint);
-			ret.x /= GRoot.contentScaleFactor;
-			ret.y /= GRoot.contentScaleFactor;
-			return ret;
+			sHelperPoint.x = ax;
+			sHelperPoint.y = ay;
+			return _displayObject.globalToLocal(sHelperPoint, resultPonit);
 		}
 		
-		public function getGlobalRect(rect:Rectangle):Rectangle
+		public function localToRoot(ax:Number=0, ay:Number=0, resultPoint:Point=null):Point
 		{
-			if(rect==null)
-				rect = new Rectangle();
-			var pt:Point = this.localToGlobal();
-			rect.x = pt.x;
-			rect.y = pt.y;
-			pt = this.localToGlobal(this.width, this.height);
-			rect.right = pt.x;
-			rect.bottom = pt.y;
-			return rect;
+			sHelperPoint.x = ax;
+			sHelperPoint.y = ay;
+			var pt:Point = _displayObject.localToGlobal(sHelperPoint, resultPoint);
+			pt.x /= GRoot.contentScaleFactor;
+			pt.y /= GRoot.contentScaleFactor;
+			return pt;
+		}
+		
+		public function rootToLocal(ax:Number=0, ay:Number=0, resultPoint:Point=null):Point
+		{
+			sHelperPoint.x = ax;
+			sHelperPoint.y = ay;
+			sHelperPoint.x *= GRoot.contentScaleFactor;
+			sHelperPoint.y *= GRoot.contentScaleFactor;
+			return _displayObject.globalToLocal(sHelperPoint, resultPoint);
+		}
+		
+		public function localToGlobalRect(ax:Number=0, ay:Number=0, aWidth:Number=0, aHeight:Number=0, 
+										  resultRect:Rectangle = null):Rectangle
+		{
+			if(resultRect==null)
+				resultRect = new Rectangle();
+			var pt:Point = this.localToGlobal(ax, ay);
+			resultRect.x = pt.x;
+			resultRect.y = pt.y;
+			pt = this.localToGlobal(ax+aWidth, ay+aHeight);
+			resultRect.right = pt.x;
+			resultRect.bottom = pt.y;
+			return resultRect;
+		}
+		
+		public function globalToLocalRect(ax:Number=0, ay:Number=0, aWidth:Number=0, aHeight:Number=0, 
+										  resultRect:Rectangle = null):Rectangle
+		{
+			if(resultRect==null)
+				resultRect = new Rectangle();
+			var pt:Point = this.globalToLocal(ax, ay);
+			resultRect.x = pt.x;
+			resultRect.y = pt.y;
+			pt = this.globalToLocal(ax+aWidth, ay+aHeight);
+			resultRect.right = pt.x;
+			resultRect.bottom = pt.y;
+			return resultRect;
 		}
 		
 		protected function createDisplayObject():void
@@ -971,8 +999,8 @@ package fairygui
 		{
 			if(_displayObject)
 			{
-				_displayObject.x = int((_x+_pivotOffsetX)*GRoot.contentScaleFactor);
-				_displayObject.y = int((_y+_pivotOffsetY)*GRoot.contentScaleFactor);
+				_displayObject.x = int(_x+_pivotOffsetX);
+				_displayObject.y = int(_y+_pivotOffsetY);
 			}
 		}
 		
@@ -1227,6 +1255,8 @@ package fairygui
 		private static var sDragging:GObject;
 		private static var sGlobalDragStart:Point = new Point();
 		private static var sGlobalRect:Rectangle = new Rectangle();
+		private static var sDragHelperPoint:Point = new Point();
+		private static var sDragHelperRect:Rectangle = new Rectangle();
 		
 		private function initDrag():void
 		{
@@ -1243,15 +1273,15 @@ package fairygui
 			
 			if(evt!=null)
 			{
-				sGlobalDragStart.x = evt.stageX/GRoot.contentScaleFactor;
-				sGlobalDragStart.y = evt.stageY/GRoot.contentScaleFactor;
+				sGlobalDragStart.x = evt.stageX;
+				sGlobalDragStart.y = evt.stageY;
 			}
 			else
 			{
-				sGlobalDragStart.x = Starling.current.nativeStage.mouseX/GRoot.contentScaleFactor;
-				sGlobalDragStart.y = Starling.current.nativeStage.mouseY/GRoot.contentScaleFactor;
+				sGlobalDragStart.x = Starling.current.nativeStage.mouseX;
+				sGlobalDragStart.y = Starling.current.nativeStage.mouseY;
 			}
-			getGlobalRect(sGlobalRect);		
+			this.localToGlobalRect(0,0,this.width,this.height,sGlobalRect);
 			sDragging = this;
 			
 			addEventListener(GTouchEvent.DRAG, __dragging);
@@ -1299,31 +1329,33 @@ package fairygui
 			if(this.parent==null)
 				return;
 			
-			var xx:Number = evt.stageX/GRoot.contentScaleFactor - sGlobalDragStart.x + sGlobalRect.x;
-			var yy:Number = evt.stageY/GRoot.contentScaleFactor - sGlobalDragStart.y　+ sGlobalRect.y;
+			var xx:Number = evt.stageX - sGlobalDragStart.x + sGlobalRect.x;
+			var yy:Number = evt.stageY - sGlobalDragStart.y　+ sGlobalRect.y;
 			
 			if (_dragBounds!=null)
 			{
-				if (xx < _dragBounds.x)
-					xx = _dragBounds.x;
-				else if(xx + sGlobalRect.width > _dragBounds.right)
+				var rect:Rectangle = GRoot.inst.localToGlobalRect(_dragBounds.x, _dragBounds.y,
+					_dragBounds.width,_dragBounds.height, sDragHelperRect);
+				if (xx < rect.x)
+					xx = rect.x;
+				else if(xx + sGlobalRect.width > rect.right)
 				{
-					xx = _dragBounds.right - sGlobalRect.width;
-					if (xx < _dragBounds.x)
-						xx = _dragBounds.x;
+					xx = rect.right - sGlobalRect.width;
+					if (xx < rect.x)
+						xx = rect.x;
 				}
 				
-				if(yy < _dragBounds.y)
-					yy = _dragBounds.y;
-				else if(yy + sGlobalRect.height > _dragBounds.bottom)
+				if(yy < rect.y)
+					yy = rect.y;
+				else if(yy + sGlobalRect.height > rect.bottom)
 				{
-					yy = _dragBounds.bottom - sGlobalRect.height;
-					if(yy < _dragBounds.y)
-						yy = _dragBounds.y;
+					yy = rect.bottom - sGlobalRect.height;
+					if(yy < rect.y)
+						yy = rect.y;
 				}
 			}
 			
-			var pt:Point = this.parent.globalToLocal(xx, yy);
+			var pt:Point = this.parent.globalToLocal(xx, yy, sDragHelperPoint);
 			this.setXY(Math.round(pt.x), Math.round(pt.y));
 		}
 		

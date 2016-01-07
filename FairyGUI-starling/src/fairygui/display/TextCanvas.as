@@ -7,7 +7,6 @@ package fairygui.display
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	
-	import fairygui.GRoot;
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	
@@ -128,14 +127,14 @@ package fairygui.display
 			if(font.mainTexture==null)
 				return;
 			
-			charPos.x += Math.ceil(glyph.offsetX*GRoot.contentScaleFactor);
+			charPos.x += glyph.offsetX;
 			
 			if(font.ttf)
 			{
 				sHelperRect.x = charPos.x;
 				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width*GRoot.contentScaleFactor;
-				sHelperRect.height = glyph.height*GRoot.contentScaleFactor;
+				sHelperRect.width = glyph.width;
+				sHelperRect.height = glyph.height;
 				
 				sHelperQuad.fillVertsByRect(sHelperRect);
 				sHelperQuad.fillUVByRect(glyph.uvRect);
@@ -146,8 +145,8 @@ package fairygui.display
 			{
 				sHelperRect.x = charPos.x;
 				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width*GRoot.contentScaleFactor;
-				sHelperRect.height = glyph.height*GRoot.contentScaleFactor;
+				sHelperRect.width = glyph.width;
+				sHelperRect.height = glyph.height;
 				
 				sHelperQuad.fillVertsByRect(sHelperRect);
 				sHelperQuad.fillUVByRect(glyph.uvRect);

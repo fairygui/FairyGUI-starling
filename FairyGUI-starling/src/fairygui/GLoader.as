@@ -66,8 +66,6 @@ package fairygui
 		{
 			_container = new UISprite(this);
 			_container.hitArea = new Rectangle();
-			_container.scaleX = GRoot.contentScaleFactor;
-			_container.scaleY = GRoot.contentScaleFactor;
 			setDisplayObject(_container);
 		}
 		
@@ -531,8 +529,8 @@ package fairygui
 				updateLayout();
 			
 			_container.hitArea.setTo(0,0,this.width,this.height);
-			_container.scaleX = this.scaleX * GRoot.contentScaleFactor;
-			_container.scaleY = this.scaleY * GRoot.contentScaleFactor;
+			_container.scaleX = this.scaleX;
+			_container.scaleY = this.scaleY;
 		}
 		
 		override public function setup_beforeAdd(xml:XML):void

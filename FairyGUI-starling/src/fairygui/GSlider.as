@@ -176,15 +176,16 @@ package fairygui
 		
 		private function __gripMouseDown(evt:GTouchEvent):void
 		{
-			_clickPos.x = evt.stageX/GRoot.contentScaleFactor;
-			_clickPos.y = evt.stageY/GRoot.contentScaleFactor;
+			this.globalToLocal(evt.stageX, evt.stageY, _clickPos);
 			_clickPercent = _value/_max;
 		}
 		
+		private var sHelperPoint:Point = new Point();
 		private function __gripMouseMove(evt:GTouchEvent):void
 		{
-			var deltaX:int = evt.stageX/GRoot.contentScaleFactor-_clickPos.x;
-			var deltaY:int = evt.stageY/GRoot.contentScaleFactor-_clickPos.y;
+			var pt:Point = this.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
+			var deltaX:int = pt.x-_clickPos.x;
+			var deltaY:int = pt.y-_clickPos.y;
 			
 			var percent:Number;
 			if(_barObjectH)

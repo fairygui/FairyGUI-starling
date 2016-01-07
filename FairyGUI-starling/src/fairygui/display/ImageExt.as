@@ -3,7 +3,6 @@ package fairygui.display
 	import flash.geom.Rectangle;
 	
 	import fairygui.FlipType;
-	import fairygui.GRoot;
 	
 	import starling.core.RenderSupport;
 	import starling.display.QuadBatch;
@@ -184,12 +183,10 @@ package fairygui.display
 
 			if (_scaleByTile)
 			{
-				var rx:Number = _scaleX / GRoot.contentScaleFactor;
-				var ry:Number = _scaleY / GRoot.contentScaleFactor;
-				var hc:int = Math.ceil(rx);
-				var vc:int = Math.ceil(ry);
-				var remainWidth:Number = _width * (rx - (hc - 1));
-				var remainHeight:Number = _height * (ry - (vc - 1));
+				var hc:int = Math.ceil(_scaleX);
+				var vc:int = Math.ceil(_scaleY);
+				var remainWidth:Number = _width * (_scaleX - (hc - 1));
+				var remainHeight:Number = _height * (_scaleY - (vc - 1));
 
 				_batch.capacity = hc*vc;
 				
@@ -197,16 +194,15 @@ package fairygui.display
 				{
 					for (var j:int = 0; j < vc; j++)
 					{
-						sHelperQuad.fillVertsWithScale(i * _width, j * _height, 
-							i==hc-1?remainWidth:_width, j==vc-1?remainHeight:_height, 
-							GRoot.contentScaleFactor, GRoot.contentScaleFactor);
+						sHelperQuad.fillVerts(i * _width, j * _height, 
+							i==hc-1?remainWidth:_width, j==vc-1?remainHeight:_height);
 
 						if(i==hc-1 && j==vc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, rx-hc+1, ry-vc+1);
+							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, _scaleX-hc+1, _scaleY-vc+1);
 						else if(i==hc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, rx-hc+1, 1);
+							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, _scaleX-hc+1, 1);
 						else if(j==vc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, 1, ry-vc+1);
+							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, 1, _scaleY-vc+1);
 						else
 							sHelperQuad.fillUV(sHelperTexCoords, _texture);
 						
@@ -224,8 +220,8 @@ package fairygui.display
 			}
 			else
 			{				
-				var scale9Width:Number = _width * _scaleX / GRoot.contentScaleFactor;
-				var scale9Height:Number = _height * _scaleY / GRoot.contentScaleFactor;
+				var scale9Width:Number = _width * _scaleX;
+				var scale9Height:Number = _height * _scaleY;
 				
 				var rows:Array;
 				var cols:Array;
@@ -273,16 +269,16 @@ package fairygui.display
 						switch(j)
 						{
 							case 0:
-								sHelperRect.x = dCols[cx] * GRoot.contentScaleFactor;
-								sHelperRect.y = dRows[cy] * GRoot.contentScaleFactor;
+								sHelperRect.x = dCols[cx];
+								sHelperRect.y = dRows[cy];
 								break;
 							
 							case 2:
-								sHelperRect.right = dCols[cx] * GRoot.contentScaleFactor;
+								sHelperRect.right = dCols[cx];
 								break;
 							
 							case 4:
-								sHelperRect.bottom = dRows[cy] * GRoot.contentScaleFactor;
+								sHelperRect.bottom = dRows[cy];
 								break;
 						}
 					}

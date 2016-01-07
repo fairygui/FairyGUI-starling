@@ -85,8 +85,8 @@ package fairygui
 		
 		override protected function handleSizeChanged():void
 		{
-			displayObject.scaleX = this.width/_sourceWidth*this.scaleX*GRoot.contentScaleFactor;
-			displayObject.scaleY = this.height/_sourceHeight*this.scaleY*GRoot.contentScaleFactor;
+			displayObject.scaleX = this.width/_sourceWidth*this.scaleX;
+			displayObject.scaleY = this.height/_sourceHeight*this.scaleY;
 		}
 		
 		override public function constructFromResource(pkgItem:PackageItem):void

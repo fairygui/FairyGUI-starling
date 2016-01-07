@@ -3,9 +3,10 @@ package fairygui
 	import flash.display.Stage;
 	import flash.events.Event;
 	import flash.events.FocusEvent;
-	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	import flash.text.TextFieldType;
+	import flash.text.TextFormat;
 	
 	import starling.core.Starling;
 	import starling.events.Touch;
@@ -70,8 +71,7 @@ package fairygui
 		{
 			super.handleSizeChanged();
 			
-			_canvas.width = this.width*GRoot.contentScaleFactor;
-			_canvas.height = this.height*GRoot.contentScaleFactor+_fontAdjustment;
+			_canvas.setSize(this.width, this.height+_fontAdjustment);
 		}
 		
 		private function __touch(evt:TouchEvent):void
@@ -82,22 +82,32 @@ package fairygui
 			var touch:Touch = evt.getTouch(displayObject);
 			if(touch && touch.phase==TouchPhase.BEGAN)
 			{
-				_nativeTextField.defaultTextFormat = _textFormat;
+				var textFormat:TextFormat;
+				if(_nativeTextField.defaultTextFormat==null)
+					textFormat = new TextFormat();
+				else
+					textFormat = _nativeTextField.defaultTextFormat;
+				textFormat.font = _textFormat.font;
+				textFormat.align = _textFormat.align;
+				textFormat.bold = _textFormat.bold;
+				textFormat.color = _textFormat.color;
+				textFormat.italic = _textFormat.italic;
+				textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
+				textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
+				textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
+				_nativeTextField.defaultTextFormat = textFormat;
 				_nativeTextField.displayAsPassword = this.displayAsPassword;
 				_nativeTextField.wordWrap = !_singleLine;
 				_nativeTextField.multiline = !_singleLine;
 				_nativeTextField.text = _text;
 				_nativeTextField.setSelection(0, int.MAX_VALUE);
 				
-				var pt:Point = this.localToGlobal();
-				pt.x*=GRoot.contentScaleFactor;
-				pt.y*=GRoot.contentScaleFactor;
-				pt.y = pt.y-_yOffset-_fontAdjustment;
+				var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
 				var stage:Stage = Starling.current.nativeStage;
-				_nativeTextField.x = pt.x;
-				_nativeTextField.y = pt.y;
-				_nativeTextField.width = this.width*GRoot.contentScaleFactor;
-				_nativeTextField.height = this.height*GRoot.contentScaleFactor+_fontAdjustment;
+				_nativeTextField.x = rect.x;
+				_nativeTextField.y = rect.y;
+				_nativeTextField.width = rect.width;
+				_nativeTextField.height = rect.height;
 				stage.addChild(_nativeTextField);
 				stage.focus = _nativeTextField;
 				

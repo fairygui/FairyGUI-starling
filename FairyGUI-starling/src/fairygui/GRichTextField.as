@@ -69,11 +69,10 @@ package fairygui
 			
 			if(_heightAutoSize)
 			{
-				var h:int = _textHeight/GRoot.contentScaleFactor;
 				_textField.height = _textHeight+_fontAdjustment;
 				
 				_updatingSize = true;
-				this.height = h;
+				this.height = _textHeight;
 				_updatingSize = false;
 			}
 		}
@@ -82,8 +81,8 @@ package fairygui
 		{
 			if(!_updatingSize)
 			{
-				_textField.width = this.width*GRoot.contentScaleFactor;
-				_textField.height = this.height*GRoot.contentScaleFactor+_fontAdjustment;
+				_textField.width = this.width;
+				_textField.height = this.height+_fontAdjustment;
 			}
 		}
 		
