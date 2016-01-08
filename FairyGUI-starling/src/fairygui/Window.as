@@ -365,7 +365,7 @@ package fairygui
 		{
 			evt.preventDefault();
 			
-			this.startDrag();
+			this.startDrag(evt.touchPointID);
 		}
 	}
 }
