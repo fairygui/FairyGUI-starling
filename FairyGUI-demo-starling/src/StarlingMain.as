@@ -10,6 +10,7 @@ package
 	import fairygui.UIConfig;
 	import fairygui.UIPackage;
 	
+	import starling.core.Starling;
 	import starling.display.Sprite;
 	import starling.events.Event;
 
@@ -37,7 +38,7 @@ package
 		{
 			UIPackage.addPackage(ByteArray(_loader.data), null);
 			
-			UIConfig.defaultFont = "宋体";
+			UIConfig.defaultFont = "Droid Sans Fallback; Droid Sans; SimSun";
 			UIConfig.verticalScrollBar = UIPackage.getItemURL("Demo", "ScrollBar_VT");
 			UIConfig.horizontalScrollBar = UIPackage.getItemURL("Demo", "ScrollBar_HZ");
 			UIConfig.popupMenu = UIPackage.getItemURL("Demo", "PopupMenu");
@@ -50,6 +51,9 @@ package
 		
 		private function continueInit():void {
 			stage.addChild(new GRoot().displayObject);
+			
+			//if(Capabilities.isDebugger)
+			Starling.current.showStatsAt("left","top");
 			
 			GRoot.inst.setContentScaleFactor(640, 960);
 			

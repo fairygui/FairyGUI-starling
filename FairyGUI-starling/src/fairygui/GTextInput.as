@@ -8,6 +8,8 @@ package fairygui
 	import flash.text.TextFieldType;
 	import flash.text.TextFormat;
 	
+	import fairygui.utils.ToolSet;
+	
 	import starling.core.Starling;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
@@ -17,6 +19,7 @@ package fairygui
 	{
 		private var _nativeTextField:TextField;
 		private var _editable:Boolean;
+		private var _promptText:String;
 		
 		public function GTextInput()
 		{
@@ -67,11 +70,57 @@ package fairygui
 			return _nativeTextField.maxChars;
 		}
 		
+		public function get promptText():String
+		{
+			return _promptText;
+		}
+		
+		public function set promptText(value:String):void
+		{
+			_promptText = value;
+			renderNow();
+		}
+		
 		override protected function handleSizeChanged():void
 		{
 			super.handleSizeChanged();
 			
 			_canvas.setSize(this.width, this.height+_fontAdjustment);
+		}
+		
+		override protected function updateTextFieldText():void
+		{
+			if(!_text && _promptText)
+			{
+				renderTextField.htmlText = ToolSet.parseUBB(ToolSet.encodeHTML(_promptText));
+			}
+			else if(_displayAsPassword)
+			{
+				var str:String = "";
+				var cnt:int = _text.length;
+				for(var i:int=0;i<cnt;i++)
+					str += "*";
+				renderTextField.text = str; 
+			}
+			else if(_ubbEnabled)
+				renderTextField.htmlText = ToolSet.parseUBB(ToolSet.encodeHTML(_text));
+			else
+				renderTextField.text = _text;
+		}
+		
+		override public function setup_beforeAdd(xml:XML):void
+		{
+			super.setup_beforeAdd(xml);
+			
+			_promptText = xml.@prompt;
+		}
+		
+		override public function setup_afterAdd(xml:XML):void
+		{
+			super.setup_afterAdd(xml);
+			
+			if(!_text && _promptText)
+				renderNow();
 		}
 		
 		private function __touch(evt:TouchEvent):void
@@ -96,7 +145,7 @@ package fairygui
 				textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
 				textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
 				_nativeTextField.defaultTextFormat = textFormat;
-				_nativeTextField.displayAsPassword = this.displayAsPassword;
+				_nativeTextField.displayAsPassword = _displayAsPassword;
 				_nativeTextField.wordWrap = !_singleLine;
 				_nativeTextField.multiline = !_singleLine;
 				_nativeTextField.text = _text;

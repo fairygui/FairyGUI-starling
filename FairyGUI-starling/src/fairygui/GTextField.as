@@ -103,9 +103,6 @@ package fairygui
 			if(_text==null)
 				_text = "";
 			
-			if(_underConstruct && !_text)
-				return;
-			
 			if(parent && parent._underConstruct)
 				renderNow();
 			else
@@ -480,18 +477,7 @@ package fairygui
 			renderTextField.antiAliasType = AntiAliasType.ADVANCED;
 			renderTextField.filters = _textFilters;
 			
-			if(_displayAsPassword)
-			{
-				var str:String = "";
-				var cnt:int = _text.length;
-				for(var i:int=0;i<cnt;i++)
-					str += "*";
-				renderTextField.text = str; 
-			}
-			else if(_ubbEnabled)
-				renderTextField.htmlText = ToolSet.parseUBB(ToolSet.encodeHTML(_text));
-			else
-				renderTextField.text = _text;
+			updateTextFieldText();
 			
 			var renderSingleLine:Boolean = renderTextField.numLines<=1;
 			
@@ -544,6 +530,22 @@ package fairygui
 			
 			_canvas.renderText(renderTextField, _textWidth, _textHeight, _fontAdjustment, clearCanvas);
 			renderTextField.text = "";
+		}
+		
+		protected function updateTextFieldText():void
+		{
+			if(_displayAsPassword)
+			{
+				var str:String = "";
+				var cnt:int = _text.length;
+				for(var i:int=0;i<cnt;i++)
+					str += "*";
+				renderTextField.text = str; 
+			}
+			else if(_ubbEnabled)
+				renderTextField.htmlText = ToolSet.parseUBB(ToolSet.encodeHTML(_text));
+			else
+				renderTextField.text = _text;
 		}
 		
 		private function clearCanvas():void
@@ -923,7 +925,9 @@ package fairygui
 			super.setup_afterAdd(xml);
 			
 			updateTextFormat();
-			this.text = xml.@text;			
+			var str:String =  xml.@text;
+			if(str)
+				this.text = str; 		
 			_sizeDirty = false;
 			
 			var cxml:XML = xml.gearColor[0];

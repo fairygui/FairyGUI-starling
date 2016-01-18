@@ -49,9 +49,6 @@ package
 			starlingInst.stage.stageHeight = h;
 			starlingInst.viewPort = new Rectangle(0,0,w,h);
 			starlingInst.start();
-			
-			//if(Capabilities.isDebugger)
-			starlingInst.showStatsAt("left","top");
 		}
 	}
 }
