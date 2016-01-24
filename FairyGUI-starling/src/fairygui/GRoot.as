@@ -23,7 +23,7 @@ package fairygui
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	
-	[Event(name = "___focusChanged", type = "fairygui.event.FocusChangeEvent")]
+	[Event(name = "focusChanged", type = "fairygui.event.FocusChangeEvent")]
 	public class GRoot extends GComponent
 	{
 		private var _nativeStage:starling.display.Stage;

@@ -15,7 +15,6 @@ package fairygui
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
-	import fairygui.utils.ZipReader;
 	
 	import starling.textures.Texture;
 	
@@ -27,10 +26,10 @@ package fairygui
 		private var _items:Vector.<PackageItem>;
 		private var _itemsById:Object;
 		private var _itemsByName:Object;
-		private var _desc:ZipReader;
-		private var _files:ZipReader;
 		private var _customId:String;
 		private var _sprites:Object;
+		
+		private var _reader:IUIPackageReader;
 		
 		internal static var _constructing:int;
 		
@@ -64,7 +63,17 @@ package fairygui
 		public static function addPackage(desc:ByteArray, res:ByteArray):UIPackage
 		{
 			var pkg:UIPackage = new UIPackage();
-			pkg.create(desc, res);
+			var reader:ZipUIPackageReader = new ZipUIPackageReader(desc, res);
+			pkg.create(reader);
+			_packageInstById[pkg.id] = pkg;
+			_packageInstByName[pkg.name] = pkg;
+			return pkg;
+		}
+		
+		public static function addPackage2(reader:IUIPackageReader):UIPackage
+		{
+			var pkg:UIPackage = new UIPackage();
+			pkg.create(reader);
 			_packageInstById[pkg.id] = pkg;
 			_packageInstByName[pkg.name] = pkg;
 			return pkg;
@@ -172,24 +181,15 @@ package fairygui
 			}
 		}
 		
-		private function create(desc:ByteArray, res:ByteArray):void
+		private function create(reader:IUIPackageReader):void
 		{
-			_desc = new ZipReader(desc);
-			if(res && res.length)
-				_files = new ZipReader(res);
-			else
-				_files = _desc;
-			
-			loadPackage();
-		}
-		
-		private function loadPackage():void
-		{
+			_reader = reader;
+
 			var ba:ByteArray;
 			var str:String;
 			var arr:Array;
 			
-			ba = _files.getEntryData("sprites.bytes");
+			ba = _reader.readResFile("sprites.bytes");
 			str = ba.readUTFBytes(ba.length);
 			arr = str.split(sep1);
 			var cnt:int = arr.length;
@@ -222,8 +222,7 @@ package fairygui
 				_sprites[itemId] = sprite;
 			}
 			
-			ba = _desc.getEntryData("package.xml");
-			str = ba.readUTFBytes(ba.length);
+			str = _reader.readDescFile("package.xml");
 			
 			var ignoreWhitespace:Boolean = XML.ignoreWhitespace;
 			XML.ignoreWhitespace = true;
@@ -413,23 +412,14 @@ package fairygui
 		{
 			var ignoreWhitespace:Boolean = XML.ignoreWhitespace;
 			XML.ignoreWhitespace = true;
-			var ret:XML = new XML(getDesc(file));
+			var ret:XML = new XML(_reader.readDescFile(file));
 			XML.ignoreWhitespace = ignoreWhitespace;
 			return ret;
 		}
 		
-		private function getDesc(file:String):String
-		{
-			var ba:ByteArray = _desc.getEntryData(file);				
-			var str:String = ba.readUTFBytes(ba.length);
-			ba.clear();
-			
-			return str;
-		}
-		
 		public function getItemRaw(item:PackageItem):ByteArray
 		{
-			return _files.getEntryData(item.file);
+			return _reader.readResFile(item.file);
 		}
 		
 		public function getComponentData(item:PackageItem):XML
@@ -655,7 +645,7 @@ package fairygui
 		
 		private function loadAtlas(pi:PackageItem):void
 		{
-			var ba:ByteArray = _files.getEntryData(pi.file?pi.file:(pi.id+".png"));
+			var ba:ByteArray = _reader.readResFile(pi.file?pi.file:(pi.id+".png"));
 			if(ba!=null)
 			{
 				var loader:PackageItemLoader = new PackageItemLoader();
@@ -668,7 +658,7 @@ package fairygui
 			}
 			else
 			{
-				ba = _files.getEntryData(pi.id+".atf");
+				ba = _reader.readResFile(pi.id+".atf");
 				if(ba!=null)
 				{
 					if(pi.texture!=null)
@@ -805,7 +795,7 @@ package fairygui
 		private function loadSound(item:PackageItem):void
 		{
 			var sound:Sound = new Sound();
-			var ba:ByteArray = _files.getEntryData(item.file);
+			var ba:ByteArray = _reader.readResFile(item.file);
 			sound.loadCompressedDataFromByteArray(ba, ba.length);
 			item.sound = sound;
 			item.loaded = true;
@@ -815,7 +805,7 @@ package fairygui
 		{
 			var font:BitmapFont = new BitmapFont();
 			font.id = "ui://"+this.id+item.id;
-			var str:String = getDesc(item.id + ".fnt");
+			var str:String = _reader.readDescFile(item.id + ".fnt");
 			
 			var lines:Array = str.split(sep1);
 			var lineCount:int = lines.length;

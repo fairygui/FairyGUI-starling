@@ -6,7 +6,7 @@ package fairygui
 	import fairygui.event.ItemEvent;
 	import fairygui.event.GTouchEvent;
 
-	[Event(name = "___itemClick", type = "fairygui.event.ItemEvent")]
+	[Event(name = "itemClick", type = "fairygui.event.ItemEvent")]
 	public class GList extends GComponent
 	{
 		private var _layout:int;

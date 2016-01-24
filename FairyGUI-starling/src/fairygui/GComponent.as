@@ -8,7 +8,8 @@ package fairygui
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Sprite;
 
-	[Event(name = "___scroll", type = "starling.events.Event")]
+	[Event(name = "scrollEvent", type = "starling.events.Event")]
+	[Event(name = "dropEvent", type = "fairygui.event.DropEvent")]
 	public class GComponent extends GObject
 	{
 		private var _boundsChanged:Boolean;

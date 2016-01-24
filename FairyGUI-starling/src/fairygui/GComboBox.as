@@ -8,7 +8,7 @@ package fairygui
 	
 	import starling.events.Event;
 	
-	[Event(name = "___stateChanged", type = "fairygui.event.StateChangeEvent")]
+	[Event(name = "stateChanged", type = "fairygui.event.StateChangeEvent")]
 	public class GComboBox extends GComponent
 	{
 		protected var _titleObject:GTextField;
