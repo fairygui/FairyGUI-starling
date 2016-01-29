@@ -812,7 +812,8 @@ package fairygui
 			var i:int;
 			var kv:Object = {};
 			var ttf:Boolean = false;
-			var lineHeight:int = 0;
+			var size:int = 0;
+			var resizable:Boolean = false;
 			var xadvance:int = 0;
 			var atlasOffsetX:int, atlasOffsetY:int;
 			var atlasWidth:int, atlasHeight:int;
@@ -888,7 +889,7 @@ package fairygui
 					}
 					
 					if(ttf)
-						bg.lineHeight = lineHeight;
+						bg.lineHeight = size;
 					else
 					{
 						if(bg.advance==0)
@@ -900,8 +901,8 @@ package fairygui
 						}
 						
 						bg.lineHeight = bg.offsetY < 0 ? bg.height : (bg.offsetY + bg.height);
-						if(bg.lineHeight < lineHeight)
-							bg.lineHeight = lineHeight;
+						if(bg.lineHeight < size)
+							bg.lineHeight = size;
 					}
 					
 					font.glyphs[String.fromCharCode(kv.id)] = bg;
@@ -909,6 +910,8 @@ package fairygui
 				else if(str=="info")
 				{
 					ttf = kv.face!=null;
+					resizable = kv.resizable=="true";
+					size = kv.size;
 					if(ttf)
 					{
 						var sprite:AtlasSprite = _sprites[item.id];
@@ -934,14 +937,19 @@ package fairygui
 				}
 				else if(str=="common")
 				{
-					lineHeight = kv.lineHeight;
+					if(size==0)
+						size = kv.lineHeight;
 					xadvance = kv.xadvance;
 				}
 			}
 			
+			if(size==0 && bg)
+				size = bg.height;
+			
 			font.mainTexture = mainTexture;
 			font.ttf = ttf;
-			font.lineHeight = lineHeight;
+			font.size = size;
+			font.resizable = resizable;
 			item.bitmapFont = font;
 		}
 	}

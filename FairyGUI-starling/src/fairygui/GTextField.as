@@ -566,7 +566,6 @@ package fairygui
 			
 			var letterSpacing:int = _letterSpacing;
 			var lineSpacing:int = _leading - 1;
-			var fontSize:int = int(_textFormat.size);
 			var rectWidth:int = this.width - GUTTER_X * 2;
 			var lineWidth:int = 0, lineHeight:int = 0, lineTextHeight:int = 0;
 			var glyphWidth:int = 0, glyphHeight:int = 0;
@@ -577,6 +576,7 @@ package fairygui
 			var line:LineInfo;
 			var textWidth:int, textHeight:int;
 			var wordWrap:Boolean = !_widthAutoSize && !_singleLine;
+			var fontScale:Number =  _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
 			
 			var textLength:int = _text.length;
 			for (var offset:int = 0; offset < textLength; ++offset)
@@ -592,7 +592,7 @@ package fairygui
 					if (lineTextHeight == 0)
 					{
 						if (lastLineHeight == 0)
-							lastLineHeight = fontSize;
+							lastLineHeight = Math.ceil(_fontSize*fontScale);
 						if (lineHeight == 0)
 							lineHeight = lastLineHeight;
 						lineTextHeight = lineHeight;
@@ -632,21 +632,21 @@ package fairygui
 				
 				if(ch==" ")
 				{
-					glyphWidth = fontSize/2;
-					glyphHeight = fontSize;
+					glyphWidth = Math.ceil(_fontSize*fontScale/2);
+					glyphHeight = Math.ceil(_fontSize*fontScale);
 				}
 				else
 				{
-					var glyph:BMGlyph = _bitmapFont.glyphs[ch];				
+					var glyph:BMGlyph = _bitmapFont.glyphs[ch];
 					if(glyph)
 					{
-						glyphWidth = glyph.advance;
-						glyphHeight = glyph.lineHeight;
+						glyphWidth = Math.ceil(glyph.advance*fontScale);
+						glyphHeight = Math.ceil(glyph.lineHeight*fontScale);
 					}
 					else if(ch==" ")
 					{
-						glyphWidth = Math.ceil(_bitmapFont.lineHeight/2);
-						glyphHeight = _bitmapFont.lineHeight;
+						glyphWidth = Math.ceil(_bitmapFont.size*fontScale/2);
+						glyphHeight = Math.ceil(_bitmapFont.size*fontScale);
 					}
 					else
 					{
@@ -800,16 +800,16 @@ package fairygui
 					glyph = _bitmapFont.glyphs[ch];
 					if (glyph != null)
 					{
-						charIndent = (line.height + line.textHeight) / 2 - glyph.lineHeight;
+						charIndent = (line.height + line.textHeight) / 2 - Math.ceil(glyph.lineHeight*fontScale);
 						sHelperPoint.x = charX + lineIndent;
 						sHelperPoint.y = line.y + charIndent;
-						_canvas.drawChar(_bitmapFont, glyph, sHelperPoint, _color);
+						_canvas.drawChar(_bitmapFont, glyph, sHelperPoint, _color, fontScale);
 						
-						charX += letterSpacing + glyph.advance;
+						charX += letterSpacing + Math.ceil(glyph.advance*fontScale);
 					}
 					else if(ch==" ")
 					{
-						charX += letterSpacing + Math.ceil(_bitmapFont.lineHeight/2);
+						charX += letterSpacing + Math.ceil(_bitmapFont.size*fontScale/2);
 					}
 					else
 					{

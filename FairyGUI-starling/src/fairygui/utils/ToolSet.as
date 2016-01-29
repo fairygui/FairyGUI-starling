@@ -130,7 +130,6 @@ package fairygui.utils
 			if(wantWidth==0 || wantHeight==0)
 			{
 				return new BitmapData(1,1,source.transparent, 0x00000000);
-				return;
 			}
 			
 			var bmpData : BitmapData = new BitmapData(wantWidth, wantHeight, source.transparent, 0x00000000);

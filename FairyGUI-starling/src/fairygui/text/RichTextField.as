@@ -162,7 +162,7 @@ package fairygui.text
 		
 		public function set wordWrap(val:Boolean):void
 		{
-			if(_textField.wordWrap = val)
+			if(_textField.wordWrap != val)
 			{
 				_textField.wordWrap = val;
 				_needRebuild = true;
@@ -187,7 +187,7 @@ package fairygui.text
 		
 		public function set border(val:Boolean):void 
 		{
-			if(_textField.border = val)
+			if(_textField.border != val)
 			{
 				_textField.border = val;
 				_needRebuild = true;

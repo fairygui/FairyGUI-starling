@@ -6,7 +6,7 @@ package fairygui.event
 	{
 		public var _text:String;
 		
-		public static const LINK:String = "__textLink";
+		public static const LINK:String = "textLink";
 		
 		public function TextEvent(type:String, bubbles:Boolean, text:String)
 		{

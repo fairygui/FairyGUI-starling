@@ -4,7 +4,6 @@ package fairygui.display
 	import flash.display3D.Context3DTextureFormat;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
-	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	
 	import fairygui.text.BMGlyph;
@@ -24,7 +23,6 @@ package fairygui.display
 		public var renderCallback:Function;
 		
 		private static var sHelperQuad:QuadExt;
-		private static var sHelperRect:Rectangle = new Rectangle();
 		private static var sHelperMatrix:Matrix = new Matrix();
 		private static var sDefaultTextureFormat:String =
 			"BGRA_PACKED" in Context3DTextureFormat ? "bgraPacked4444" : "bgra";
@@ -122,36 +120,48 @@ package fairygui.display
 			}
 		}
 		
-		public function drawChar(font:BitmapFont, glyph:BMGlyph, charPos:Point, color:uint):void
+		public function drawChar(font:BitmapFont, glyph:BMGlyph, charPos:Point, color:uint, fontScale:Number):void
 		{
 			if(font.mainTexture==null)
 				return;
 			
-			charPos.x += glyph.offsetX;
-			
-			if(font.ttf)
-			{
-				sHelperRect.x = charPos.x;
-				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width;
-				sHelperRect.height = glyph.height;
+			if(fontScale==1)
+			{			
+				charPos.x += glyph.offsetX;
 				
-				sHelperQuad.fillVertsByRect(sHelperRect);
-				sHelperQuad.fillUVByRect(glyph.uvRect);
-				sHelperQuad.color = uint(color);
-				_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
+				if(font.ttf)
+				{
+					sHelperQuad.fillVerts(charPos.x, charPos.y, glyph.width, glyph.height);
+					sHelperQuad.fillUVByRect(glyph.uvRect);
+					sHelperQuad.color = uint(color);
+					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
+				}
+				else if(glyph.uvRect!=null)
+				{
+					sHelperQuad.fillVerts(charPos.x, charPos.y, glyph.width, glyph.height);
+					sHelperQuad.fillUVByRect(glyph.uvRect);
+					sHelperQuad.color = 0xffffff;
+					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
+				}
 			}
-			else if(glyph.uvRect!=null)
+			else
 			{
-				sHelperRect.x = charPos.x;
-				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width;
-				sHelperRect.height = glyph.height;
+				charPos.x += Math.ceil(glyph.offsetX*fontScale);
 				
-				sHelperQuad.fillVertsByRect(sHelperRect);
-				sHelperQuad.fillUVByRect(glyph.uvRect);
-				sHelperQuad.color = 0xffffff;
-				_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
+				if(font.ttf)
+				{
+					sHelperQuad.fillVerts(charPos.x, charPos.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
+					sHelperQuad.fillUVByRect(glyph.uvRect);
+					sHelperQuad.color = uint(color);
+					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
+				}
+				else if(glyph.uvRect!=null)
+				{
+					sHelperQuad.fillVerts(charPos.x, charPos.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
+					sHelperQuad.fillUVByRect(glyph.uvRect);
+					sHelperQuad.color = 0xffffff;
+					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
+				}
 			}
 		}
 
