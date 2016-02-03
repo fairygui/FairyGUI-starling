@@ -1118,7 +1118,8 @@ package fairygui
 		private var _touchPointId:int;
 		private var _lastClick:int;
 		private var _buttonStatus:int;
-		private var _rollOver:Boolean;		
+		private var _rollOver:Boolean;
+		private var _touchDownPoint:Point;
 		private static var sHelperPoint:Point = new Point();
 		private static const MTOUCH_EVENTS:Array = 
 			[GTouchEvent.BEGIN, GTouchEvent.DRAG, GTouchEvent.END, GTouchEvent.CLICK,
@@ -1153,6 +1154,16 @@ package fairygui
 						|| GRoot.touchPointInput && _touchPointId!=touch.id)
 						return;
 					
+					var sensitivity:int;
+					if(GRoot.touchScreen)
+						sensitivity = UIConfig.touchDragSensitivity;
+					else
+						sensitivity = UIConfig.clickDragSensitivity;
+					if(_touchDownPoint!=null 
+						&& Math.abs(_touchDownPoint.x - touch.globalX) < sensitivity
+							&& Math.abs(_touchDownPoint.y - touch.globalY) < sensitivity)
+							return;
+						
 					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.DRAG);
 					devt.copyFrom(evt, touch);
 					this.dispatchEvent(devt);
@@ -1187,6 +1198,11 @@ package fairygui
 				this.dispatchEvent(devt);
 				if(devt.isPropagationStop)
 					evt.stopPropagation();
+				
+				if(_touchDownPoint==null)
+					_touchDownPoint = new Point();
+				_touchDownPoint.x = touch.globalX;
+				_touchDownPoint.y = touch.globalY;
 				
 				triggerDown(touch.id);
 			}
