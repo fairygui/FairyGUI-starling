@@ -39,8 +39,8 @@ package fairygui
 		private var _y:Number;
 		private var _width:Number;
 		private var _height:Number;
-		private var _pivotX:int;
-		private var _pivotY:int;
+		private var _pivotX:Number;
+		private var _pivotY:Number;
 		private var _alpha:Number;
 		private var _rotation:int;
 		private var _visible:Boolean;
@@ -103,6 +103,8 @@ package fairygui
 			_touchable = true;
 			_scaleX = 1;
 			_scaleY = 1;
+			_pivotX = 0;
+			_pivotY = 0;
 			_pivotOffsetX = 0;
 			_pivotOffsetY = 0;
 			
@@ -328,27 +330,27 @@ package fairygui
 			}
 		}
 		
-		final public function get pivotX():int
+		final public function get pivotX():Number
 		{
 			return _pivotX;
 		}
 		
-		final public function set pivotX(value:int):void
+		final public function set pivotX(value:Number):void
 		{
 			setPivot(value, _pivotY);
 		}
 		
-		final public function get pivotY():int
+		final public function get pivotY():Number
 		{
 			return _pivotY;
 		}
 		
-		final public function set pivotY(value:int):void
+		final public function set pivotY(value:Number):void
 		{
 			setPivot(_pivotX, value);
 		}
 		
-		final public function setPivot(xv:int, yv:int):void
+		final public function setPivot(xv:Number, yv:Number):void
 		{
 			if(_pivotX!=xv || _pivotY!=yv)
 			{
@@ -1079,7 +1081,7 @@ package fairygui
 			if(str)
 			{
 				arr = str.split(",");
-				this.setPivot(int(arr[0]), int(arr[1]));
+				this.setPivot(parseFloat(arr[0]), parseFloat(arr[1]));
 			}
 			
 			this.touchable = xml.@touchable!="false";
