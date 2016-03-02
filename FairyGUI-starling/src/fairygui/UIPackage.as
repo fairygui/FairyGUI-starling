@@ -3,6 +3,7 @@ package fairygui
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.LoaderInfo;
+	import flash.display3D.Context3DTextureFormat;
 	import flash.events.Event;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -699,7 +700,10 @@ package fairygui
 				if(bmd.transparent)
 					pi.texture = Texture.fromBitmapData(bmd, false);
 				else
-					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, "bgrPacked565");
+				{
+					var format:String = "BGR_PACKED" in Context3DTextureFormat ? "bgrPacked565" : "bgra";
+					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, format);
+				}
 				pi.texture.root.onRestore = function():void
 				{
 					loadAtlas(pi);

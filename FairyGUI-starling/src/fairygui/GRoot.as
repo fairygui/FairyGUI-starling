@@ -295,7 +295,7 @@ package fairygui
 				{
 					for(var i:int=_popupStack.length-1;i>=k;i--)
 					{
-						var popup:GObject =  _popupStack.pop();
+						popup =  _popupStack.pop();
 						closePopup(popup);
 					}
 				}

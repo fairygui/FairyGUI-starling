@@ -23,7 +23,7 @@ package fairygui.utils  {
 		
 		public static const inst:GTimers = new GTimers();
 		
-		private static const FPS24:int = 1000/24;
+		private static const FPS24:int = 42;//1000/24;
 		
 		public function GTimers():void {
 			_items = new Vector.<TimerItem>();

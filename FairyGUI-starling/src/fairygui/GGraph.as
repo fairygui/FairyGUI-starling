@@ -80,7 +80,8 @@ package fairygui
 		{
 			if(displayObject==_shape)
 			{
-				_shape.dispose();
+				if(_shape)
+					_shape.dispose();
 				_shape = null;
 				
 				setDisplayObject(new UISprite(this));
