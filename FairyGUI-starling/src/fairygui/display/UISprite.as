@@ -1,9 +1,9 @@
 package fairygui.display
 {
 	import flash.geom.Point;
-	import flash.geom.Rectangle;
 	
 	import fairygui.GObject;
+	import fairygui.utils.PixelHitTest;
 	
 	import starling.core.RenderSupport;
 	import starling.display.DisplayObject;
@@ -12,7 +12,7 @@ package fairygui.display
 	public class UISprite extends Sprite implements UIDisplayObject 
 	{
 		private var _owner:GObject;
-		private var _hitArea:Rectangle;
+		private var _hitArea:Object;
 		private var _skipRendering:Boolean;
 		
 		public var renderCallback:Function;
@@ -27,15 +27,14 @@ package fairygui.display
 			return _owner;
 		}
 		
-		public function get hitArea():Rectangle
+		public function get hitArea():Object
 		{
 			return _hitArea;
 		}
 		
-		public function set hitArea(value:Rectangle):void
+		public function set hitArea(value:Object):void
 		{
-			if (_hitArea && value) _hitArea.copyFrom(value);
-			else _hitArea = (value ? value.clone() : null);
+			_hitArea = value;
 		}
 		
 		override public function dispose():void
@@ -53,10 +52,20 @@ package fairygui.display
 			var localY:Number = localPoint.y;
 			
 			var ret:DisplayObject = super.hitTest(localPoint, forTouch);
-			if(ret==null && (this.touchable || !forTouch) 
-				&& _hitArea!=null && _hitArea.contains(localX, localY))
-				ret = this;
-			
+			if(_hitArea!=null && (this.touchable || !forTouch))
+			{
+				if(ret==null)
+				{
+					if(_hitArea.contains(localX, localY))
+						ret = this;
+				}
+				else
+				{
+					if((_hitArea is PixelHitTest) && !_hitArea.contains(localX, localY))
+						ret = null;
+				}
+			}
+
 			return ret;				
 		}
 		

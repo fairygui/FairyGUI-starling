@@ -16,8 +16,10 @@ package fairygui
 	import starling.core.Starling;
 	import starling.display.Sprite;
 	import starling.events.Event;
+	import starling.events.EventDispatcher;
 	
-	public class ScrollPane
+	[Event(name = "scroll", type = "starling.events.Event")]
+	public class ScrollPane extends EventDispatcher
 	{
 		private var _owner:GComponent;
 		private var _container:Sprite;
@@ -49,6 +51,7 @@ package fairygui
 		private var _xPerc:Number;
 		private var _vScroll:Boolean;
 		private var _hScroll:Boolean;
+		private var _needRefresh:Boolean;
 		
 		private static var _easeTypeFunc:Ease;
 		private var _throwTween:ThrowTween;
@@ -68,6 +71,7 @@ package fairygui
 		private var _vtScrollBar:GScrollBar;
 		
 		private static var sHelperPoint:Point = new Point();
+		private static var sHelperRect:Rectangle = new Rectangle();
 		
 		public function ScrollPane(owner:GComponent, 
 								   scrollType:int,
@@ -168,7 +172,6 @@ package fairygui
 			_contentWidth = 0;
 			_contentHeight = 0;
 			setSize(owner.width, owner.height);
-			setContentSize(owner.bounds.width, owner.bounds.height);
 			
 			Starling.current.nativeStage.addEventListener(MouseEvent.MOUSE_WHEEL, __mouseWheel);
 			_owner.addEventListener(GTouchEvent.BEGIN, __mouseDown);
@@ -178,16 +181,6 @@ package fairygui
 		public function dispose():void
 		{
 			Starling.current.nativeStage.removeEventListener(MouseEvent.MOUSE_WHEEL, __mouseWheel);
-			
-			_owner.removeEventListener(GTouchEvent.BEGIN, __mouseDown);
-			_owner.removeEventListener(GTouchEvent.DRAG, __mouseMove);
-			_owner.removeEventListener(GTouchEvent.END, __mouseUp);
-			_owner.removeEventListener(GTouchEvent.ROLL_OVER, __rollOver);
-			_owner.removeEventListener(GTouchEvent.ROLL_OUT, __rollOut);
-			_container.removeChildren();
-			_maskContentHolder.x = 0;
-			_maskContentHolder.y = 0;
-			_container.addChild(_maskContentHolder);
 		}
 		
 		public function get owner():GComponent
@@ -267,7 +260,6 @@ package fairygui
 			if(sc != _xPerc)
 			{
 				_xPerc = sc;
-				_owner.dispatchEventWith(Event.SCROLL);
 				posChanged(ani);				
 			}
 		}
@@ -291,7 +283,6 @@ package fairygui
 			if(sc != _yPerc)
 			{
 				_yPerc = sc;
-				_owner.dispatchEventWith(Event.SCROLL);
 				posChanged(ani);
 			}
 		}
@@ -420,50 +411,77 @@ package fairygui
 			this.setPercX(_xPerc + getDeltaX(_scrollSpeed*speed), ani);
 		}
 		
-		public function scrollToView(obj:GObject, ani:Boolean=false):void
+		/**
+		 * @param target GObject: can be any object on stage, not limited to the direct child of this container.
+		 * 				or Rectangle: Rect in local coordinates
+		 * @param ani If moving to target position with animation
+		 */
+		public function scrollToView(target:*, ani:Boolean=false):void
 		{
+			var rect:Rectangle;
+			if(target is GObject)
+			{
+				if (target.parent != _owner)
+				{
+					GObject(target).parent.localToGlobalRect(target.x, target.y, 
+						target.width, target.height, sHelperRect);
+					rect = _owner.globalToLocalRect(sHelperRect.x, sHelperRect.y, 
+						sHelperRect.width, sHelperRect.height, sHelperRect);
+				}
+				else
+				{
+					rect = sHelperRect;
+					rect.setTo(target.x, target.y, target.width, target.height);					
+				}
+			}
+			else
+				rect = Rectangle(target);
+			
 			_owner.ensureBoundsCorrect();
-			if(GTimers.inst.exists(refresh))
+			if(_needRefresh)
 				refresh();
 			
 			if(_vScroll)
 			{
-				var top:Number = (_contentHeight-_maskHeight)*_yPerc;
+				var top:Number = this.posY;
 				var bottom:Number = top+_maskHeight;
-				if(obj.y<top)
-					this.setPosY(obj.y, ani);
-				else if(obj.y+obj.height>bottom)
+				if(rect.y<top)
+					this.setPosY(rect.y, ani);
+				else if(rect.y+rect.height>bottom)
 				{
-					if (obj.y + obj.height * 2 >= top)
-						this.setPosY(obj.y+obj.height*2-_maskHeight, ani);
+					if (rect.y + rect.height * 2 >= top)
+						this.setPosY(rect.y+rect.height*2-_maskHeight, ani);
 					else
-						this.setPosY(obj.y+obj.height-_maskHeight, ani);
+						this.setPosY(rect.y+rect.height-_maskHeight, ani);
 				}
 			}
 			if(_hScroll)
 			{
-				var left:Number = (_contentWidth-_maskWidth)*_xPerc;
+				var left:Number = this.posX;
 				var right:Number = left+_maskWidth;
-				if(obj.x<left)
-					this.setPosX(obj.x, ani);
-				else if(obj.x+obj.width>right)
+				if(rect.x<left)
+					this.setPosX(rect.x, ani);
+				else if(rect.x+rect.width>right)
 				{
-					if (obj.x + obj.width * 2 >= left)
-						this.setPosX(obj.x+obj.width*2-_maskWidth, ani);
+					if (rect.x + rect.width * 2 >= left)
+						this.setPosX(rect.x+rect.width*2-_maskWidth, ani);
 					else
-						this.setPosX(obj.x+obj.width-_maskWidth, ani);
+						this.setPosX(rect.x+rect.width-_maskWidth, ani);
 				}
 			}
 			
-			if(!ani && GTimers.inst.exists(refresh))
+			if(!ani && _needRefresh)
 				refresh();
 		}
 		
+		/**
+		 * @param obj obj must be the direct child of this container
+		 */
 		public function isChildInView(obj:GObject):Boolean
 		{
 			if(_vScroll)
 			{
-				var top:Number = (_contentHeight-_maskHeight)*_yPerc;
+				var top:Number = this.posY;
 				var bottom:Number = top+_maskHeight;
 				if(obj.y+obj.height<top || obj.y>bottom)
 					return false;
@@ -471,7 +489,7 @@ package fairygui
 			
 			if(_hScroll)
 			{
-				var left:Number = (_contentWidth-_maskWidth)*_xPerc;
+				var left:Number = this.posX;
 				var right:Number = left+_maskWidth;
 				if(obj.x+obj.width<left || obj.x>right)
 					return false;
@@ -675,20 +693,18 @@ package fairygui
 		{
 			if(_aniFlag)
 				_aniFlag = ani;
+			
+			_needRefresh = true;
 			GTimers.inst.callLater(refresh);
 		}
 		
 		private function refresh():void
 		{
-			if(_isMouseMoved)
-			{
-				GTimers.inst.callLater(refresh);
-				return;
-			}
+			_needRefresh = false;
 			GTimers.inst.remove(refresh);
 			
-			var contentYLoc:Number;
-			var contentXLoc:Number;
+			var contentYLoc:Number = 0;
+			var contentXLoc:Number = 0;
 
 			if(_vScroll)
 				contentYLoc = _yPerc * (_contentHeight - _maskHeight);
@@ -698,14 +714,12 @@ package fairygui
 			if(_snapToItem)
 			{
 				var pt:Point = _owner.findObjectNear(_xPerc==1?0:contentXLoc, _yPerc==1?0:contentYLoc, sHelperPoint);
-				var scrolled:Boolean = false;
 				if (_xPerc != 1 && pt.x!=contentXLoc)
 				{
 					_xPerc = pt.x / (_contentWidth - _maskWidth);
 					if(_xPerc>1)
 						_xPerc = 1;
 					contentXLoc = _xPerc * (_contentWidth - _maskWidth);
-					scrolled = true;
 				}
 				if (_yPerc != 1 && pt.y!=contentYLoc)
 				{
@@ -713,15 +727,34 @@ package fairygui
 					if(_yPerc>1)
 						_yPerc = 1;
 					contentYLoc = _yPerc * (_contentHeight - _maskHeight);
-					scrolled = true;
 				}
-				if(scrolled)
-					_owner.dispatchEventWith(Event.SCROLL);
 			}
+			
+			refresh2(contentXLoc, contentYLoc);
+			
+			dispatchEventWith(Event.SCROLL);
+			
+			if (_needRefresh) //user change scroll pos in on scroll
+			{
+				_needRefresh = false;
+				GTimers.inst.remove(refresh);
+				
+				if (_hScroll)
+					contentXLoc = _xPerc * (_contentWidth - _maskWidth);
+				if (_vScroll)
+					contentYLoc = _yPerc * (_contentHeight - _maskHeight);
+				refresh2(contentXLoc, contentYLoc);
+			}
+			
+			_aniFlag = true;
+		}
+		
+		private function refresh2(contentXLoc:Number, contentYLoc:Number):void
+		{
 			contentXLoc = int(contentXLoc);
 			contentYLoc = int(contentYLoc);
 			
-			if(_aniFlag)
+			if(_aniFlag && !_isMouseMoved)
 			{
 				var toX:Number = _maskContentHolder.x;
 				var toY:Number = _maskContentHolder.y;
@@ -760,21 +793,20 @@ package fairygui
 			{
 				killTweens();
 				
-				if(_vScroll)
-					_maskContentHolder.y = -contentYLoc;
-				else
-					_maskContentHolder.y = 0;
-				if(_hScroll)
-					_maskContentHolder.x = -contentXLoc;
-				else
-					_maskContentHolder.x = 0;
+				if (_isMouseMoved)
+				{
+					_xOffset += _maskContentHolder.x - (-contentXLoc);
+					_yOffset += _maskContentHolder.y - (-contentYLoc);
+				}
+				
+				_maskContentHolder.y = -contentYLoc;
+				_maskContentHolder.x = -contentXLoc;
+
 				if(_vtScrollBar)
 					_vtScrollBar.scrollPerc = _yPerc;
 				if(_hzScrollBar)
 					_hzScrollBar.scrollPerc = _xPerc;
 			}
-			
-			_aniFlag = true;
 		}
 		
 		private function killTweens():void
@@ -1018,7 +1050,8 @@ package fairygui
 				_owner.cancelChildrenClickEvent();
 			}
 			onScrolling();
-			_owner.dispatchEventWith(Event.SCROLL);
+
+			dispatchEventWith(Event.SCROLL);
 		}
 		
 		private function __mouseUp(evt:GTouchEvent):void
@@ -1206,7 +1239,8 @@ package fairygui
 			}
 			
 			onScrolling();
-			_owner.dispatchEventWith(Event.SCROLL);
+
+			dispatchEventWith(Event.SCROLL);
 		}
 		
 		private function __tweenComplete2():void
@@ -1223,7 +1257,8 @@ package fairygui
 
 			_maskHolder.touchable = true;
 			onScrollEnd();
-			_owner.dispatchEventWith(Event.SCROLL);
+
+			dispatchEventWith(Event.SCROLL);
 		}
 	}
 }

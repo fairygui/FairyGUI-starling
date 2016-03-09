@@ -819,7 +819,7 @@ package fairygui
 			}//line loop
 		}
 		
-		override protected function handleXYChanged():void
+		override protected function handlePositionChanged():void
 		{
 			displayObject.x = this.x;
 			displayObject.y = this.y+_yOffset;

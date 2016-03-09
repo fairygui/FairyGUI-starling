@@ -15,6 +15,8 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.GTimers;
+	import fairygui.utils.PixelHitTest;
+	import fairygui.utils.PixelHitTestData;
 	import fairygui.utils.ToolSet;
 	
 	import starling.textures.Texture;
@@ -27,6 +29,7 @@ package fairygui
 		private var _items:Vector.<PackageItem>;
 		private var _itemsById:Object;
 		private var _itemsByName:Object;
+		private var _hitTestDatas:Object;
 		private var _customId:String;
 		private var _sprites:Object;
 		
@@ -48,6 +51,7 @@ package fairygui
 		public function UIPackage()
 		{
 			_items = new Vector.<PackageItem>();
+			_hitTestDatas = {};
 			_sprites = {};
 		}
 		
@@ -221,6 +225,17 @@ package fairygui
 				sprite.rect.height = parseInt(arr2[5]);
 				sprite.rotated = arr2[6] == "1";
 				_sprites[itemId] = sprite;
+			}
+			
+			ba = _reader.readResFile("hittest.bytes");
+			if(ba!=null)
+			{
+				while(ba.bytesAvailable)
+				{
+					var hitTestData:PixelHitTestData = new PixelHitTestData();
+					_hitTestDatas[ba.readUTF()] = hitTestData;
+					hitTestData.load(ba);
+				}
 			}
 			
 			str = _reader.readDescFile("package.xml");
@@ -440,6 +455,11 @@ package fairygui
 			}
 			
 			return item.componentData;
+		}
+		
+		public function getPixelHitTestData(itemId:String):PixelHitTestData
+		{
+			return _hitTestDatas[itemId];
 		}
 		
 		private function translateComponent(xml:XML, strings:Object):void

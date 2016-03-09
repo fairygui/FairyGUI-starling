@@ -44,6 +44,8 @@ package fairygui.display
 			
 			_batch = new QuadBatch();
 			_batch.capacity = 1;
+			
+			setPlaySettings();
 		}
 		
 		public function get playState():PlayState
@@ -95,8 +97,13 @@ package fairygui.display
 				_frameCount = _frames.length;
 			else
 				_frameCount = 0;
+			
+			if(_end==-1 || _end>_frameCount - 1)
+				_end = _frameCount - 1;
+			if(_endAt==-1 || _endAt>_frameCount - 1)
+				_endAt = _frameCount - 1;
+			
 			_currentFrame = -1;
-			setPlaySettings();
 		}
 		
 		public function get frameCount():int
@@ -126,7 +133,7 @@ package fairygui.display
 			{
 				_currentFrame = value;
 				_playState.currentFrame = value;
-				setFrame(_currentFrame<frameCount?_frames[_currentFrame]:null);
+				setFrame(_currentFrame<_frameCount?_frames[_currentFrame]:null);
 			}
 		}
 		
@@ -138,11 +145,6 @@ package fairygui.display
 		public function set playing(value:Boolean):void
 		{
 			_playing = value;
-
-			if (playing && frameCount != 0 && _status != 3)
-				GTimers.inst.callBy24Fps(update);
-			else
-				GTimers.inst.remove(update);
 		}
 		
 		//从start帧开始，播放到end帧（-1表示结尾），重复times次（0表示无限循环），循环结束后，停止在endAt帧（-1表示参数end）
@@ -152,25 +154,16 @@ package fairygui.display
 		{
 			_start = start;
 			_end = end;
-			if (_end == -1)
-				_end = frameCount - 1;
 			_times = times;
 			_endAt = endAt;
-			if (_endAt == -1)
-				_endAt = _end;
 			_status = 0;
-			_callback = endCallback;
-			
+			_callback = endCallback;			
 			this.currentFrame = start;
-			if (playing && frameCount != 0)
-				GTimers.inst.callBy24Fps(update);
-			else
-				GTimers.inst.remove(update);
 		}
 		
 		private function update():void
 		{
-			if (playing && frameCount != 0 && _status != 3)
+			if (_playing && _frameCount != 0 && _status != 3)
 			{
 				_playState.update(this);
 				if (_currentFrame != _playState.currentFrame)
@@ -188,16 +181,8 @@ package fairygui.display
 						_status = 3;
 						
 						//play end
-						GTimers.inst.remove(update);
 						if(_callback!=null)
-						{
-							var f:Function = _callback;
-							_callback = null;
-							if(f.length == 1)
-								f(this);
-							else
-								f();
-						}
+							GTimers.inst.callLater(__playEnd);
 					}
 					else
 					{
@@ -223,6 +208,19 @@ package fairygui.display
 				setFrame(null);
 		}
 		
+		private function __playEnd():void
+		{
+			if(_callback!=null)
+			{
+				var f:Function = _callback;
+				_callback = null;
+				if(f.length == 1)
+					f(this);
+				else
+					f();
+			}
+		}
+		
 		private function setFrame(frame:Frame):void
 		{
 			if(frame==null)
@@ -244,6 +242,8 @@ package fairygui.display
 		private static var sHelperQuad:QuadExt;
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
+			this.update();
+			
 			if(_needRebuild)
 			{
 				_needRebuild = false;
