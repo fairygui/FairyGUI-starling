@@ -154,8 +154,12 @@ package fairygui.display
 		{
 			_start = start;
 			_end = end;
+			if(_end==-1 || _end>_frameCount - 1)
+				_end = _frameCount - 1;
 			_times = times;
 			_endAt = endAt;
+			if (_endAt == -1)
+				_endAt = _end;
 			_status = 0;
 			_callback = endCallback;			
 			this.currentFrame = start;
