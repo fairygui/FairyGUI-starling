@@ -751,7 +751,8 @@ package fairygui
 			
 			setSize(_sourceWidth, _sourceHeight);
 			
-			this.opaque = xml.@opaque;
+			str = xml.@opaque;
+			this.opaque = str!="false";
 			str = xml.@hitTest;
 			if(str)
 			{
