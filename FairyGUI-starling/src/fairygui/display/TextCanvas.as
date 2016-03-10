@@ -2,7 +2,6 @@ package fairygui.display
 {
 	import flash.display.BitmapData;
 	import flash.display3D.Context3DTextureFormat;
-	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.text.TextField;
 	
@@ -23,7 +22,6 @@ package fairygui.display
 		public var renderCallback:Function;
 		
 		private static var sHelperQuad:QuadExt;
-		private static var sHelperMatrix:Matrix = new Matrix();
 		private static var sDefaultTextureFormat:String =
 			"BGRA_PACKED" in Context3DTextureFormat ? "bgraPacked4444" : "bgra";
 		
@@ -50,7 +48,7 @@ package fairygui.display
 			super.dispose();
 		}
 		
-		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, fontAdjustment:int, restoreFunc:Function):void
+		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, restoreFunc:Function):void
 		{
 			var nw:int = nativeTextField.width;
 			if(textWidth==0 || textHeight==0 || nw==0)
@@ -66,11 +64,9 @@ package fairygui.display
 				bh = getNextPowerOfTwo(textHeight);
 				if(bh>2048)
 					bh = 2048;
-				var bmd:BitmapData =  new BitmapData(bw,bh,true,0);
 				
-				//bmd.drawWithQuality(nativeTextField, null, null, null, null, false, StageQuality.MEDIUM);
-				sHelperMatrix.ty = -fontAdjustment;
-				bmd.draw(nativeTextField, sHelperMatrix);
+				var bmd:BitmapData =  new BitmapData(bw,bh,true,0);
+				bmd.draw(nativeTextField);
 				
 				if(_texture==null)
 				{

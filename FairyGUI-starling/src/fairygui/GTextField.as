@@ -528,7 +528,7 @@ package fairygui
 				doAlign();
 			}
 			
-			_canvas.renderText(renderTextField, _textWidth, _textHeight, _fontAdjustment, clearCanvas);
+			_canvas.renderText(renderTextField, _textWidth, _textHeight+_fontAdjustment+3, clearCanvas);
 			renderTextField.text = "";
 		}
 		

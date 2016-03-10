@@ -837,7 +837,7 @@ package fairygui.text
 			if(_needRebuild)
 			{
 				_needRebuild = false;
-				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, 0, clearCanvas);
+				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, clearCanvas);
 			}
 			
 			super.render(support, parentAlpha);
