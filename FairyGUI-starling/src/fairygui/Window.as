@@ -146,14 +146,6 @@ package fairygui
 			r.hideWindowImmediately(this);
 		}
 		
-		override public function center(restraint:Boolean=false):void
-		{
-			var r:GRoot = this.root;
-			if(!r)
-				r = GRoot.inst;
-			centerOn(r, restraint);
-		}
-		
 		public function centerOn(r:GRoot, restraint:Boolean=false):void
 		{
 			this.setXY(int((r.width-this.width)/2), int((r.height-this.height)/2));
@@ -194,10 +186,7 @@ package fairygui
 		
 		public function bringToFront():void
 		{
-			var r:GRoot = this.root;
-			if(!r)
-				r = GRoot.inst;
-			r.showWindow(this);
+			this.root.showWindow(this);
 		}
 
 		public function showModalWait(requestingCmd:int=0):void

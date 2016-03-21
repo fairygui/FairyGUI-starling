@@ -418,6 +418,10 @@ package fairygui
 		 */
 		public function scrollToView(target:*, ani:Boolean=false):void
 		{
+			_owner.ensureBoundsCorrect();
+			if(_needRefresh)
+				refresh();
+			
 			var rect:Rectangle;
 			if(target is GObject)
 			{
@@ -436,10 +440,6 @@ package fairygui
 			}
 			else
 				rect = Rectangle(target);
-			
-			_owner.ensureBoundsCorrect();
-			if(_needRefresh)
-				refresh();
 			
 			if(_vScroll)
 			{
