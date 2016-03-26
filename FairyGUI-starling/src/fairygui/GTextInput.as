@@ -153,10 +153,10 @@ package fairygui
 				
 				var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
 				var stage:Stage = Starling.current.nativeStage;
-				_nativeTextField.x = rect.x;
-				_nativeTextField.y = rect.y;
-				_nativeTextField.width = rect.width;
-				_nativeTextField.height = rect.height;
+				_nativeTextField.x = int(rect.x);
+				_nativeTextField.y = int(rect.y);
+				_nativeTextField.width = int(rect.width);
+				_nativeTextField.height = int(rect.height);
 				stage.addChild(_nativeTextField);
 				stage.focus = _nativeTextField;
 				
