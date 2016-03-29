@@ -445,7 +445,7 @@ package fairygui
 			{
 				var top:Number = this.posY;
 				var bottom:Number = top+_maskHeight;
-				if(rect.y<top)
+				if(rect.y<=top)
 					this.setPosY(rect.y, ani);
 				else if(rect.y+rect.height>bottom)
 				{
@@ -459,7 +459,7 @@ package fairygui
 			{
 				var left:Number = this.posX;
 				var right:Number = left+_maskWidth;
-				if(rect.x<left)
+				if(rect.x<=left)
 					this.setPosX(rect.x, ani);
 				else if(rect.x+rect.width>right)
 				{
