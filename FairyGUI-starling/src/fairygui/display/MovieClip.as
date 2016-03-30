@@ -105,6 +105,11 @@ package fairygui.display
 			
 			if(_currentFrame<0 || _currentFrame>_frameCount - 1)
 				_currentFrame = _frameCount - 1;
+			
+			if(_frameCount>0)
+				setFrame(_frames[_currentFrame]);
+			else
+				setFrame(null);
 		}
 		
 		public function get frameCount():int
@@ -134,7 +139,9 @@ package fairygui.display
 			{
 				_currentFrame = value;
 				_playState.currentFrame = value;
-				setFrame(_currentFrame<_frameCount?_frames[_currentFrame]:null);
+				
+				if(_frameCount>0)
+					setFrame(_currentFrame<_frameCount?_frames[_currentFrame]:_frames[_frameCount-1]);
 			}
 		}
 		
@@ -162,7 +169,8 @@ package fairygui.display
 			if (_endAt == -1)
 				_endAt = _end;
 			_status = 0;
-			_callback = endCallback;			
+			_callback = endCallback;
+			
 			this.currentFrame = start;
 		}
 		
@@ -209,8 +217,6 @@ package fairygui.display
 					setFrame(_frames[_currentFrame]);
 				}
 			}
-			else
-				setFrame(null);
 		}
 		
 		private function __playEnd():void
