@@ -45,6 +45,13 @@ package fairygui
 			super.dispose();
 		}
 		
+		override public function get text():String
+		{
+			if(_nativeTextField.parent)
+				_text = _nativeTextField.text;
+			return _text;
+		}		
+		
 		public function get nativeTextField():TextField
 		{
 			return _nativeTextField;
@@ -85,7 +92,7 @@ package fairygui
 		{
 			super.handleSizeChanged();
 			
-			_canvas.setSize(this.width, this.height+_fontAdjustment);
+			_canvas.setCanvasSize(this.width, this.height+_fontAdjustment);
 		}
 		
 		override protected function updateTextFieldText():void
