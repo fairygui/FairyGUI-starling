@@ -897,14 +897,11 @@ package fairygui
 			}
 			else
 			{
-				var obj:GButton = getChildAt(index).asButton;
-				if (obj != null)
-				{
-					if (this.scrollPane != null)
-						scrollPane.scrollToView(obj, ani);
-					else if (parent != null && parent.scrollPane != null)
-						parent.scrollPane.scrollToView(obj, ani);
-				}
+				var obj:GObject = getChildAt(index);
+				if (this.scrollPane != null)
+					scrollPane.scrollToView(obj, ani);
+				else if (parent != null && parent.scrollPane != null)
+					parent.scrollPane.scrollToView(obj, ani);
 			}
 		}
 		
