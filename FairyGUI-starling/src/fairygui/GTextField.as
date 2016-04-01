@@ -9,6 +9,7 @@ package fairygui
 	
 	import fairygui.display.TextCanvas;
 	import fairygui.display.UITextField;
+	import fairygui.display.VertexHelper;
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.CharSize;
@@ -577,6 +578,7 @@ package fairygui
 			var textWidth:int, textHeight:int;
 			var wordWrap:Boolean = !_widthAutoSize && !_singleLine;
 			var fontScale:Number =  _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
+			var charCount:int;
 			
 			var textLength:int = _text.length;
 			for (var offset:int = 0; offset < textLength; ++offset)
@@ -642,6 +644,7 @@ package fairygui
 					{
 						glyphWidth = Math.ceil(glyph.advance*fontScale);
 						glyphHeight = Math.ceil(glyph.lineHeight*fontScale);
+						charCount++;
 					}
 					else if(ch==" ")
 					{
@@ -771,10 +774,17 @@ package fairygui
 			}
 			
 			_canvas.clear();
-			_canvas.setSize(w, h);
+			_canvas.setCanvasSize(w, h);
 			
 			if(w==0 || h==0)
 				return;
+			
+			VertexHelper.beginFill();
+			VertexHelper.alloc(charCount);
+			if(_bitmapFont.ttf)
+				VertexHelper.color = _color;
+			else
+				VertexHelper.color = 0xffffff;
 			
 			var charX:int = GUTTER_X;
 			var lineIndent:int;
@@ -803,7 +813,19 @@ package fairygui
 						charIndent = (line.height + line.textHeight) / 2 - Math.ceil(glyph.lineHeight*fontScale);
 						sHelperPoint.x = charX + lineIndent;
 						sHelperPoint.y = line.y + charIndent;
-						_canvas.drawChar(_bitmapFont, glyph, sHelperPoint, _color, fontScale);
+						
+						if(fontScale==1)
+						{			
+							sHelperPoint.x += glyph.offsetX;
+							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, glyph.width, glyph.height);
+							VertexHelper.fillUV2(glyph.uvRect);
+						}
+						else
+						{
+							sHelperPoint.x += Math.ceil(glyph.offsetX*fontScale);				
+							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
+							VertexHelper.fillUV2(glyph.uvRect);
+						}
 						
 						charX += letterSpacing + Math.ceil(glyph.advance*fontScale);
 					}
@@ -817,6 +839,8 @@ package fairygui
 					}
 				}//text loop
 			}//line loop
+			
+			_canvas.renderBitmapText(_bitmapFont);
 		}
 		
 		override protected function handlePositionChanged():void

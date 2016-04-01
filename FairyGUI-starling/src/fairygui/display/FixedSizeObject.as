@@ -11,8 +11,6 @@ package fairygui.display
 	{
 		protected var _width:Number;
 		protected var _height:Number;
-		protected var _scaleX:Number;
-		protected var _scaleY:Number;
 		protected var _needRebuild:Boolean;
 		
 		private static var sHelperMatrix:Matrix = new Matrix();
@@ -23,49 +21,14 @@ package fairygui.display
 		{
 			_width = 0;
 			_height = 0;
-			_scaleX = 1;
-			_scaleY = 1;
 		}
 		
-		override public function get width():Number
-		{
-			return _width;
-		}
-		
-		public function setSize(aw:Number, ah:Number):void
+		protected function setSize(aw:Number, ah:Number):void
 		{
 			if(_width!=aw || _height!=ah)
 			{
 				_width = aw;
 				_height = ah;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function get scaleX():Number
-		{
-			return _scaleX;
-		}
-		
-		override public function set scaleX(value:Number):void
-		{
-			if(_scaleX!=value)
-			{
-				_scaleX = value;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function get scaleY():Number
-		{
-			return _scaleY;
-		}
-		
-		override public function set scaleY(value:Number):void
-		{
-			if(_scaleY!=value)
-			{
-				_scaleY = value;
 				_needRebuild = true;
 			}
 		}
@@ -79,11 +42,11 @@ package fairygui.display
 			
 			if (targetSpace == this || _width==0 || _height==0) // optimization
 			{
-				resultRect.setTo(0,0,_width*_scaleX, _height*_scaleY);
+				resultRect.setTo(0,0,_width, _height);
 			}
 			else if (targetSpace == parent && rotation == 0.0) // optimization
 			{
-				resultRect.setTo(x - pivotX,  y - pivotY, _width*_scaleX, _height*_scaleY);
+				resultRect.setTo(x - pivotX,  y - pivotY, _width*this.scaleX, _height*this.scaleY);
 			}
 			else
 			{
@@ -98,9 +61,9 @@ package fairygui.display
 					switch(i)
 					{
 						case 0: ax = 0;  ay = 0;    break;
-						case 1: ax = _width*_scaleX;  ay = 0; break;
-						case 2: ax = 0; ay = _height*_scaleY;    break;
-						case 3: ax = _width*_scaleX; ay = _height*_scaleY; break;
+						case 1: ax = _width;  ay = 0; break;
+						case 2: ax = 0; ay = _height;    break;
+						case 3: ax = _width; ay = _height; break;
 					}
 					var transformedPoint:Point = MatrixUtil.transformCoords(sHelperMatrix, ax, ay, sHelperPoint);
 					

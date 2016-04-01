@@ -42,6 +42,46 @@ package fairygui
 			_content.flip = value;
 		}
 		
+		public function get fillMethod():int
+		{
+			return _content.fillMethod;
+		}
+		
+		public function set fillMethod(value:int):void
+		{
+			_content.fillMethod = value;
+		}
+		
+		public function get fillOrigin():int
+		{
+			return _content.fillOrigin;
+		}
+		
+		public function set fillOrigin(value:int):void
+		{
+			_content.fillOrigin = value;
+		}
+		
+		public function get fillAmount():Number
+		{
+			return _content.fillAmount;
+		}
+		
+		public function set fillAmount(value:Number):void
+		{
+			_content.fillAmount = value;
+		}
+		
+		public function get fillClockwise():Boolean
+		{
+			return _content.fillClockwise;
+		}
+		
+		public function set fillClockwise(value:Boolean):void
+		{
+			_content.fillClockwise = value;
+		}
+		
 		override protected function createDisplayObject():void
 		{ 
 			_content = new UIImage(this);
@@ -99,8 +139,10 @@ package fairygui
 		
 		override protected function handleSizeChanged():void
 		{
-			_content.scaleX = this.width/_sourceWidth*this.scaleX;
-			_content.scaleY = this.height/_sourceHeight*this.scaleY;
+			_content.textureScaleX = this.width/this.sourceWidth;
+			_content.textureScaleY = this.height/this.sourceHeight;
+			_content.scaleX = this.scaleX;
+			_content.scaleY = this.scaleY;
 		}
 		
 		override public function setup_beforeAdd(xml:XML):void
@@ -114,7 +156,22 @@ package fairygui
 			
 			str = xml.@flip;
 			if(str)
-				_content.flip = FlipType.parse(str);	
+				_content.flip = FlipType.parse(str);
+			
+			str = xml.@fillMethod;
+			if (str)
+				_content.fillMethod = FillType.parseFillMethod(str);
+			
+			if (_content.fillMethod != FillType.FillMethod_None)
+			{
+				str = xml.@fillOrigin;
+				if(str)
+					_content.fillOrigin = parseInt(str); 
+				_content.fillClockwise = xml.@fillClockwise!="false";
+				str = xml.@fillAmount;
+				if(str)
+					_content.fillAmount = parseInt(str) / 100;
+			}
 		}
 		
 		override public function setup_afterAdd(xml:XML):void

@@ -19,6 +19,7 @@ package fairygui.display
 		private var _batch:QuadBatch;
 		private var _frameRect:Rectangle;
 		private var _smoothing:String;
+		private var _color:uint;
 		
 		private var _playing:Boolean;
 		private var _playState:PlayState;
@@ -41,9 +42,8 @@ package fairygui.display
 			_playState = new PlayState();
 			_playing = true;
 			_smoothing = TextureSmoothing.BILINEAR;
-			
+			_color = 0xFFFFFF;
 			_batch = new QuadBatch();
-			_batch.capacity = 1;
 			
 			setPlaySettings();
 		}
@@ -83,6 +83,20 @@ package fairygui.display
 		{
 			super.blendMode = value;
 			_batch.blendMode = value;
+		}
+		
+		public function get color():uint
+		{
+			return _color;
+		}
+		
+		public function set color(value:uint):void
+		{
+			if(_color != value)
+			{
+				_color = value;
+				_needRebuild = true;
+			}
 		}
 
 		public function get frames():Vector.<Frame>
@@ -250,7 +264,6 @@ package fairygui.display
 			}
 		}
 		
-		private static var sHelperQuad:QuadExt;
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
 			this.update();
@@ -258,18 +271,15 @@ package fairygui.display
 			if(_needRebuild)
 			{
 				_needRebuild = false;
-				
-				if(sHelperQuad==null)
-					sHelperQuad = new QuadExt();
-			
+
 				_batch.reset();
 				if(_texture!=null)
 				{
-					sHelperQuad.setPremultipliedAlpha(_texture.premultipliedAlpha);
-					sHelperQuad.fillVertsWithScale(_frameRect.x, _frameRect.y, _texture.width, _texture.height, 
-						_scaleX, _scaleY);
-					sHelperQuad.fillUVOfTexture(_texture);
-					_batch.addQuad(sHelperQuad, 1.0, _texture, _smoothing);
+					VertexHelper.beginFill();
+					VertexHelper.color = _color;
+					VertexHelper.addQuad(_frameRect.x, _frameRect.y, _texture.width, _texture.height);
+					VertexHelper.fillUV4(_texture);
+					VertexHelper.flush(_batch, _texture, 1, _smoothing);
 					
 					_batch.blendMode = this.blendMode;
 				}

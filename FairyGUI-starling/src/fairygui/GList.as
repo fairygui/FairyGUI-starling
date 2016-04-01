@@ -47,6 +47,7 @@ package fairygui
 			_layout = ListLayoutType.SingleColumn;
 			_autoResizeItem = true;
 			_lastSelectedIndex = -1;
+			this.opaque = true;
 		}
 		
 		public override function dispose():void
@@ -1202,7 +1203,7 @@ package fairygui
 				for (var i:int = 0; i < _viewCount; i++)
 				{
 					var obj:GObject = getChildAt(i);
-					obj.y = (firstLine + (i / _curLineItemCount)) * (_itemSize.y + _lineGap);
+					obj.y = (firstLine + Math.floor(i / _curLineItemCount)) * (_itemSize.y + _lineGap);
 				}
 				if (newFirstIndex >= _numItems)
 					newFirstIndex -= _numItems;
@@ -1283,7 +1284,7 @@ package fairygui
 				for (i = 0; i < _viewCount; i++)
 				{
 					obj = getChildAt(i);
-					obj.x = (firstLine + (i / _curLineItemCount)) * (_itemSize.x + _columnGap);
+					obj.x = (firstLine + Math.floor(i / _curLineItemCount)) * (_itemSize.x + _columnGap);
 				}
 				
 				if (newFirstIndex >= _numItems)

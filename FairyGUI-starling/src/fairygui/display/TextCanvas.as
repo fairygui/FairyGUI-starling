@@ -2,10 +2,8 @@ package fairygui.display
 {
 	import flash.display.BitmapData;
 	import flash.display3D.Context3DTextureFormat;
-	import flash.geom.Point;
 	import flash.text.TextField;
 	
-	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	
 	import starling.core.RenderSupport;
@@ -20,8 +18,7 @@ package fairygui.display
 		private var _texture:Texture;
 		
 		public var renderCallback:Function;
-		
-		private static var sHelperQuad:QuadExt;
+
 		private static var sDefaultTextureFormat:String =
 			"BGRA_PACKED" in Context3DTextureFormat ? "bgraPacked4444" : "bgra";
 		
@@ -30,13 +27,9 @@ package fairygui.display
 		public function TextCanvas()
 		{
 			_batch = new QuadBatch();
-			_batch.capacity = 1;
-			
+
 			//TextCanvas is by default touchable
 			this.touchable = false;
-			
-			if(sHelperQuad==null)
-				sHelperQuad = new QuadExt();
 		}
 		
 		override public function dispose():void
@@ -46,6 +39,11 @@ package fairygui.display
 			renderCallback = null;
 			
 			super.dispose();
+		}
+		
+		public function setCanvasSize(width:Number, height:Number):void
+		{
+			setSize(width, height);
 		}
 		
 		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, restoreFunc:Function):void
@@ -89,12 +87,19 @@ package fairygui.display
 
 				bmd.dispose();
 				
-				_batch.reset();				
-				sHelperQuad.fillVerts(0, 0, bw, bh);
-				sHelperQuad.fillUVOfTexture(_texture);
-				sHelperQuad.color = 0xffffff;
-				_batch.addQuad(sHelperQuad, 1.0, _texture, TextureSmoothing.BILINEAR);
+				_batch.reset();
+				
+				VertexHelper.beginFill();
+				VertexHelper.color = 0xffffff;
+				VertexHelper.addQuad(0, 0, bw, bh);
+				VertexHelper.fillUV4(_texture);
+				VertexHelper.flush(_batch, _texture, 1.0, TextureSmoothing.BILINEAR);
 			}
+		}
+		
+		public function renderBitmapText(font:BitmapFont):void
+		{
+			VertexHelper.flush(_batch, font.mainTexture, 1, TextureSmoothing.BILINEAR);
 		}
 		
 		public function get textureMemory():int
@@ -113,51 +118,6 @@ package fairygui.display
 				textureMemoryTrack -= textureMemory;
 				_texture.dispose();
 				_texture = null;
-			}
-		}
-		
-		public function drawChar(font:BitmapFont, glyph:BMGlyph, charPos:Point, color:uint, fontScale:Number):void
-		{
-			if(font.mainTexture==null)
-				return;
-			
-			if(fontScale==1)
-			{			
-				charPos.x += glyph.offsetX;
-				
-				if(font.ttf)
-				{
-					sHelperQuad.fillVerts(charPos.x, charPos.y, glyph.width, glyph.height);
-					sHelperQuad.fillUVByRect(glyph.uvRect);
-					sHelperQuad.color = uint(color);
-					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
-				}
-				else if(glyph.uvRect!=null)
-				{
-					sHelperQuad.fillVerts(charPos.x, charPos.y, glyph.width, glyph.height);
-					sHelperQuad.fillUVByRect(glyph.uvRect);
-					sHelperQuad.color = 0xffffff;
-					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
-				}
-			}
-			else
-			{
-				charPos.x += Math.ceil(glyph.offsetX*fontScale);
-				
-				if(font.ttf)
-				{
-					sHelperQuad.fillVerts(charPos.x, charPos.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
-					sHelperQuad.fillUVByRect(glyph.uvRect);
-					sHelperQuad.color = uint(color);
-					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
-				}
-				else if(glyph.uvRect!=null)
-				{
-					sHelperQuad.fillVerts(charPos.x, charPos.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
-					sHelperQuad.fillUVByRect(glyph.uvRect);
-					sHelperQuad.color = 0xffffff;
-					_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
-				}
 			}
 		}
 

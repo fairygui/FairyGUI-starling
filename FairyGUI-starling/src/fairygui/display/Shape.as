@@ -28,7 +28,6 @@ package fairygui.display
 			super();
 			
 			_batch = new QuadBatch();
-			_batch.capacity = 5;
 			_width = 0;
 			_height = 0;
 			_lineSize = 1;
@@ -70,6 +69,11 @@ package fairygui.display
 			_needRebuild = true;
 		}
 		
+		public function setShapeSize(width:Number, height:Number):void
+		{
+			setSize(width, height);
+		}
+		
 		public function clear():void
 		{
 			if(_type!=0)
@@ -87,8 +91,6 @@ package fairygui.display
 			support.batchQuadBatch(_batch, this.alpha*parentAlpha);
 		}
 		
-		private static var sHelperTexCoords:Vector.<Number> = new Vector.<Number>(8);
-		private static var sHelperQuad:QuadExt;
 		private function rebuild():void
 		{
 			_needRebuild = false;
@@ -97,47 +99,32 @@ package fairygui.display
 			if(_type==0)
 				return;
 			
-			if(sHelperQuad==null)
-			{
-				sHelperQuad = new QuadExt();
-				sHelperQuad.setPremultipliedAlpha(false);
-			}
-			
-			var rectWidth:int = _width * _scaleX;
-			var rectHeight:int = _height * _scaleY;
-			
 			if (_lineSize == 0)
 			{
-				sHelperQuad.color = _fillColor;
-				sHelperQuad.alpha = _fillAlpha;
-				sHelperQuad.fillVerts(0, 0, rectWidth, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
+				VertexHelper.beginFill();
+				VertexHelper.color = _fillColor;
+				VertexHelper.addQuad(0, 0, _width, _height);
+				VertexHelper.flush(_batch, null, _fillAlpha);
 			}
 			else
 			{
-				var lineSize:int = Math.ceil(Math.min(_lineSize*_scaleX, _lineSize*_scaleY));
-				
+				VertexHelper.beginFill();
+				VertexHelper.color = _lineColor;
+
 				//left,right
-				sHelperQuad.color = _lineColor;
-				sHelperQuad.alpha = _lineAlpha;
-				sHelperQuad.fillVerts(0, 0, lineSize, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
-				sHelperQuad.fillVerts(rectWidth - lineSize, 0, lineSize, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
+				VertexHelper.addQuad(0, 0, _lineSize, _height);
+				VertexHelper.addQuad(_width - _lineSize, 0, _lineSize, _height);
+
 				//top, bottom
-				sHelperQuad.fillVerts(lineSize, 0, rectWidth - lineSize, lineSize);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
-				sHelperQuad.fillVerts(lineSize, rectHeight - lineSize, rectWidth - lineSize, lineSize);
-				_batch.addQuad(sHelperQuad, 1.0);
+				VertexHelper.addQuad(_lineSize, 0, _width - _lineSize, _lineSize);
+				VertexHelper.addQuad(_lineSize, _height - _lineSize, _width - _lineSize, _lineSize);
+				VertexHelper.flush(_batch, null, _lineAlpha);
 				
 				//middle
-				sHelperQuad.color = _fillColor;
-				sHelperQuad.alpha = _fillAlpha;
-				sHelperQuad.fillVerts(lineSize, lineSize, rectWidth- lineSize*2, rectHeight - lineSize*2);
-				_batch.addQuad(sHelperQuad, 1.0);
+				VertexHelper.beginFill();
+				VertexHelper.color = _fillColor;				
+				VertexHelper.addQuad(_lineSize, _lineSize, _width- _lineSize*2, _height - _lineSize*2);
+				VertexHelper.flush(_batch, null, _fillAlpha);
 			}
 		}
 	}

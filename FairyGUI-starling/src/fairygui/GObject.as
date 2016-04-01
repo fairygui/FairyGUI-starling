@@ -802,6 +802,11 @@ package fairygui
 			return this as GComboBox;
 		}
 		
+		final public function get asImage():GImage
+		{
+			return this as GImage;
+		}
+		
 		final public function get asMovieClip():GMovieClip
 		{
 			return this as GMovieClip;
@@ -1279,7 +1284,12 @@ package fairygui
 				var child:GObject = GComponent(this).getChildAt(i);
 				child._buttonStatus = 2;
 				if(child is GComponent)
+				{
+					//当拖动发生，没有办法在starling里找到rollout的触发点，只好强制rollout
+					if((child is GButton) && GButton(child)._over)
+						GButton(child).__rollout(null);
 					child.cancelChildrenClickEvent();
+				}
 			}
 		}
 		//-------------------------------------------------------------------

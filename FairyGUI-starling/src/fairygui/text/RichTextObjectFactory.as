@@ -1,6 +1,6 @@
 package fairygui.text
 {
-	import fairygui.FillType;
+	import fairygui.LoaderFillType;
 	import fairygui.GLoader;
 	import fairygui.PackageItem;
 	import fairygui.UIPackage;
@@ -26,7 +26,7 @@ package fairygui.text
 			else
 			{
 				loader = new GLoader();
-				loader.fill = FillType.ScaleFree;
+				loader.fill = LoaderFillType.ScaleFree;
 			}
 			loader.url = src;
 			

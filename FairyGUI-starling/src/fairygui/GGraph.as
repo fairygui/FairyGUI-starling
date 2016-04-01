@@ -116,7 +116,7 @@ package fairygui
 			_shape.alpha = this.alpha;
 			_shape.rotation = this.normalizeRotation;
 			_shape.visible = this.visible;
-			_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+			_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			
 			return _shape;
 		}
@@ -125,7 +125,7 @@ package fairygui
 		{
 			if(_shape!=null)
 			{
-				_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			}
 		}
 
@@ -176,7 +176,7 @@ package fairygui
 				else
 					drawEllipse(lineSize, lineColor, lineAlpha, fillColor, fillAlpha);
 				
-				_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			}
 		}
 	}

@@ -49,8 +49,17 @@ package fairygui
 		{
 			if(_nativeTextField.parent)
 				_text = _nativeTextField.text;
+			
 			return _text;
-		}		
+		}
+		
+		override public function set text(value:String):void
+		{
+			super.text = value;
+			
+			if(_nativeTextField.parent)
+				_nativeTextField.text = _text;
+		}
 		
 		public function get nativeTextField():TextField
 		{

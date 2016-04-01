@@ -25,12 +25,12 @@ package fairygui
 		private var _container:Sprite;
 		private var _maskHolder:Sprite;
 		private var _maskContentHolder:Sprite;
-
+		
 		private var _maskWidth:Number;
 		private var _maskHeight:Number;
 		private var _contentWidth:Number;
 		private var _contentHeight:Number;
-	
+		
 		private var _scrollType:int;
 		private var _scrollSpeed:int;
 		private var _mouseWheelSpeed:int;
@@ -91,12 +91,12 @@ package fairygui
 			
 			_maskHolder = new Sprite();
 			_container.addChild(_maskHolder);
-	
+			
 			_maskContentHolder = _owner._container;
 			_maskContentHolder.x = 0;
 			_maskContentHolder.y = 0;
 			_maskHolder.addChild(_maskContentHolder);
-
+			
 			_holdAreaPoint = new Point();
 			_margin = margin;
 			_scrollBarMargin = scrollBarMargin;
@@ -322,7 +322,7 @@ package fairygui
 			else
 				this.setPercY(0, ani);
 		}
-
+		
 		public function get isBottomMost():Boolean
 		{
 			return _yPerc==1 || _contentHeight<=_maskHeight;
@@ -445,11 +445,11 @@ package fairygui
 			{
 				var top:Number = this.posY;
 				var bottom:Number = top+_maskHeight;
-				if(rect.y<=top)
+				if(rect.y<=top || rect.height>_maskHeight)
 					this.setPosY(rect.y, ani);
 				else if(rect.y+rect.height>bottom)
 				{
-					if (rect.y + rect.height * 2 >= top)
+					if (rect.height <= _maskHeight/2)
 						this.setPosY(rect.y+rect.height*2-_maskHeight, ani);
 					else
 						this.setPosY(rect.y+rect.height-_maskHeight, ani);
@@ -459,11 +459,11 @@ package fairygui
 			{
 				var left:Number = this.posX;
 				var right:Number = left+_maskWidth;
-				if(rect.x<=left)
+				if(rect.x<=left || rect.width>_maskWidth)
 					this.setPosX(rect.x, ani);
 				else if(rect.x+rect.width>right)
 				{
-					if (rect.x + rect.width * 2 >= left)
+					if (rect.width <= _maskWidth/2)
 						this.setPosX(rect.x+rect.width*2-_maskWidth, ani);
 					else
 						this.setPosX(rect.x+rect.width-_maskWidth, ani);
@@ -497,7 +497,7 @@ package fairygui
 			
 			return true;
 		}
-
+		
 		internal function setSize(aWidth:Number, aHeight:Number):void 
 		{
 			if(_hzScrollBar)
@@ -543,7 +543,7 @@ package fairygui
 			handleSizeChanged();
 			posChanged(false);
 		}
-
+		
 		internal function setContentSize(aWidth:Number, aHeight:Number):void
 		{
 			if(_contentWidth==aWidth && _contentHeight==aHeight)
@@ -705,7 +705,7 @@ package fairygui
 			
 			var contentYLoc:Number = 0;
 			var contentXLoc:Number = 0;
-
+			
 			if(_vScroll)
 				contentYLoc = _yPerc * (_contentHeight - _maskHeight);
 			if(_hScroll)
@@ -801,7 +801,7 @@ package fairygui
 				
 				_maskContentHolder.y = -contentYLoc;
 				_maskContentHolder.x = -contentXLoc;
-
+				
 				if(_vtScrollBar)
 					_vtScrollBar.scrollPerc = _yPerc;
 				if(_hzScrollBar)
@@ -858,7 +858,7 @@ package fairygui
 				currX = diff;
 			else
 				currX = -mx;
-
+			
 			return currX / diff;
 		}
 		
@@ -892,7 +892,7 @@ package fairygui
 			}
 			_tweening = 0;
 		}
-
+		
 		private function __mouseDown(evt:GTouchEvent):void
 		{
 			if(!_touchEffect)
@@ -928,7 +928,7 @@ package fairygui
 			
 			var diff:Number;
 			var sv:Boolean, sh:Boolean, st:Boolean;
-
+			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
 			_container.globalToLocal(sHelperPoint, sHelperPoint);
@@ -978,7 +978,7 @@ package fairygui
 				_time1 = t;
 				st = true;
 			}
-
+			
 			if(sv)
 			{
 				var y:int = sHelperPoint.y - _yOffset;
@@ -1031,7 +1031,7 @@ package fairygui
 				{
 					_maskContentHolder.x = x;
 				}
-
+				
 				if (st)
 				{
 					_x2 = _x1;
@@ -1050,7 +1050,7 @@ package fairygui
 				_owner.cancelChildrenClickEvent();
 			}
 			onScrolling();
-
+			
 			dispatchEventWith(Event.SCROLL);
 		}
 		
@@ -1066,7 +1066,7 @@ package fairygui
 			
 			if (!_isMouseMoved)
 				return;
-
+			
 			_isMouseMoved = false;
 			
 			var time:Number = (getTimer() - _time2) / 1000;
@@ -1079,7 +1079,7 @@ package fairygui
 			var yMin:Number = -_yOverlap;
 			var xMax:Number = 0;
 			var yMax:Number = 0;	
-
+			
 			_throwTween.start.x = _maskContentHolder.x;
 			_throwTween.start.y = _maskContentHolder.y;
 			
@@ -1223,7 +1223,7 @@ package fairygui
 			_maskHolder.touchable = true;
 			onScrollEnd();
 		}
-
+		
 		private function __tweenUpdate2():void
 		{
 			_throwTween.update(_maskContentHolder);
@@ -1239,7 +1239,7 @@ package fairygui
 			}
 			
 			onScrolling();
-
+			
 			dispatchEventWith(Event.SCROLL);
 		}
 		
@@ -1254,10 +1254,10 @@ package fairygui
 				_yPerc = calcYPerc();
 				_xPerc = calcXPerc();
 			}
-
+			
 			_maskHolder.touchable = true;
 			onScrollEnd();
-
+			
 			dispatchEventWith(Event.SCROLL);
 		}
 	}

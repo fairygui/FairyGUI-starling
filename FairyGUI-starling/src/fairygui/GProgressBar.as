@@ -130,22 +130,50 @@ package fairygui
 			if(!_reverse)
 			{
 				if(_barObjectH)
-					_barObjectH.width = fullWidth*percent;
+				{
+					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectH).fillAmount = percent;
+					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectH).fillAmount = percent;
+					else
+						_barObjectH.width = fullWidth*percent;
+				}
 				if(_barObjectV)
-					_barObjectV.height = fullHeight*percent;
+				{
+					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectV).fillAmount = percent;
+					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectV).fillAmount = percent;
+					else
+						_barObjectV.height = fullHeight*percent;
+				}
 			}
 			else
 			{
 				if(_barObjectH)
 				{
-					_barObjectH.width = fullWidth*percent;
-					_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
+					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectH).fillAmount = (1-percent);
+					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectH).fillAmount = (1-percent);
+					else
+					{
+						_barObjectH.width = fullWidth*percent;
+						_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
+					}
 					
 				}
 				if(_barObjectV)
 				{
-					_barObjectV.height = fullHeight*percent;
-					_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
+					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectV).fillAmount = (1-percent);
+					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectV).fillAmount = (1-percent);
+					else
+					{
+						_barObjectV.height = fullHeight*percent;
+						_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
+					}
 				}
 			}
 			if(_aniObject is GMovieClip)

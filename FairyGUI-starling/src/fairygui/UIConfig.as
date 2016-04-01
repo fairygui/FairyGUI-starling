@@ -7,7 +7,7 @@ package fairygui
 		}
 		
 		//Default font name
-		public static var defaultFont:String = ""; 
+		public static var defaultFont:String = "Arial"; 
 		
 		//Resource using in Window.ShowModalWait for locking the window.
 		public static var windowModalWaiting:String;
@@ -30,9 +30,9 @@ package fairygui
 		//Default scrollbar display mode. Recommened visible for Desktop and Auto for mobile.
 		public static var defaultScrollBarDisplay:int = ScrollBarDisplayType.Visible;
 		//Allow dragging the content to scroll. Recommeded true for mobile.
-		public static var defaultScrollTouchEffect:Boolean = false;
+		public static var defaultScrollTouchEffect:Boolean = true;
 		//The "rebound" effect in the scolling container. Recommeded true for mobile.
-		public static var defaultScrollBounceEffect:Boolean = false;
+		public static var defaultScrollBounceEffect:Boolean = true;
 		
 		//Resources for PopupMenu.
 		public static var popupMenu:String;
