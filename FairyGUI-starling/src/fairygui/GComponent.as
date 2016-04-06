@@ -9,6 +9,7 @@ package fairygui
 	
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Sprite;
+	import starling.events.Event;
 
 	[Event(name = "dropEvent", type = "fairygui.event.DropEvent")]
 	public class GComponent extends GObject
@@ -867,6 +868,12 @@ package fairygui
 				trans.setup(cxml);
 			}
 			
+			if(_transitions.length>0)
+			{
+				this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, __removedFromStage);
+			}
+			
 			applyAllControllers();
 			
 			_buildingDisplayList = false;
@@ -876,6 +883,27 @@ package fairygui
 			{
 				if (child.displayObject != null && child.finalVisible)
 					_container.addChild(child.displayObject);
+			}
+		}
+		
+		private function __addedToStage(evt:Event):void
+		{
+			var cnt:int = _transitions.length;
+			for (var i:int = 0; i < cnt; ++i)
+			{
+				var trans:Transition = _transitions[i];
+				if (trans.autoPlay)
+					trans.play(null, null, trans.autoPlayRepeat, trans.autoPlayDelay);
+			}
+		}
+		
+		private function __removedFromStage(evt:Event):void
+		{
+			var cnt:int = _transitions.length;
+			for (var i:int = 0; i < cnt; ++i)
+			{
+				var trans:Transition = _transitions[i];
+				trans.stop(false, true);
 			}
 		}
 		

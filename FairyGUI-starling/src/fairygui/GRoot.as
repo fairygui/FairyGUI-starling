@@ -279,8 +279,7 @@ package fairygui
 				}
 			}
 			
-			popup.x = int(xx);
-			popup.y = int(yy);
+			popup.setXY(int(xx), int(yy));
 		}
 		
 		public function togglePopup(popup:GObject, target:GObject=null, downward:Object=null):void

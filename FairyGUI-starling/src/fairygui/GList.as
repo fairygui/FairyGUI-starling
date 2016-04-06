@@ -160,7 +160,8 @@ package fairygui
 				url = _defaultItem;
 
 			var ret:GObject = _pool.getObject(url);
-			ret.visible = true;
+			if(ret!=null)
+				ret.visible = true;
 			return ret;
 		}
 		
