@@ -26,7 +26,9 @@ package fairygui
 		private var _buttonController:Controller;
 		private var _changeStateOnClick:Boolean;
 		private var _linkedPopup:GObject;
-
+		private var _downEffect:int;
+		private var _downEffectValue:Number;
+		
 		internal var _over:Boolean;
 		
 		public static const UP:String = "up";
@@ -47,6 +49,7 @@ package fairygui
 			_soundVolumeScale = UIConfig.buttonSoundVolumeScale;
 			_pageOption = new PageOption();
 			_changeStateOnClick = true;
+			_downEffectValue = 0.8;
 		}
 		
 		final public function get icon():String
@@ -281,6 +284,38 @@ package fairygui
 		{
 			if(_buttonController)
 				_buttonController.selectedPage = val;
+			
+			if(_downEffect==1)
+			{
+				var cnt:int = this.numChildren;
+				if(val==DOWN || val==SELECTED_OVER || val==SELECTED_DISABLED)
+				{
+					var r:int = _downEffectValue * 255;
+					var color:uint = (r<<16)+(r<<8)+r;
+					for(var i:int=0;i<cnt;i++)
+					{
+						var obj:GObject = this.getChildAt(i);
+						if(obj is IColorGear)
+							IColorGear(obj).color = color;
+					}
+				}
+				else
+				{
+					for(i=0;i<cnt;i++)
+					{
+						obj = this.getChildAt(i);
+						if(obj is IColorGear)
+							IColorGear(obj).color = 0xFFFFFF;
+					}
+				}
+			}
+			else if(_downEffect==2)				
+			{
+				if(val==DOWN || val==SELECTED_OVER || val==SELECTED_DISABLED)
+					setScale(_downEffectValue, _downEffectValue);
+				else
+					setScale(1, 1);
+			}
 		}
 		
 		protected function setCurrentState():void
@@ -346,6 +381,15 @@ package fairygui
 			str = xml.@volume;
 			if(str)
 				_soundVolumeScale = parseInt(str)/100;
+			
+			str = xml.@downEffect;
+			if(str)
+			{
+				_downEffect = str=="dark"?1:(str=="scale"?2:0);
+				str = xml.@downEffectValue;
+				_downEffectValue = parseFloat(str);
+				this.setPivotByRatio(0.5, 0.5);
+			}
 			
 			_buttonController = getController("button");
 			_titleObject = getChild("title");
