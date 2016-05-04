@@ -146,38 +146,41 @@ package fairygui
 			
 			var touch:Touch = evt.getTouch(displayObject);
 			if(touch && touch.phase==TouchPhase.BEGAN)
-			{
-				var textFormat:TextFormat;
-				if(_nativeTextField.defaultTextFormat==null)
-					textFormat = new TextFormat();
-				else
-					textFormat = _nativeTextField.defaultTextFormat;
-				textFormat.font = _textFormat.font;
-				textFormat.align = _textFormat.align;
-				textFormat.bold = _textFormat.bold;
-				textFormat.color = _textFormat.color;
-				textFormat.italic = _textFormat.italic;
-				textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
-				textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
-				textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
-				_nativeTextField.defaultTextFormat = textFormat;
-				_nativeTextField.displayAsPassword = _displayAsPassword;
-				_nativeTextField.wordWrap = !_singleLine;
-				_nativeTextField.multiline = !_singleLine;
-				_nativeTextField.text = _text;
-				_nativeTextField.setSelection(0, int.MAX_VALUE);
-				
-				var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
-				var stage:Stage = Starling.current.nativeStage;
-				_nativeTextField.x = int(rect.x);
-				_nativeTextField.y = int(rect.y);
-				_nativeTextField.width = int(rect.width);
-				_nativeTextField.height = int(rect.height);
-				stage.addChild(_nativeTextField);
-				stage.focus = _nativeTextField;
-				
-				_canvas.visible = false;
-			}
+				startInput();
+		}
+		
+		public function startInput():void
+		{
+			var textFormat:TextFormat;
+			if(_nativeTextField.defaultTextFormat==null)
+				textFormat = new TextFormat();
+			else
+				textFormat = _nativeTextField.defaultTextFormat;
+			textFormat.font = _textFormat.font;
+			textFormat.align = _textFormat.align;
+			textFormat.bold = _textFormat.bold;
+			textFormat.color = _textFormat.color;
+			textFormat.italic = _textFormat.italic;
+			textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
+			textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
+			textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
+			_nativeTextField.defaultTextFormat = textFormat;
+			_nativeTextField.displayAsPassword = _displayAsPassword;
+			_nativeTextField.wordWrap = !_singleLine;
+			_nativeTextField.multiline = !_singleLine;
+			_nativeTextField.text = _text;
+			_nativeTextField.setSelection(0, int.MAX_VALUE);
+			
+			var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
+			var stage:Stage = Starling.current.nativeStage;
+			_nativeTextField.x = int(rect.x);
+			_nativeTextField.y = int(rect.y);
+			_nativeTextField.width = int(rect.width);
+			_nativeTextField.height = int(rect.height);
+			stage.addChild(_nativeTextField);
+			stage.focus = _nativeTextField;
+			
+			_canvas.visible = false;
 		}
 		
 		private function __focusOut(evt:Event):void

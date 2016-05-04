@@ -4,6 +4,7 @@ package fairygui
 	import flash.geom.Rectangle;
 	
 	import fairygui.display.UISprite;
+	import fairygui.utils.GTimers;
 	import fairygui.utils.PixelHitTest;
 	import fairygui.utils.PixelHitTestData;
 	
@@ -27,6 +28,9 @@ package fairygui
 		internal var _rootContainer:UISprite;
 		internal var _container:Sprite;
 		internal var _scrollPane:ScrollPane;
+		
+		private var _childrenRenderOrder:int;
+		private var _apexIndex:int;
 		
 		public function GComponent():void
 		{
@@ -156,7 +160,12 @@ package fairygui
 				
 				_children.splice(index, 1);
 				if(child.inContainer)
+				{
 					_container.removeChild(child.displayObject);
+					
+					if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+						GTimers.inst.callLater(buildNativeDisplayList);
+				}
 				
 				if(dispose)
 					child.dispose();
@@ -277,15 +286,37 @@ package fairygui
 			if(child.inContainer)
 			{			
 				var displayIndex:int;
-				for(var i:int=0;i<index;i++)
+				var g:GObject;
+				var i:int;
+				
+				if (_childrenRenderOrder == ChildrenRenderOrder.Ascent)
 				{
-					var g:GObject = _children[i];
-					if(g.inContainer)
-						displayIndex++;
+					for(i=0;i<index;i++)
+					{
+						g = _children[i];
+						if(g.inContainer)
+							displayIndex++;
+					}
+					if(displayIndex==_container.numChildren)
+						displayIndex--;
+					_container.setChildIndex(child.displayObject, displayIndex);
 				}
-				if(displayIndex==_container.numChildren)
-					displayIndex--;
-				_container.setChildIndex(child.displayObject, displayIndex);
+				else if (_childrenRenderOrder == ChildrenRenderOrder.Descent)
+				{
+					for (i = cnt - 1; i > index; i--)
+					{
+						g = _children[i];
+						if (g.inContainer)
+							displayIndex++;
+					}
+					if(displayIndex==_container.numChildren)
+						displayIndex--;
+					_container.setChildIndex(child.displayObject, displayIndex);
+				}
+				else
+				{
+					GTimers.inst.callLater(buildNativeDisplayList);
+				}
 				
 				setBoundsChangedFlag();
 			}
@@ -362,10 +393,15 @@ package fairygui
 			if(_buildingDisplayList)
 				return;
 			
+			var cnt:int = _children.length;
+			var g:GObject;
+			var i:int;
+			
 			if(child is GGroup)
 			{
-				for each(var g:GObject in _children)
+				for (i = 0; i < cnt; i++)
 				{
+					g = _children[i];
 					if(g.group==child)
 						childStateChanged(g);
 				}
@@ -379,22 +415,101 @@ package fairygui
 			{
 				if(!child.displayObject.parent)
 				{
-					var index:int;
-					for each(g in _children)
+					var index:int;				
+					if (_childrenRenderOrder == ChildrenRenderOrder.Ascent)
 					{
-						if(g==child)
-							break;
-						
-						if(g.displayObject && g.displayObject.parent)
-							index++;
+						for (i = 0; i < cnt; i++)
+						{
+							g = _children[i];
+							if (g == child)
+								break;
+							
+							if (g.displayObject != null && g.displayObject.parent != null)
+								index++;
+						}
+						_container.addChildAt(child.displayObject, index);
 					}
-					_container.addChildAt(child.displayObject, index);
+					else if (_childrenRenderOrder == ChildrenRenderOrder.Descent)
+					{
+						for (i = cnt - 1; i >= 0; i--)
+						{
+							g = _children[i];
+							if (g == child)
+								break;
+							
+							if (g.displayObject != null && g.displayObject.parent != null)
+								index++;
+						}
+						_container.addChildAt(child.displayObject, index);
+					}
+					else
+					{
+						_container.addChild(child.displayObject);
+						
+						GTimers.inst.callLater(buildNativeDisplayList);
+					}
 				}
 			}
 			else
 			{
 				if(child.displayObject.parent)
+				{
 					_container.removeChild(child.displayObject);
+					if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+					{
+						GTimers.inst.callLater(buildNativeDisplayList);
+					}
+				}
+			}
+		}
+		
+		private function buildNativeDisplayList():void
+		{
+			var cnt:int = _children.length;
+			if (cnt == 0)
+				return;
+			
+			var i:int;
+			var child:GObject;
+			switch (_childrenRenderOrder)
+			{
+				case ChildrenRenderOrder.Ascent:
+				{
+					for (i = 0; i < cnt; i++)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
+				case ChildrenRenderOrder.Descent:
+				{
+					for (i = cnt - 1; i >= 0; i--)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
+				
+				case ChildrenRenderOrder.Arch:
+				{
+					for (i = 0; i < _apexIndex; i++)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+					for (i = cnt - 1; i >= _apexIndex; i--)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
 			}
 		}
 		
@@ -501,6 +616,52 @@ package fairygui
 				_rootContainer.hitArea = null;
 		}
 		
+		public function get margin():Margin
+		{
+			return _margin;
+		}
+		
+		public function set margin(value:Margin):void
+		{
+			_margin.copy(value);
+			if(_rootContainer.clipRect!=null)
+			{
+				_container.x = _margin.left;
+				_container.y = _margin.top;
+			}
+			handleSizeChanged();
+		}
+		
+		public function get childrenRenderOrder():int
+		{
+			return _childrenRenderOrder;
+		}
+		
+		public function set childrenRenderOrder(value:int):void
+		{
+			if (_childrenRenderOrder != value)
+			{
+				_childrenRenderOrder = value;
+				buildNativeDisplayList();
+			}
+		}
+		
+		public function get apexIndex():int
+		{
+			return _apexIndex;
+		}
+		
+		public function set apexIndex(value:int):void
+		{
+			if (_apexIndex != value)
+			{
+				_apexIndex = value;
+				
+				if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+					buildNativeDisplayList();
+			}
+		}
+		
 		protected function updateHitArea():void
 		{
 			if(_rootContainer.hitArea is PixelHitTest)
@@ -542,7 +703,7 @@ package fairygui
 		{
 			_container = new Sprite();
 			_rootContainer.addChild(_container);
-			_scrollPane = new ScrollPane(this, scroll, _margin, scrollBarMargin, scrollBarDisplay, flags,
+			_scrollPane = new ScrollPane(this, scroll, scrollBarMargin, scrollBarDisplay, flags,
 				vtScrollBarRes, hzScrollBarRes);
 			
 			setBoundsChangedFlag();
@@ -703,10 +864,82 @@ package fairygui
 				this.height = value + _margin.top + _margin.bottom;
 		}
 		
-		public function findObjectNear(xValue:Number, yValue:Number, resultPoint:Point=null):Point
+		public function GetSnappingPosition(xValue:Number, yValue:Number, resultPoint:Point=null):Point
 		{
 			if(!resultPoint)
 				resultPoint = new Point();
+			
+			var cnt:int = _children.length;
+			if(cnt==0)
+			{
+				resultPoint.x = xValue;
+				resultPoint.y = yValue;
+				return resultPoint;
+			}
+			
+			ensureBoundsCorrect();			
+
+			var obj:GObject = null;
+			var prev:GObject;
+			
+			var i:int = 0;
+			if (yValue != 0)
+			{
+				for (; i < cnt; i++)
+				{
+					obj = _children[i];
+					if (yValue < obj.y)
+					{
+						if (i == 0)
+						{
+							yValue = 0;
+							break;
+						}
+						else
+						{
+							prev = _children[i - 1];
+							if (yValue < prev.y + prev.height / 2) //top half part
+								yValue = prev.y;
+							else//bottom half part
+								yValue = obj.y;
+							break;
+						}
+					}
+				}
+				
+				if (i == cnt)
+					yValue = obj.y;
+			}
+			
+			if (xValue != 0)
+			{
+				if (i > 0)
+					i--;
+				for (; i < cnt; i++)
+				{
+					obj = _children[i];
+					if (xValue < obj.x)
+					{
+						if (i == 0)
+						{
+							xValue = 0;
+							break;
+						}
+						else
+						{
+							prev = _children[i - 1];
+							if (xValue < prev.x + prev.width / 2) //top half part
+								xValue = prev.x;
+							else//bottom half part
+								xValue = obj.x;
+							break;
+						}
+					}
+				}
+				
+				if (i == cnt)
+					xValue = obj.x;
+			}
 			
 			resultPoint.x = xValue;
 			resultPoint.y = yValue;
@@ -879,11 +1112,7 @@ package fairygui
 			_buildingDisplayList = false;
 			_underConstruct = false;
 			
-			for each(var child:GObject in _children)
-			{
-				if (child.displayObject != null && child.finalVisible)
-					_container.addChild(child.displayObject);
-			}
+			buildNativeDisplayList();
 		}
 		
 		private function __addedToStage(evt:Event):void

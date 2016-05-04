@@ -15,7 +15,6 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.GTimers;
-	import fairygui.utils.PixelHitTest;
 	import fairygui.utils.PixelHitTestData;
 	import fairygui.utils.ToolSet;
 	

@@ -11,7 +11,6 @@ package fairygui
 	import flash.ui.MultitouchInputMode;
 	
 	import fairygui.display.UIDisplayObject;
-	import fairygui.event.FocusChangeEvent;
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
@@ -35,7 +34,6 @@ package fairygui
 		private var _tooltipWin:GObject;
 		private var _defaultTooltipWin:GObject;
 		private var _hitUI:Boolean;
-		private var _focusManagement:Boolean;
 		private var _volumeScale:Number;
 		
 		private static var _inst:GRoot;
@@ -47,6 +45,8 @@ package fairygui
 		public static var touchScreen:Boolean;
 		public static var touchPointInput:Boolean;
 		public static var contentScaleFactor:Number = 1;
+		
+		public const FOCUS_CHANGED:String = "FocusChanged";
 
 		public static function get inst():GRoot
 		{
@@ -107,11 +107,6 @@ package fairygui
 			this.setSize(Math.round(screenWidth/contentScaleFactor),Math.round(screenHeight/contentScaleFactor));
 			this.scaleX = contentScaleFactor;
 			this.scaleY = contentScaleFactor;
-		}
-		
-		public function enableFocusManagement():void
-		{
-			_focusManagement = true;
 		}
 		
 		public function showWindow(win:Window):void 
@@ -423,19 +418,20 @@ package fairygui
 		
 		public function set focus(value:GObject):void
 		{
-			if(!_focusManagement)
-				return;
-			
 			if(value && (!value.focusable || !value.onStage))
 				throw new Error("invalid focus target");
 			
+			setFocus(value);
+			if(_focusedObject is GTextInput)
+				GTextInput(_focusedObject).startInput();
+		}
+		
+		private function setFocus(value:GObject):void
+		{
 			if(_focusedObject!=value)
 			{
-				var old:GObject;
-				if(_focusedObject!=null && _focusedObject.onStage)
-					old = _focusedObject;
 				_focusedObject = value;
-				dispatchEvent(new FocusChangeEvent(FocusChangeEvent.CHANGED, old, value));
+				this.dispatchEventWith(FOCUS_CHANGED);
 			}
 		}
 		
@@ -535,23 +531,20 @@ package fairygui
 			var touch:Touch = evt.touches[0];
 			if(touch.phase==TouchPhase.BEGAN)
 			{
-				if(this._focusManagement)
-				{
-					//因为starling不支持事件的capture，所以焦点处理是在所有显示对象处理完touch begin之后。
-					//也就是说，在touch begin里获取当前焦点对象可能不是最新的
-					var mc:DisplayObject = touch.target;
-					while(mc!=_nativeStage && mc!=null) {
-						if(mc is UIDisplayObject)
+				//因为starling不支持事件的capture，所以焦点处理是在所有显示对象处理完touch begin之后。
+				//也就是说，在touch begin里获取当前焦点对象可能不是最新的
+				var mc:DisplayObject = touch.target;
+				while(mc!=_nativeStage && mc!=null) {
+					if(mc is UIDisplayObject)
+					{
+						var gg:GObject = UIDisplayObject(mc).owner;
+						if(gg.touchable && gg.focusable)
 						{
-							var gg:GObject = UIDisplayObject(mc).owner;
-							if(gg.touchable && gg.focusable)
-							{
-								this.focus = gg;
-								break;
-							}
+							this.setFocus(gg);
+							break;
 						}
-						mc = mc.parent;
 					}
+					mc = mc.parent;
 				}
 			}
 		}

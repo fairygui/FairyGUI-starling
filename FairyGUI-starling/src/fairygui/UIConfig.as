@@ -54,5 +54,8 @@ package fairygui
 		
 		// Pixel offsets of mouse pointer to trigger dragging.
 		public static var clickDragSensitivity:int = 2;
+		
+		// When click the window, brings to front automatically.
+		public static var bringWindowToFrontOnClick:Boolean = true;
 	}
 }

@@ -331,7 +331,6 @@ package fairygui
 						v = _owner._rawWidth - _targetWidth;
 					if (info.percent)
 						v = v / _targetWidth * _target._rawWidth;
-					v = v / _targetWidth * _target._rawWidth;
 					if(_target==_owner.parent)
 						_owner.setSize(_target._rawWidth + v, _owner._rawHeight, true);
 					else
