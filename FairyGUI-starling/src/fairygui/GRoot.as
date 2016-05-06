@@ -1,6 +1,7 @@
 package fairygui
 {
 	import flash.display.Stage;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	import flash.media.Sound;
@@ -17,12 +18,11 @@ package fairygui
 	import starling.display.DisplayObject;
 	import starling.display.Stage;
 	import starling.events.Event;
-	import starling.events.ResizeEvent;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	
-	[Event(name = "focusChanged", type = "fairygui.event.FocusChangeEvent")]
+	[Event(name = "FocusChanged", type = "starling.events.Event")]
 	public class GRoot extends GComponent
 	{
 		private var _nativeStage:starling.display.Stage;
@@ -35,6 +35,9 @@ package fairygui
 		private var _defaultTooltipWin:GObject;
 		private var _hitUI:Boolean;
 		private var _volumeScale:Number;
+		private var _designResolutionX:int;
+		private var _designResolutionY:int;
+		private var _screenMatchMode:int;
 		
 		private static var _inst:GRoot;
 
@@ -64,7 +67,7 @@ package fairygui
 			this.opaque = false;
 			_popupStack = new Vector.<GObject>();
 			_justClosedPopups = new Vector.<GObject>();
-			displayObject.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			displayObject.addEventListener(starling.events.Event.ADDED_TO_STAGE, __addedToStage);
 		}
 		
 		public function get nativeStage():starling.display.Stage
@@ -75,35 +78,50 @@ package fairygui
 		public function setContentScaleFactor(designResolutionX:int, designResolutionY:int, 
 											  screenMatchMode:int=ScreenMatchMode.MatchWidthOrHeight):void
 		{
-			var screenWidth:int, screenHeight:int;
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac")
+			_designResolutionX = designResolutionX;
+			_designResolutionY = designResolutionY;
+			_screenMatchMode = screenMatchMode;
+			
+			if(_designResolutionX==0) //backward compability
+				_screenMatchMode = ScreenMatchMode.MatchWidth;
+			else if(_designResolutionY==0) //backward compability
+				_screenMatchMode = ScreenMatchMode.MatchHeight;
+			
+			applyScaleFactor();
+		}
+		
+		private function applyScaleFactor():void
+		{
+			var screenWidth:int = _nativeStage.stageWidth;
+			var screenHeight:int = _nativeStage.stageHeight;
+			
+			if(_designResolutionX==0 || _designResolutionY==0)
 			{
-				screenWidth = _nativeStage.stageWidth;
-				screenHeight = _nativeStage.stageHeight;
-			}
-			else
-			{
-				screenWidth = Capabilities.screenResolutionX;
-				screenHeight = Capabilities.screenResolutionY;
+				this.setSize(screenWidth, screenHeight);
+				return;
 			}
 			
-			if(designResolutionX==0) //backward compability
-				screenMatchMode = ScreenMatchMode.MatchWidth;
-			else if(designResolutionY==0) //backward compability
-				screenMatchMode = ScreenMatchMode.MatchHeight;
-			
-			if (screenMatchMode == ScreenMatchMode.MatchWidthOrHeight)
+			var dx:int = _designResolutionX;
+			var dy:int = _designResolutionY;
+			if (screenWidth > screenHeight && dx < dy || screenWidth < screenHeight && dx > dy) 
 			{
-				var s1:Number = screenWidth/designResolutionX;
-				var s2:Number = screenHeight/designResolutionY; 
+				//scale should not change when orientation change
+				var tmp:int = dx;
+				dx = dy;
+				dy = tmp;
+			}			
+
+			if (_screenMatchMode == ScreenMatchMode.MatchWidthOrHeight)
+			{
+				var s1:Number = screenWidth/dx;
+				var s2:Number = screenHeight/dy; 
 				contentScaleFactor = Math.min(s1, s2);
 			}
-			else if (screenMatchMode == ScreenMatchMode.MatchWidth)
-				contentScaleFactor = screenWidth / designResolutionX;
+			else if (_screenMatchMode == ScreenMatchMode.MatchWidth)
+				contentScaleFactor = screenWidth / dx;
 			else
-				contentScaleFactor = screenHeight / designResolutionY;
-
+				contentScaleFactor = screenHeight / dy;
+			
 			this.setSize(Math.round(screenWidth/contentScaleFactor),Math.round(screenHeight/contentScaleFactor));
 			this.scaleX = contentScaleFactor;
 			this.scaleY = contentScaleFactor;
@@ -486,9 +504,9 @@ package fairygui
 				removeChild(_modalLayer);
 		}
 		
-		private function __addedToStage(evt:Event):void
+		private function __addedToStage(evt:starling.events.Event):void
 		{
-			displayObject.removeEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			displayObject.removeEventListener(starling.events.Event.ADDED_TO_STAGE, __addedToStage);
 
 			_nativeStage = displayObject.stage;
 
@@ -514,12 +532,9 @@ package fairygui
 			_modalLayer.setSize(this.width, this.height);
 			_modalLayer.drawRect(0,0,0,UIConfig.modalLayerColor, UIConfig.modalLayerAlpha);
 			_modalLayer.addRelation(this, RelationType.Size);
-			
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac") 
-				displayObject.stage.addEventListener(ResizeEvent.RESIZE, __winResize);
-			else 
-				stage.addEventListener("orientationChange", __orientationChange);
+
+			stage.addEventListener(flash.events.Event.RESIZE, __winResize);
+			stage.addEventListener("orientationChange", __orientationChange);
 			__winResize(null);
 		}
 		
@@ -596,33 +611,19 @@ package fairygui
 			}
 		}
 		
-		private function __stageMouseUpCapture(evt:MouseEvent):void 
+		private function __stageMouseUpCapture(evt:MouseEvent):void
 		{
 			buttonDown = false;
 		}
 		
-		private function __winResize(evt:Event):void
+		private function __winResize(evt:flash.events.Event):void
 		{
-			var w:int, h:int;
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac")
-			{
-				w = _nativeStage.stageWidth;
-				h = _nativeStage.stageHeight;
-			}
-			else
-			{
-				w = Capabilities.screenResolutionX;
-				h = Capabilities.screenResolutionY;
-			}
-			this.setSize(Math.round(w/contentScaleFactor),Math.round(h/contentScaleFactor));
-			
-			trace("screen size="+w+"x"+h+"/"+this.width+"x"+this.height);
+			applyScaleFactor();
 		}
 		
-		private function __orientationChange(evt:Event):void
+		private function __orientationChange(evt:flash.events.Event):void
 		{
-			__winResize(null);
+			applyScaleFactor();
 		}
 	}
 	
