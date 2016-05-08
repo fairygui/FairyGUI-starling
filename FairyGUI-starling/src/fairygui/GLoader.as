@@ -344,7 +344,7 @@ package fairygui
 				_image.texture = pi.texture;
 				_image.scale9Grid = pi.scale9Grid;
 				_image.scaleByTile = pi.scaleByTile;
-				_image.smoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
+				_image.textureSmoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
 				_image.color = _color;
 				_contentSourceWidth = pi.width;
 				_contentSourceHeight = pi.height;

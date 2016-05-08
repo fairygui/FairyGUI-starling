@@ -5,17 +5,14 @@ package fairygui.display
 	import fairygui.GObject;
 	import fairygui.utils.PixelHitTest;
 	
-	import starling.core.RenderSupport;
 	import starling.display.DisplayObject;
 	import starling.display.Sprite;
+	import starling.rendering.Painter;
 
 	public class UISprite extends Sprite implements UIDisplayObject 
 	{
 		private var _owner:GObject;
 		private var _hitArea:Object;
-		private var _skipRendering:Boolean;
-		
-		public var renderCallback:Function;
 		
 		public function UISprite(owner:GObject)
 		{
@@ -39,20 +36,16 @@ package fairygui.display
 		
 		override public function dispose():void
 		{
-			renderCallback = null;
 			super.dispose();
 		}
 		
-		public override function hitTest(localPoint:Point, forTouch:Boolean=false):DisplayObject
+		public override function hitTest(localPoint:Point):DisplayObject
 		{
-			if(_skipRendering)
-				return null;
-			
 			var localX:Number = localPoint.x;
 			var localY:Number = localPoint.y;
 			
-			var ret:DisplayObject = super.hitTest(localPoint, forTouch);
-			if(_hitArea!=null && (this.touchable || !forTouch))
+			var ret:DisplayObject = super.hitTest(localPoint);
+			if(_hitArea!=null && this.touchable)
 			{
 				if(ret==null)
 				{
@@ -69,16 +62,9 @@ package fairygui.display
 			return ret;				
 		}
 		
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
-			_skipRendering = _owner.parent!=null && !_owner.parent.isChildInView(_owner);
-			if(_skipRendering)
-				return;
-			
-			if(renderCallback!=null)
-				renderCallback();
-			
-			super.render(support, parentAlpha);
+			super.render(painter);
 		}
 	}
 }

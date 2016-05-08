@@ -131,7 +131,7 @@ package fairygui
 				_content.texture = pi.texture;
 				_content.scale9Grid = pi.scale9Grid;
 				_content.scaleByTile = pi.scaleByTile;
-				_content.smoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
+				_content.textureSmoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
 			}
 			
 			handleSizeChanged();

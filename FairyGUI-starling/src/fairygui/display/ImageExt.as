@@ -4,16 +4,11 @@ package fairygui.display
 	
 	import fairygui.FillType;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
+	import starling.rendering.Painter;
 	import starling.textures.Texture;
-	import starling.textures.TextureSmoothing;
 
-	public class ImageExt extends FixedSizeObject
+	public class ImageExt extends MeshExt
 	{		
-		private var _texture:Texture;
-		private var _batch:QuadBatch;
-		private var _smoothing:String;
 		private var _color:uint;
 		private var _flip:int;
 		private var _fillMethod:int;
@@ -27,21 +22,28 @@ package fairygui.display
 		private var _scale9Grid:Rectangle;
 		
 		public function ImageExt()
-		{
+		{			
 			super();
 			
-			//ImageExt is by default touchable
+			//ImageExt is by default not touchable
 			this.touchable = false;
-			
-			_batch = new QuadBatch();
-			_width = 0;
-			_height = 0;
 			_color = 0xFFFFFF;
-			_smoothing = TextureSmoothing.BILINEAR;
+
 			_textureScaleX = 1;
 			_textureScaleY = 1;
 			_fillAmount = 100;
 			_fillClockwise = true;
+		}
+		
+		override public function get color():uint
+		{
+			return _color;
+		}
+		
+		override public function set color(value:uint):void
+		{
+			_color = value;
+			this.style.color = value;
 		}
 		
 		public function get fillMethod():int
@@ -54,7 +56,7 @@ package fairygui.display
 			if(_fillMethod != value)
 			{
 				_fillMethod = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
@@ -68,7 +70,7 @@ package fairygui.display
 			if(_fillOrigin != value)
 			{
 				_fillOrigin = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 
@@ -82,7 +84,7 @@ package fairygui.display
 			if(_fillAmount != value)
 			{
 				_fillAmount = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 
@@ -96,46 +98,23 @@ package fairygui.display
 			if(_fillClockwise != value)
 			{
 				_fillClockwise = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 
-		override public function dispose():void
+		override public function set texture(value:Texture):void
 		{
-			_batch.dispose();
-			
-			super.dispose();
-		}
-
-		public function get texture():Texture
-		{
-			return _texture;
-		}
-
-		public function set texture(value:Texture):void
-		{
-			if(_texture!=value)
+			if (value != texture)
 			{
-				_texture = value;
-				if(_texture!=null)
-					setSize(_texture.width * _textureScaleX, _texture.height * _textureScaleY);
+				super.texture = value;
+				if(this.texture!=null)
+				{
+					vertexData.premultipliedAlpha = value.premultipliedAlpha;
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				}
 				else
 					setSize(0,0);
-				_needRebuild = true;
-			}
-		}
-		
-		public function get color():uint
-		{
-			return _color;
-		}
-		
-		public function set color(value:uint):void
-		{
-			if(_color != value)
-			{
-				_color = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
@@ -149,30 +128,10 @@ package fairygui.display
 			if(_flip!=value)
 			{
 				_flip = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
-		
-		public function get smoothing():String
-		{
-			return _smoothing;
-		}
-		
-		public function set smoothing(value:String):void
-		{
-			if(_smoothing != value)
-			{
-				_smoothing = value;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function set blendMode(value:String):void
-		{
-			super.blendMode = value;
-			_batch.blendMode = value;
-		}
-		
+
 		public function get scale9Grid():Rectangle
 		{
 			return _scale9Grid;
@@ -181,7 +140,7 @@ package fairygui.display
 		public function set scale9Grid(value:Rectangle):void
 		{
 			_scale9Grid = value;
-			_needRebuild = true;
+			setRequiresRebuild();
 		}
 		
 		public function get scaleByTile():Boolean
@@ -194,7 +153,7 @@ package fairygui.display
 			if(_scaleByTile!=value)
 			{
 				_scaleByTile = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
@@ -208,9 +167,9 @@ package fairygui.display
 			if(_textureScaleX != value)
 			{
 				_textureScaleX = value;
-				if(_texture!=null)
-					setSize(_texture.width * _textureScaleX, _texture.height * _textureScaleY);
-				_needRebuild = true;
+				if(this.texture!=null)
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				setRequiresRebuild();
 			}
 		}
 		
@@ -224,19 +183,18 @@ package fairygui.display
 			if(_textureScaleY != value)
 			{
 				_textureScaleY = value;
-				if(_texture!=null)
-					setSize(_texture.width * _textureScaleX, _texture.height * _textureScaleY);
-				_needRebuild = true;
+				if(this.texture!=null)
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				setRequiresRebuild();
 			}
 		}
 
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 				rebuild();
-			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+
+			super.render(painter);
 		}
 		
 		private static var vertRect:Rectangle = new Rectangle();
@@ -245,17 +203,22 @@ package fairygui.display
 		{
 			_needRebuild = false;
 			
-			this._batch.reset();
-			if(_texture==null)
+			var texture:Texture = this.texture;
+			
+			if(texture==null)
+			{
+				this.vertexData.clear();
+				this.indexData.clear();
+				this.setRequiresRedraw();
 				return;
+			}
 
-			VertexHelper.getTextureUV(_texture, uvRect);
+			VertexHelper.getTextureUV(texture, uvRect);
 			if(_flip!=0)
 				VertexHelper.flipUV(uvRect, _flip);
-			vertRect.setTo(0,0,_width,_height);
+			vertRect.copyFrom(_bounds);
 			
 			VertexHelper.beginFill();
-			VertexHelper.color = _color;
 			
 			if (_fillMethod != FillType.FillMethod_None)
 			{
@@ -270,8 +233,8 @@ package fairygui.display
 			{
 				var hc:int = Math.ceil(_textureScaleX);
 				var vc:int = Math.ceil(_textureScaleY);
-				var remainWidth:Number = _width - (hc - 1) * _texture.width;
-				var remainHeight:Number = _height - (vc - 1) * _texture.height;
+				var remainWidth:Number = _bounds.width - (hc - 1) * texture.width;
+				var remainHeight:Number = _bounds.height - (vc - 1) * texture.height;
 				
 				VertexHelper.alloc(hc*vc*4);
 
@@ -279,14 +242,14 @@ package fairygui.display
 				{
 					for (var j:int = 0; j < vc; j++)
 					{
-						VertexHelper.addQuad(i * _texture.width, j * _texture.height, 
-							i==hc-1?remainWidth:_texture.width, j==vc-1?remainHeight:_texture.height);
+						VertexHelper.addQuad(i * texture.width, j * texture.height, 
+							i==hc-1?remainWidth:texture.width, j==vc-1?remainHeight:texture.height);
 
 						if(i==hc-1 || j==vc-1)
 						{
 							VertexHelper.fillUV3(uvRect,
-								i==hc-1?remainWidth/_texture.width:1,
-								j==vc-1?remainHeight/_texture.height:1);
+								i==hc-1?remainWidth/texture.width:1,
+								j==vc-1?remainHeight/texture.height:1);
 						}
 						else
 							VertexHelper.fillUV2(uvRect);
@@ -300,25 +263,25 @@ package fairygui.display
 				var dRows:Array;
 				var dCols:Array;
 	
-				rows = [ 0, _scale9Grid.top, _scale9Grid.bottom, _texture.height ];
-				cols = [ 0, _scale9Grid.left, _scale9Grid.right, _texture.width ];
+				rows = [ 0, _scale9Grid.top, _scale9Grid.bottom, texture.height ];
+				cols = [ 0, _scale9Grid.left, _scale9Grid.right, texture.width ];
 				
-				if (_height >= (_texture.height - _scale9Grid.height))
-					dRows = [ 0, _scale9Grid.top, _height - (_texture.height - _scale9Grid.bottom), _height ];
+				if (_bounds.height >= (texture.height - _scale9Grid.height))
+					dRows = [ 0, _scale9Grid.top, _bounds.height - (texture.height - _scale9Grid.bottom), _bounds.height ];
 				else
 				{
-					var tmp:Number = _scale9Grid.top / (_texture.height - _scale9Grid.bottom);
-					tmp = _height * tmp / (1 + tmp);
-					dRows = [ 0, tmp, tmp, _height ];
+					var tmp:Number = _scale9Grid.top / (texture.height - _scale9Grid.bottom);
+					tmp = _bounds.height * tmp / (1 + tmp);
+					dRows = [ 0, tmp, tmp, _bounds.height ];
 				}
 				
-				if (_width >= (_texture.width - _scale9Grid.width))
-					dCols = [ 0, _scale9Grid.left, _width - (_texture.width - _scale9Grid.right), _width ];
+				if (_bounds.width >= (texture.width - _scale9Grid.width))
+					dCols = [ 0, _scale9Grid.left, _bounds.width - (texture.width - _scale9Grid.right), _bounds.width ];
 				else
 				{
-					tmp = _scale9Grid.left / (_texture.width - _scale9Grid.right);
-					tmp = _width * tmp / (1 + tmp);
-					dCols = [ 0, tmp, tmp, _width ];
+					tmp = _scale9Grid.left / (texture.width - _scale9Grid.right);
+					tmp = _bounds.width * tmp / (1 + tmp);
+					dCols = [ 0, tmp, tmp, _bounds.width ];
 				}
 
 				var cx:int, cy:int;
@@ -338,10 +301,10 @@ package fairygui.display
 					
 					VertexHelper.addQuad(left, top, right-left, bottom-top);
 					
-					left = uvRect.x + cols[cx] / _texture.width * uvRect.width;
-					top = uvRect.y + rows[cy] / _texture.height * uvRect.height;
-					right = uvRect.x + cols[cx+1] / _texture.width * uvRect.width;
-					bottom = uvRect.y + rows[cy+1] / _texture.height * uvRect.height;
+					left = uvRect.x + cols[cx] / texture.width * uvRect.width;
+					top = uvRect.y + rows[cy] / texture.height * uvRect.height;
+					right = uvRect.x + cols[cx+1] / texture.width * uvRect.width;
+					bottom = uvRect.y + rows[cy+1] / texture.height * uvRect.height;
 					VertexHelper.fillUV(left, top, right-left, bottom-top);
 				}
 			}
@@ -350,9 +313,9 @@ package fairygui.display
 				VertexHelper.addQuad2(vertRect);
 				VertexHelper.fillUV2(uvRect);
 			}
-			
-			VertexHelper.flush(_batch, _texture, 1, _smoothing);
-			_batch.blendMode = this.blendMode;
+
+			VertexHelper.flush(this.vertexData, this.indexData);
+			vertexData.colorize("color", _color);
 		}
 	}
 }

@@ -1,5 +1,5 @@
 package fairygui 
-{
+{	
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	
@@ -9,6 +9,7 @@ package fairygui
 	import fairygui.utils.PixelHitTestData;
 	
 	import starling.display.DisplayObjectContainer;
+	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.Event;
 
@@ -44,7 +45,6 @@ package fairygui
 		{
 			_rootContainer = new UISprite(this);
 			setDisplayObject(_rootContainer);
-			_rootContainer.renderCallback = onRender;
 			_container = _rootContainer;
 		}
 		
@@ -61,6 +61,7 @@ package fairygui
 			if (_scrollPane != null)
 				_scrollPane.dispose();
 			
+			_boundsChanged = false;
 			super.dispose();
 		}
 		
@@ -582,7 +583,7 @@ package fairygui
 			{
 				return _scrollPane.isChildInView(child);
 			}
-			else if (_rootContainer.clipRect != null)
+			else if (_rootContainer.mask != null)
 			{
 				return child.x + child.width >= 0 && child.x <= this.width
 					&& child.y + child.height >= 0 && child.y <= this.height;
@@ -624,7 +625,7 @@ package fairygui
 		public function set margin(value:Margin):void
 		{
 			_margin.copy(value);
-			if(_rootContainer.clipRect!=null)
+			if(_rootContainer.mask!=null)
 			{
 				_container.x = _margin.left;
 				_container.y = _margin.top;
@@ -684,14 +685,18 @@ package fairygui
 		
 		protected function updateMask():void
 		{
-			if(_rootContainer.clipRect==null)
-				_rootContainer.clipRect = new Rectangle();
-			
 			var left:Number = _margin.left;
 			var top:Number = _margin.top;
 			var w:Number = this.width - (_margin.left + _margin.right);
 			var h:Number = this.height - (_margin.top + _margin.bottom);
-			_rootContainer.clipRect.setTo(left, top, w, h);
+			
+			if(_rootContainer.mask==null)
+				_rootContainer.mask = new Quad(w,h);
+			else
+				Quad(_rootContainer.mask).readjustSize(w,h);
+
+			_rootContainer.mask.x = left;
+			_rootContainer.mask.y = top;
 		}
 		
 		protected function setupScroll(scrollBarMargin:Margin,
@@ -734,7 +739,7 @@ package fairygui
 		{
 			if(_scrollPane)
 				_scrollPane.setSize(this.width, this.height);
-			else if(_rootContainer.clipRect!=null)
+			else if(_rootContainer.mask!=null)
 				updateMask();
 			
 			if(_rootContainer.hitArea!=null)
@@ -766,10 +771,14 @@ package fairygui
 			if(!_scrollPane && !_trackBounds)
 				return;
 			
-			_boundsChanged = true;
+			if(!_boundsChanged)
+			{
+				_boundsChanged = true;
+				GTimers.inst.callLater(__updateBounds);
+			}
 		}
 
-		private function onRender():void
+		private function __updateBounds():void
 		{
 			if(_boundsChanged)
 				updateBounds();
