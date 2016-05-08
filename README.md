@@ -4,23 +4,19 @@ FairyGUI-starling
 FairyGUI官方QQ群：434866637
 
 A flexible UI framework for Starling, working with the FREE professional Game UI Editor: FairyGUI Editor.
-Download the editor from here: [www.fairygui.com](http://www.fairygui.com/index.php/download)
+Download the editor from here: [www.fairygui.com](http://www.fairygui.com/download)
 
-![](http://www.fairygui.com/wp-content/uploads/2015/09/show2.jpg)  
+![](http://www.fairygui.com/wp-content/uploads/2016/01/2016-03-06_114556.png)  
 
 #Features
-* WYSWYG
-* The editor can produce a variety of complex UI components, no need to write code, do not need program knowledges.
-* No complex skin configuration, all UI elements can be free collocation.
-* Provided time axis to design UI dynamic effect(UI Transition).
-* Support for image compression, you can adjust the picture quality according to reduce the size of the package.
-* Support for the building and using of sequence frame animation, you can use the animation as a image on UI
-* Support BMFont production of bitmap fonts, as well as supporting creating bitmap font from images.
-* Use of files storage, so it is easy to use version management software for management, and also to facilitate the collaboration of many people.
-* Preview is provided, same effect with the actual running effect.
-* Flexible publish strategy, support automatic packing atlas, support the definition of multiple atlas.
+* WYSWYG.
+* In the editor can make a variety of complex UI components, no need to write code, do not need programming knowledge.
+* Powerful text control. Support for dynamic fonts, bitmap fonts, as well as the production of BMFont bitmap fonts, support for HTML syntax and UBB syntax, support for graphics and text mixed.
+* 9 Squares and tiled image scale mode support, support image color and gray scale, support frame animation editing and use.
+* Provide time axis design UI dynamic effect.
+* The use of dispersed material editing, automatic packing Atlas released. Support the definition of multiple atlas, support compression drawn A channel.
 * Multi language support.
-* Resolution adaptive.
+* Various adaptive resolution.
 
 #特性
 * WYSWYG
