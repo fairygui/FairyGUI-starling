@@ -6,7 +6,7 @@ FairyGUI官方QQ群：434866637
 A flexible UI framework for Starling, working with the FREE professional Game UI Editor: FairyGUI Editor.
 Download the editor from here: [www.fairygui.com](http://www.fairygui.com/download)
 
-![](http://www.fairygui.com/wp-content/uploads/2015/09/2016-03-04_124156-1024x614.png)  
+![](http://www.fairygui.com/wp-content/uploads/2016/01/2016-03-06_114556.png)  
 
 #Features
 * WYSWYG.
