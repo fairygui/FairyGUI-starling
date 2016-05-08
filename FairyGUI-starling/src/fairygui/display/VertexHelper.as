@@ -6,24 +6,21 @@ package fairygui.display
 	import fairygui.FillType;
 	import fairygui.FlipType;
 	
-	import starling.display.QuadBatch;
+	import starling.rendering.IndexData;
+	import starling.rendering.VertexData;
 	import starling.textures.Texture;
 
 	public class VertexHelper
 	{
 		public static var vertBuffer:Vector.<Point> = new Vector.<Point>();
 		public static var uvBuffer:Vector.<Point> = new Vector.<Point>();
-		public static var colorBuffer:Vector.<uint> = new Vector.<uint>();		
-		public static var color:uint = 0;		
-		public static var quadCount:int;		
+		public static var quadCount:int;
 		
-		private static var helperQuad:HelperQuad;
+		private static var helperPoint:Point = new Point();
 		private static var helperRect1:Rectangle = new Rectangle();
 		private static var helperRect2:Rectangle = new Rectangle();
 		private static var helperRect3:Rectangle = new Rectangle();
 		private static var helperRect4:Rectangle = new Rectangle();
-		private static var helperTexCoords:Vector.<Number> = new Vector.<Number>(8);
-		private static var FULL_UV:Array = [0,0,1,0,0,1,1,1];
 		
 		public function VertexHelper()
 		{
@@ -33,12 +30,9 @@ package fairygui.display
 		public static function beginFill():void
 		{
 			quadCount = 0;
-			
-			if(helperQuad==null)
-			{
-				helperQuad = new HelperQuad();
+
+			if(vertBuffer.length==0)
 				alloc(50);
-			}
 		}
 		
 		public static function alloc(capacity:int):void
@@ -49,7 +43,6 @@ package fairygui.display
 			{
 				vertBuffer.length = req;
 				uvBuffer.length = req;
-				colorBuffer.length = capacity;
 				
 				for(var i:int=cnt;i<req;i++)
 				{
@@ -59,32 +52,29 @@ package fairygui.display
 			}
 		}
 		
-		public static function flush(target:QuadBatch, texture:Texture, alpha:Number=1, smoothing:String=null):void
+		public static function flush(vertexData:VertexData, indexData:IndexData):void
 		{
 			if(quadCount==0)
+			{
+				vertexData.clear();
+				indexData.clear();
 				return;
-			
-			if(texture!=null)
-				helperQuad.vectexData.setPremultipliedAlpha(texture.premultipliedAlpha);
-			else
-				helperQuad.vectexData.setPremultipliedAlpha(false);
-			
-			var space:int = target.capacity-target.numQuads;
-			if(space<quadCount)
-				target.capacity += quadCount-space;
+			}
+
+			vertexData.numVertices = quadCount*4;
+			indexData.numIndices = 0;
 			
 			var k:int = 0;
 			for(var i:int=0;i<quadCount;i++)
 			{
 				for(var j:int=0;j<4;j++)
 				{
-					helperQuad.vectexData.setPosition(j, vertBuffer[k].x, vertBuffer[k].y);
-					helperQuad.vectexData.setTexCoords(j, uvBuffer[k].x, uvBuffer[k].y);
+					vertexData.setPoint(k, "position", vertBuffer[k].x, vertBuffer[k].y);
+					vertexData.setPoint(k, "texCoords", uvBuffer[k].x, uvBuffer[k].y);
 					k++;
 				}
-
-				helperQuad.color = colorBuffer[i];
-				target.addQuad(helperQuad, alpha, texture, smoothing);
+				
+				indexData.addQuad(k-4, k-3, k-2, k-1);
 			}
 		}
 		
@@ -100,8 +90,6 @@ package fairygui.display
 			vertBuffer[vertIndex+3].x = x+width;
 			vertBuffer[vertIndex+3].y = y+height;
 			
-			colorBuffer[quadCount] = color;
-			
 			quadCount++;
 		}
 		
@@ -116,24 +104,20 @@ package fairygui.display
 			vertBuffer[vertIndex+2].y = vertRect.bottom;
 			vertBuffer[vertIndex+3].x = vertRect.right;
 			vertBuffer[vertIndex+3].y = vertRect.bottom;
-			
-			colorBuffer[quadCount] = color;
-			
+
 			quadCount++;
 		}
 		
 		public static function getTextureUV(texture:Texture, rect:Rectangle = null):Rectangle
 		{
-			for(var i:int=0;i<8;i++)
-				helperTexCoords[i] = FULL_UV[i];
-			texture.adjustTexCoords(helperTexCoords);
-			
 			if(rect==null)
 				rect = new Rectangle();
-			rect.x = helperTexCoords[0];
-			rect.y = helperTexCoords[1];
-			rect.right = helperTexCoords[6];
-			rect.bottom = helperTexCoords[7];
+			texture.localToGlobal(0,0,helperPoint);
+			rect.x = helperPoint.x;
+			rect.y = helperPoint.y;
+			texture.localToGlobal(1,1,helperPoint);
+			rect.right = helperPoint.x;
+			rect.bottom = helperPoint.y;
 			
 			return rect;
 		}
@@ -196,14 +180,12 @@ package fairygui.display
 		
 		public static function fillUV4(texture:Texture):void
 		{
-			for(var i:int=0;i<8;i++)
-				helperTexCoords[i] = FULL_UV[i];
-			texture.adjustTexCoords(helperTexCoords);
-			
-			var x:Number = helperTexCoords[0];
-			var y:Number = helperTexCoords[1];
-			var width:Number = helperTexCoords[6]-x;
-			var height:Number = helperTexCoords[7]-y;
+			texture.localToGlobal(0,0,helperPoint);
+			var x:Number = helperPoint.x;
+			var y:Number = helperPoint.y;
+			texture.localToGlobal(1,1,helperPoint);
+			var width:Number = helperPoint.x-x;
+			var height:Number = helperPoint.y-y;
 			
 			var vertIndex:int = (quadCount-1)*4;
 			uvBuffer[vertIndex].x = x;
@@ -888,18 +870,3 @@ package fairygui.display
 	}
 }
 
-
-import starling.display.Quad;
-import starling.utils.VertexData;
-
-class HelperQuad extends Quad
-{		
-	public var vectexData:VertexData;
-	public function HelperQuad()
-	{			
-		super(1, 1);
-		
-		this.vectexData = mVertexData;
-	}
-	
-}

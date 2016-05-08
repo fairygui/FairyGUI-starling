@@ -1105,5 +1105,9 @@ class TransitionValue
 	
 	public var b1:Boolean = true;
 	public var b2:Boolean = true;
+	
+	public function TransitionValue()
+	{
+	}
 }
 

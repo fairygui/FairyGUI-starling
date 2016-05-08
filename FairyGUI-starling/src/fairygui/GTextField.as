@@ -430,7 +430,12 @@ package fairygui
 		
 		protected function render():void
 		{
-			_requireRender = true;
+			if(!_requireRender)
+			{
+				_requireRender = true;
+				_canvas.setRequiresRedraw();
+			}
+			
 			if(_widthAutoSize || _heightAutoSize)
 			{
 				_sizeDirty = true;
@@ -551,10 +556,11 @@ package fairygui
 		
 		private function clearCanvas():void
 		{
-			if(_canvas.textureMemory>0)
+			if(_canvas.texture!=null)
 			{
 				_canvas.clear();
 				_requireRender = true;
+				_canvas.setRequiresRedraw();
 			}
 		}
 		
@@ -577,7 +583,7 @@ package fairygui
 			var line:LineInfo;
 			var textWidth:int, textHeight:int;
 			var wordWrap:Boolean = !_widthAutoSize && !_singleLine;
-			var fontScale:Number =  _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
+			var fontScale:Number = _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
 			var charCount:int;
 			
 			var textLength:int = _text.length;
@@ -781,10 +787,6 @@ package fairygui
 			
 			VertexHelper.beginFill();
 			VertexHelper.alloc(charCount);
-			if(_bitmapFont.ttf)
-				VertexHelper.color = _color;
-			else
-				VertexHelper.color = 0xffffff;
 			
 			var charX:int = GUTTER_X;
 			var lineIndent:int;
@@ -840,8 +842,8 @@ package fairygui
 					}
 				}//text loop
 			}//line loop
-			
-			_canvas.renderBitmapText(_bitmapFont);
+
+			_canvas.renderBitmapText(_bitmapFont, _bitmapFont.ttf?_color:0xFFFFFF);
 		}
 		
 		override protected function handlePositionChanged():void

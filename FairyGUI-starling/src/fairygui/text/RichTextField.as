@@ -15,13 +15,13 @@ package fairygui.text
 	import fairygui.utils.CharSize;
 	import fairygui.utils.ToolSet;
 	
-	import starling.core.RenderSupport;
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Sprite;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
+	import starling.rendering.Painter;
 	
 	public class RichTextField extends Sprite 
 	{
@@ -832,7 +832,7 @@ package fairygui.text
 			}
 		}
 		
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 			{
@@ -840,12 +840,12 @@ package fairygui.text
 				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, clearCanvas);
 			}
 			
-			super.render(support, parentAlpha);
+			super.render(painter);
 		}
 		
 		public function clearCanvas():void
 		{
-			if(_canvas.textureMemory>0)
+			if(_canvas.texture!=null)
 			{
 				_canvas.clear();
 				_needRebuild = true;

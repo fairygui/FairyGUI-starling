@@ -6,28 +6,20 @@ package fairygui.display
 	
 	import fairygui.text.BitmapFont;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
+	import starling.rendering.Painter;
 	import starling.textures.Texture;
-	import starling.textures.TextureSmoothing;
-	import starling.utils.getNextPowerOfTwo;
+	import starling.utils.MathUtil;
 	
-	public class TextCanvas extends FixedSizeObject
+	public class TextCanvas extends MeshExt
 	{
-		private var _batch:QuadBatch;
-		private var _texture:Texture;
-		
 		public var renderCallback:Function;
 
-		private static var sDefaultTextureFormat:String =
-			"BGRA_PACKED" in Context3DTextureFormat ? "bgraPacked4444" : "bgra";
-		
-		public static var textureMemoryTrack:int = 0;
+		private static var sDefaultTextureFormat:String = Context3DTextureFormat.BGRA_PACKED;
+
+		private var _ownsTexture:Boolean;
 		
 		public function TextCanvas()
 		{
-			_batch = new QuadBatch();
-
 			//TextCanvas is by default touchable
 			this.touchable = false;
 		}
@@ -35,7 +27,7 @@ package fairygui.display
 		override public function dispose():void
 		{
 			clear();
-			_batch.dispose();
+
 			renderCallback = null;
 			
 			super.dispose();
@@ -56,78 +48,77 @@ package fairygui.display
 			else
 			{
 				var bw:int, bh:int;
-				bw = getNextPowerOfTwo(nw);
+				bw = MathUtil.getNextPowerOfTwo(nw);
 				if(bw>2048)
 					bw = 2048;
-				bh = getNextPowerOfTwo(textHeight);
+				bh = MathUtil.getNextPowerOfTwo(textHeight);
 				if(bh>2048)
 					bh = 2048;
 				
 				var bmd:BitmapData =  new BitmapData(bw,bh,true,0);
 				bmd.draw(nativeTextField);
 				
-				if(_texture==null)
+				var texture:Texture = this.style.texture;
+				if(texture==null)
 				{
-					_texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
-					textureMemoryTrack += _texture.width*_texture.height*4;
+					texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
+					this.style.texture = texture;
 				}
 				else
 				{
-					if(bw<_texture.width && bh<_texture.height)
-						_texture.root.uploadBitmapData(bmd);
+					if(bw<texture.width && bh<texture.height)
+						texture.root.uploadBitmapData(bmd);
 					else
 					{
-						textureMemoryTrack -= textureMemory;
-						_texture.dispose();
-						_texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
-						textureMemoryTrack += textureMemory;
+						texture.dispose();
+						texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
+						this.style.texture = texture;
 					}
 				}
-				_texture.root.onRestore = restoreFunc;
-
+				texture.root.onRestore = restoreFunc;
+				_ownsTexture = true;
+				
 				bmd.dispose();
 				
-				_batch.reset();
-				
 				VertexHelper.beginFill();
-				VertexHelper.color = 0xffffff;
 				VertexHelper.addQuad(0, 0, bw, bh);
-				VertexHelper.fillUV4(_texture);
-				VertexHelper.flush(_batch, _texture, 1.0, TextureSmoothing.BILINEAR);
-			}
+				VertexHelper.fillUV4(texture);
+				VertexHelper.flush(this.vertexData, this.indexData);
+				vertexData.colorize("color", 0xFFFFFF);
+				setRequiresRedraw();
+			}			
 		}
 		
-		public function renderBitmapText(font:BitmapFont):void
+		public function renderBitmapText(font:BitmapFont, color:uint):void
 		{
-			VertexHelper.flush(_batch, font.mainTexture, 1, TextureSmoothing.BILINEAR);
-		}
-		
-		public function get textureMemory():int
-		{
-			if(_texture!=null) 
-				return _texture.width*_texture.height*4;
-			else
-				return 0;
+			_ownsTexture = false;
+			this.style.texture = font.mainTexture;
+			this.vertexData.premultipliedAlpha = font.mainTexture.premultipliedAlpha;
+			VertexHelper.flush(this.vertexData, this.indexData);
+			vertexData.colorize("color", color);
+			setRequiresRedraw();
 		}
 		
 		public function clear():void
 		{
-			_batch.reset();
-			if(_texture!=null)
+			if(_ownsTexture && this.texture!=null)
 			{
-				textureMemoryTrack -= textureMemory;
-				_texture.dispose();
-				_texture = null;
+				this.style.texture.dispose();
+				this.style.texture = null;
+				
+				this.vertexData.numVertices = 0;
+				this.indexData.numIndices = 0;
+				
+				setRequiresRedraw();
 			}
 		}
 
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(renderCallback!=null)
 				renderCallback();
 			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+			super.render(painter);
 		}
 	}
 }

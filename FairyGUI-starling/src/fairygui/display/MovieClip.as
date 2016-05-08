@@ -4,19 +4,20 @@ package fairygui.display
 	
 	import fairygui.utils.GTimers;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
-	import starling.textures.Texture;
+	import starling.animation.IAnimatable;
+	import starling.core.Starling;
+	import starling.events.Event;
+	import starling.rendering.IndexData;
+	import starling.rendering.Painter;
+	import starling.rendering.VertexData;
 	import starling.textures.TextureSmoothing;
 	
-	public class MovieClip extends FixedSizeObject
+	public class MovieClip extends MeshExt implements IAnimatable
 	{
 		public var interval:int;
 		public var swing:Boolean;
 		public var repeatDelay:int;
-		
-		private var _texture:Texture;
-		private var _batch:QuadBatch;
+
 		private var _frameRect:Rectangle;
 		private var _smoothing:String;
 		private var _color:uint;
@@ -43,9 +44,22 @@ package fairygui.display
 			_playing = true;
 			_smoothing = TextureSmoothing.BILINEAR;
 			_color = 0xFFFFFF;
-			_batch = new QuadBatch();
-			
+
 			setPlaySettings();
+			
+			this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
+		}
+		
+		override public function get color():uint
+		{
+			return _color;
+		}
+		
+		override public function set color(value:uint):void
+		{
+			_color = value;
+			this.style.color = value;
 		}
 		
 		public function get playState():PlayState
@@ -58,47 +72,6 @@ package fairygui.display
 			_playState = value;
 		}
 		
-		override public function dispose():void
-		{
-			_batch.dispose();
-			
-			super.dispose();
-		}
-		
-		public function get smoothing():String
-		{
-			return _smoothing;
-		}
-		
-		public function set smoothing(value:String):void
-		{
-			if(_smoothing != value)
-			{
-				_smoothing = value;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function set blendMode(value:String):void
-		{
-			super.blendMode = value;
-			_batch.blendMode = value;
-		}
-		
-		public function get color():uint
-		{
-			return _color;
-		}
-		
-		public function set color(value:uint):void
-		{
-			if(_color != value)
-			{
-				_color = value;
-				_needRebuild = true;
-			}
-		}
-
 		public function get frames():Vector.<Frame>
 		{
 			return _frames;
@@ -121,9 +94,15 @@ package fairygui.display
 				_currentFrame = _frameCount - 1;
 			
 			if(_frameCount>0)
+			{
 				setFrame(_frames[_currentFrame]);
+				startPlay();
+			}
 			else
+			{
 				setFrame(null);
+				stopPlay();
+			}
 		}
 		
 		public function get frameCount():int
@@ -188,7 +167,7 @@ package fairygui.display
 			this.currentFrame = start;
 		}
 		
-		private function update():void
+		public function advanceTime(passedTime:Number):void
 		{
 			if (_playing && _frameCount != 0 && _status != 3)
 			{
@@ -250,43 +229,64 @@ package fairygui.display
 		{
 			if(frame==null)
 			{
-				if(_texture!=null)
+				if(this.texture!=null)
 				{
-					_texture = null;
-					_needRebuild = true;
+					this.texture = null;
+					setRequiresRebuild();
 				}
 			}
-			else if(_texture != frame.texture)
+			else if(this.texture != frame.texture)
 			{
-				_texture = frame.texture;
+				this.style.texture = frame.texture;
 				_frameRect = frame.rect;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		private function __addedToStage(evt:Event):void
 		{
-			this.update();
-			
+			startPlay();
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			stopPlay();
+		}
+		
+		private function startPlay():void
+		{
+			if(this.stage)
+				Starling.current.juggler.add(this);
+		}
+		
+		private function stopPlay():void
+		{
+			Starling.current.juggler.remove(this);
+		}
+		
+		override public function render(painter:Painter):void
+		{
 			if(_needRebuild)
 			{
 				_needRebuild = false;
 
-				_batch.reset();
-				if(_texture!=null)
+				if(this.texture!=null)
 				{
 					VertexHelper.beginFill();
-					VertexHelper.color = _color;
-					VertexHelper.addQuad(_frameRect.x, _frameRect.y, _texture.width, _texture.height);
-					VertexHelper.fillUV4(_texture);
-					VertexHelper.flush(_batch, _texture, 1, _smoothing);
-					
-					_batch.blendMode = this.blendMode;
+					VertexHelper.addQuad(_frameRect.x, _frameRect.y, this.texture.width, this.texture.height);
+					VertexHelper.fillUV4(this.texture);
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _color);
+					setRequiresRedraw();
+				}
+				else
+				{
+					vertexData.numVertices = 0;
+					indexData.numIndices = 0;
 				}
 			}
 			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+			super.render(painter);
 		}
 	}
 }

@@ -14,6 +14,7 @@ package fairygui
 	import fairygui.utils.GTimers;
 	
 	import starling.core.Starling;
+	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.Event;
 	import starling.events.EventDispatcher;
@@ -679,7 +680,10 @@ package fairygui
 				}
 			}
 			
-			_maskHolder.clipRect = new Rectangle(0,0,_maskWidth,_maskHeight);
+			if(_maskHolder.mask==null)
+				_maskHolder.mask = new Quad(_maskWidth,_maskHeight);
+			else
+				Quad(_maskHolder.mask).readjustSize(_maskWidth,_maskHeight);
 			
 			_xOverlap = Math.ceil(Math.max(0, _contentWidth - _maskWidth));
 			_yOverlap = Math.ceil(Math.max(0, _contentHeight - _maskHeight));
@@ -1325,7 +1329,7 @@ package fairygui
 			sHelperPoint.y = evt.stageY;
 			_container.globalToLocal(sHelperPoint, sHelperPoint);
 			
-			if(!_container.hitTest(sHelperPoint, true))
+			if(!_container.hitTest(sHelperPoint))
 				return;
 			
 			var delta:Number = evt.delta;
