@@ -4,6 +4,7 @@ package fairygui.display
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	
+	import starling.geom.Polygon;
 	import starling.rendering.Painter;
 	
 	public class Shape extends MeshExt
@@ -89,31 +90,46 @@ package fairygui.display
 				return;
 			}
 			
-			if (_lineSize == 0)
+			if(_type == 1)
 			{
-				VertexHelper.beginFill();
-				VertexHelper.addQuad(0, 0, _bounds.width, _bounds.height);
-				VertexHelper.flush(vertexData, indexData);
-				vertexData.colorize("color", _fillColor, _fillAlpha);
+				if (_lineSize == 0)
+				{
+					VertexHelper.beginFill();
+					VertexHelper.addQuad(0, 0, _bounds.width, _bounds.height);
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _fillColor, _fillAlpha);
+				}
+				else
+				{
+					VertexHelper.beginFill();
+					
+					//left,right
+					VertexHelper.addQuad(0, 0, _lineSize, _bounds.height);
+					VertexHelper.addQuad(_bounds.width - _lineSize, 0, _lineSize, _bounds.height);
+	
+					//top, bottom
+					VertexHelper.addQuad(_lineSize, 0, _bounds.width - _lineSize, _lineSize);
+					VertexHelper.addQuad(_lineSize, _bounds.height - _lineSize, _bounds.width - _lineSize, _lineSize);
+					
+					//middle
+					VertexHelper.addQuad(_lineSize, _lineSize, _bounds.width-_lineSize*2, _bounds.height -_lineSize*2);
+					
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _lineColor, _lineAlpha, 0, 16);
+					vertexData.colorize("color", _fillColor, _fillAlpha, 16, 4);
+				}
 			}
-			else
+			else if(_type==2)
 			{
-				VertexHelper.beginFill();
+				var polygon:Polygon = Polygon.createEllipse(_bounds.width/2, _bounds.height/2, _bounds.width/2, _bounds.height/2);
 				
-				//left,right
-				VertexHelper.addQuad(0, 0, _lineSize, _bounds.height);
-				VertexHelper.addQuad(_bounds.width - _lineSize, 0, _lineSize, _bounds.height);
-
-				//top, bottom
-				VertexHelper.addQuad(_lineSize, 0, _bounds.width - _lineSize, _lineSize);
-				VertexHelper.addQuad(_lineSize, _bounds.height - _lineSize, _bounds.width - _lineSize, _lineSize);
+				vertexData.numVertices = 0;
+				indexData.numIndices = 0;
+					
+				polygon.triangulate(indexData);
+				polygon.copyToVertexData(vertexData);
 				
-				//middle
-				VertexHelper.addQuad(_lineSize, _lineSize, _bounds.width-_lineSize*2, _bounds.height -_lineSize*2);
-				
-				VertexHelper.flush(vertexData, indexData);
-				vertexData.colorize("color", _lineColor, _lineAlpha, 0, 16);
-				vertexData.colorize("color", _fillColor, _fillAlpha, 16, 4);
+				vertexData.colorize("color", _fillColor, _fillAlpha);
 			}
 		}
 	}

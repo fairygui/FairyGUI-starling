@@ -9,8 +9,8 @@ package fairygui.display
 	import starling.display.DisplayObject;
 	import starling.display.Mesh;
 	import starling.rendering.IndexData;
-	import starling.rendering.MeshStyle;
 	import starling.rendering.VertexData;
+	import starling.styles.MeshStyle;
 	import starling.utils.RectangleUtil;
 
 	public class MeshExt extends Mesh
