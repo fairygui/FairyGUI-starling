@@ -986,9 +986,7 @@ package fairygui
 			var layoutChanged:Boolean = _virtualListChanged == 2;
 			_virtualListChanged = 0;
 			_eventLocked = true;
-			
-			ensureBoundsCorrect();
-			
+						
 			if(layoutChanged)
 			{
 				if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowHorizontal)
@@ -1029,6 +1027,8 @@ package fairygui
 				}
 			}
 			
+			ensureBoundsCorrect();
+
 			if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowHorizontal)
 			{
 				if (_scrollPane != null)
