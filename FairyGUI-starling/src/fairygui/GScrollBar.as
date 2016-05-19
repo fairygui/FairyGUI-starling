@@ -14,6 +14,7 @@ package fairygui
 		
 		private var _vertical:Boolean;
 		private var _scrollPerc:Number;
+		private var _fixedGripSize:Boolean;
 		
 		private var _dragOffset:Point;
 		
@@ -33,12 +34,14 @@ package fairygui
 		{
 			if(_vertical)
 			{
-				_grip.height = val*_bar.height;
+				if(!_fixedGripSize)
+					_grip.height = val*_bar.height;
 				_grip.y = _bar.y+(_bar.height-_grip.height)*_scrollPerc;
 			}
 			else
 			{
-				_grip.width = val*_bar.width;
+				if(!_fixedGripSize)
+					_grip.width = val*_bar.width;
 				_grip.x = _bar.x+(_bar.width-_grip.width)*_scrollPerc;
 			}
 		}
@@ -63,6 +66,10 @@ package fairygui
 		override protected function constructFromXML(xml:XML):void
 		{
 			super.constructFromXML(xml);
+			
+			xml = xml.ScrollBar[0];
+			if(xml!=null)
+				_fixedGripSize = xml.@fixedGripSize=="true";
 			
 			_grip = getChild("grip");
 			if(!_grip)

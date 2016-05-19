@@ -7,7 +7,7 @@ package fairygui
 	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
 	
-	[Event(name = "___stateChanged", type = "fairygui.event.StateChangeEvent")]
+	[Event(name = "stateChanged", type = "fairygui.event.StateChangeEvent")]
 	public class GButton extends GComponent
 	{
 		protected var _titleObject:GObject;
@@ -26,8 +26,10 @@ package fairygui
 		private var _buttonController:Controller;
 		private var _changeStateOnClick:Boolean;
 		private var _linkedPopup:GObject;
-
-		private var _over:Boolean;
+		private var _downEffect:int;
+		private var _downEffectValue:Number;
+		
+		internal var _over:Boolean;
 		
 		public static const UP:String = "up";
 		public static const DOWN:String = "down";
@@ -47,6 +49,7 @@ package fairygui
 			_soundVolumeScale = UIConfig.buttonSoundVolumeScale;
 			_pageOption = new PageOption();
 			_changeStateOnClick = true;
+			_downEffectValue = 0.8;
 		}
 		
 		final public function get icon():String
@@ -167,20 +170,7 @@ package fairygui
 			if(_selected!=val)
 			{
 				_selected = val;
-				if(this.grayed && _buttonController && _buttonController.hasPage(DISABLED))
-				{
-					if(_selected)
-						setState(SELECTED_DISABLED);
-					else
-						setState(DISABLED);
-				}
-				else
-				{
-					if(_selected)
-						setState(_over?SELECTED_OVER:DOWN);
-					else
-						setState(_over?OVER:UP);
-				}
+				setCurrentState();
 				if(_selectedTitle && _titleObject)
 					_titleObject.text = _selected?_selectedTitle:_title;
 				if(_selectedIcon)
@@ -294,6 +284,56 @@ package fairygui
 		{
 			if(_buttonController)
 				_buttonController.selectedPage = val;
+			
+			if(_downEffect==1)
+			{
+				var cnt:int = this.numChildren;
+				if(val==DOWN || val==SELECTED_OVER || val==SELECTED_DISABLED)
+				{
+					var r:int = _downEffectValue * 255;
+					var color:uint = (r<<16)+(r<<8)+r;
+					for(var i:int=0;i<cnt;i++)
+					{
+						var obj:GObject = this.getChildAt(i);
+						if(obj is IColorGear)
+							IColorGear(obj).color = color;
+					}
+				}
+				else
+				{
+					for(i=0;i<cnt;i++)
+					{
+						obj = this.getChildAt(i);
+						if(obj is IColorGear)
+							IColorGear(obj).color = 0xFFFFFF;
+					}
+				}
+			}
+			else if(_downEffect==2)				
+			{
+				if(val==DOWN || val==SELECTED_OVER || val==SELECTED_DISABLED)
+					setScale(_downEffectValue, _downEffectValue);
+				else
+					setScale(1, 1);
+			}
+		}
+		
+		protected function setCurrentState():void
+		{
+			if(this.grayed && _buttonController && _buttonController.hasPage(DISABLED))
+			{
+				if(_selected)
+					setState(SELECTED_DISABLED);
+				else
+					setState(DISABLED);
+			}
+			else
+			{
+				if(_selected)
+					setState(_over?SELECTED_OVER:DOWN);
+				else
+					setState(_over?OVER:UP);
+			}
 		}
 		
 		override public function handleControllerChanged(c:Controller):void
@@ -341,6 +381,15 @@ package fairygui
 			str = xml.@volume;
 			if(str)
 				_soundVolumeScale = parseInt(str)/100;
+			
+			str = xml.@downEffect;
+			if(str)
+			{
+				_downEffect = str=="dark"?1:(str=="scale"?2:0);
+				str = xml.@downEffectValue;
+				_downEffectValue = parseFloat(str);
+				this.setPivot(0.5, 0.5);
+			}
 			
 			_buttonController = getController("button");
 			_titleObject = getChild("title");
@@ -411,7 +460,7 @@ package fairygui
 			setState(_selected?SELECTED_OVER:OVER);
 		}
 		
-		private function __rollout(evt:GTouchEvent):void
+		internal function __rollout(evt:GTouchEvent):void
 		{
 			if(!_buttonController || !_buttonController.hasPage(OVER))
 				return;
@@ -441,11 +490,7 @@ package fairygui
 				if(_linkedPopup is Window)
 					Window(_linkedPopup).toggleStatus();
 				else
-				{
-					var r:GRoot = this.root;
-					if(r)
-						r.togglePopup(_linkedPopup, this);
-				}
+					this.root.togglePopup(_linkedPopup, this);
 			}
 		}
 		
@@ -459,6 +504,15 @@ package fairygui
 					setState(OVER);
 				else
 					setState(UP);
+			}
+			else
+			{
+				if(!_over
+					&&_buttonController 
+					&& (_buttonController.selectedPage==OVER || _buttonController.selectedPage==SELECTED_OVER))
+				{
+					setCurrentState();
+				}
 			}
 		}
 		

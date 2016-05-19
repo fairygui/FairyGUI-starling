@@ -60,7 +60,7 @@ package fairygui
 				_owner.internalVisible--;
 			}
 			
-			if(_tween && !UIPackage._constructing
+			if(_tween && !UIPackage._constructing && !disableAllTweenEffect
 				&& ct && _pageSet.containsId(_controller.previousPageId))
 			{
 				if (_owner.x != pt.x || _owner.y != pt.y)
@@ -71,6 +71,7 @@ package fairygui
 								x: pt.x,
 								y: pt.y,
 								ease: _easeType,
+								delay: _delay,
 								overwrite:0
 							};
 					vars.onUpdate = __tweenUpdate;

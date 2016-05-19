@@ -1,12 +1,12 @@
 package fairygui
 {
-	public class AutoSizeType
-	{		
+	public class LoaderFillType
+	{
 		public static const None:int = 0;
-		public static const Both:int = 1;
-		public static const Height:int = 2;
+		public static const Scale:int = 3;
+		public static const ScaleFree:int = 4;
 		
-		public function AutoSizeType()
+		public function LoaderFillType()
 		{
 		}
 		
@@ -16,10 +16,10 @@ package fairygui
 			{
 				case "none":
 					return None;
-				case "both":
-					return Both;
-				case "height":
-					return Height;
+				case "scale":
+					return Scale;
+				case "scaleFree":
+					return ScaleFree;
 				default:
 					return None;
 			}

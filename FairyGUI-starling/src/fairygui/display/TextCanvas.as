@@ -2,166 +2,158 @@ package fairygui.display
 {
 	import flash.display.BitmapData;
 	import flash.display3D.Context3DTextureFormat;
-	import flash.geom.Matrix;
-	import flash.geom.Point;
-	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	
-	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
+	import starling.events.Event;
+	import starling.rendering.Painter;
 	import starling.textures.Texture;
-	import starling.textures.TextureSmoothing;
-	import starling.utils.getNextPowerOfTwo;
+	import starling.utils.MathUtil;
 	
-	public class TextCanvas extends FixedSizeObject
+	public class TextCanvas extends MeshExt
 	{
-		private var _batch:QuadBatch;
-		private var _texture:Texture;
-		
 		public var renderCallback:Function;
 		
-		private static var sHelperQuad:QuadExt;
-		private static var sHelperRect:Rectangle = new Rectangle();
-		private static var sHelperMatrix:Matrix = new Matrix();
-		private static var sDefaultTextureFormat:String =
-			"BGRA_PACKED" in Context3DTextureFormat ? "bgraPacked4444" : "bgra";
+		//to save memory. If you dont like this, change to false
+		public static var freeTextureOnRemoved:Boolean = true;
 		
-		public static var textureMemoryTrack:int = 0;
+		private static var sDefaultTextureFormat:String = Context3DTextureFormat.BGRA_PACKED;
+
+		private var _ownsTexture:Boolean;
+		private var _restoreFunction:Function;
+		private var _needRestore:Boolean;
 		
 		public function TextCanvas()
 		{
-			_batch = new QuadBatch();
-			_batch.capacity = 1;
-			
 			//TextCanvas is by default touchable
 			this.touchable = false;
 			
-			if(sHelperQuad==null)
-				sHelperQuad = new QuadExt();
+			if(freeTextureOnRemoved)
+			{
+				this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+				this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
+			}
 		}
 		
 		override public function dispose():void
 		{
-			clear();
-			_batch.dispose();
+			freeTexture();
 			renderCallback = null;
+			_restoreFunction = null;
 			
 			super.dispose();
 		}
 		
-		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, fontAdjustment:int, restoreFunc:Function):void
+		public function setCanvasSize(width:Number, height:Number):void
+		{
+			setSize(width, height);
+		}
+		
+		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, restoreFunc:Function):void
 		{
 			var nw:int = nativeTextField.width;
 			if(textWidth==0 || textHeight==0 || nw==0)
 			{
 				clear();
+				setRequiresRedraw();
+				_restoreFunction = null;
 			}
 			else
 			{
+				_restoreFunction = restoreFunc;
+				
 				var bw:int, bh:int;
-				bw = getNextPowerOfTwo(nw);
+				bw = MathUtil.getNextPowerOfTwo(nw);
 				if(bw>2048)
 					bw = 2048;
-				bh = getNextPowerOfTwo(textHeight);
+				bh = MathUtil.getNextPowerOfTwo(textHeight);
 				if(bh>2048)
 					bh = 2048;
+				
 				var bmd:BitmapData =  new BitmapData(bw,bh,true,0);
+				bmd.draw(nativeTextField);
 				
-				//bmd.drawWithQuality(nativeTextField, null, null, null, null, false, StageQuality.MEDIUM);
-				sHelperMatrix.ty = -fontAdjustment;
-				bmd.draw(nativeTextField, sHelperMatrix);
-				
-				if(_texture==null)
+				var texture:Texture = this.style.texture;
+				if(texture==null)
 				{
-					_texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
-					textureMemoryTrack += _texture.width*_texture.height*4;
+					texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
+					this.style.texture = texture;
 				}
 				else
 				{
-					if(bw<_texture.width && bh<_texture.height)
-						_texture.root.uploadBitmapData(bmd);
+					if(bw<texture.width && bh<texture.height)
+						texture.root.uploadBitmapData(bmd);
 					else
 					{
-						textureMemoryTrack -= textureMemory;
-						_texture.dispose();
-						_texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
-						textureMemoryTrack += textureMemory;
+						texture.dispose();
+						texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
+						this.style.texture = texture;
 					}
 				}
-				_texture.root.onRestore = restoreFunc;
-
+				texture.root.onRestore = restoreFunc;
+				_ownsTexture = true;
+				
 				bmd.dispose();
 				
-				_batch.reset();				
-				sHelperQuad.fillVerts(0, 0, bw, bh);
-				sHelperQuad.fillUVOfTexture(_texture);
-				sHelperQuad.color = 0xffffff;
-				_batch.addQuad(sHelperQuad, 1.0, _texture, TextureSmoothing.BILINEAR);
-			}
+				VertexHelper.beginFill();
+				VertexHelper.addQuad(0, 0, bw, bh);
+				VertexHelper.fillUV4(texture);
+				VertexHelper.flush(this.vertexData, this.indexData);
+				vertexData.colorize("color", 0xFFFFFF);
+				setRequiresRedraw();
+			}			
 		}
 		
-		public function get textureMemory():int
+		public function renderBitmapText(font:BitmapFont, color:uint):void
 		{
-			if(_texture!=null) 
-				return _texture.width*_texture.height*4;
-			else
-				return 0;
+			_ownsTexture = false;
+			this.style.texture = font.mainTexture;
+			VertexHelper.flush(this.vertexData, this.indexData);
+			vertexData.colorize("color", color);
+			setRequiresRedraw();
+		}
+		
+		public function freeTexture():void
+		{
+			if(_ownsTexture && this.style.texture!=null)
+			{
+				this.style.texture.dispose();
+				this.style.texture = null;
+			}
 		}
 		
 		public function clear():void
 		{
-			_batch.reset();
-			if(_texture!=null)
-			{
-				textureMemoryTrack -= textureMemory;
-				_texture.dispose();
-				_texture = null;
-			}
-		}
+			freeTexture();
+			
+			this.vertexData.numVertices = 0;
+			this.indexData.numIndices = 0;
+		}		
 		
-		public function drawChar(font:BitmapFont, glyph:BMGlyph, charPos:Point, color:uint):void
-		{
-			if(font.mainTexture==null)
-				return;
-			
-			charPos.x += glyph.offsetX;
-			
-			if(font.ttf)
-			{
-				sHelperRect.x = charPos.x;
-				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width;
-				sHelperRect.height = glyph.height;
-				
-				sHelperQuad.fillVertsByRect(sHelperRect);
-				sHelperQuad.fillUVByRect(glyph.uvRect);
-				sHelperQuad.color = uint(color);
-				_batch.addQuad(sHelperQuad, 1.0, font.mainTexture);
-			}
-			else if(glyph.uvRect!=null)
-			{
-				sHelperRect.x = charPos.x;
-				sHelperRect.y = charPos.y;
-				sHelperRect.width = glyph.width;
-				sHelperRect.height = glyph.height;
-				
-				sHelperQuad.fillVertsByRect(sHelperRect);
-				sHelperQuad.fillUVByRect(glyph.uvRect);
-				sHelperQuad.color = 0xffffff;
-				_batch.addQuad(sHelperQuad, 1.0, font.mainTexture, TextureSmoothing.BILINEAR);
-			}
-		}
-
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(renderCallback!=null)
 				renderCallback();
 			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+			super.render(painter);
+		}
+		
+		private function __addedToStage(evt:Event):void
+		{
+			if(_needRestore && _restoreFunction!=null)
+				_restoreFunction();
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			if(_ownsTexture)
+			{
+				freeTexture();
+				_needRestore = true;
+			}
+			else
+				_needRestore = false;
 		}
 	}
 }

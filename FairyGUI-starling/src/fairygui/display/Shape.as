@@ -4,10 +4,10 @@ package fairygui.display
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
+	import starling.geom.Polygon;
+	import starling.rendering.Painter;
 	
-	public class Shape extends FixedSizeObject
+	public class Shape extends MeshExt
 	{		
 		private var _type:int;
 		private var _lineSize:int;
@@ -16,8 +16,6 @@ package fairygui.display
 		private var _fillColor:int;
 		private var _fillAlpha:Number;
 		private var _corner:Array;
-		
-		private var _batch:QuadBatch;
 
 		private static var sHelperMatrix:Matrix = new Matrix();
 		private static var sHelperPoint:Point = new Point();
@@ -27,21 +25,10 @@ package fairygui.display
 		{
 			super();
 			
-			_batch = new QuadBatch();
-			_batch.capacity = 5;
-			_width = 0;
-			_height = 0;
 			_lineSize = 1;
 			_lineAlpha = 1;
 			_fillAlpha = 1;
 			_fillColor = 0xFFFFFF;
-		}
-		
-		override public function dispose():void
-		{
-			_batch.dispose();
-			
-			super.dispose();
 		}
 		
 		public function drawRect(lineSize:int, lineColor:int, lineAlpha:Number,
@@ -54,7 +41,7 @@ package fairygui.display
 			_fillColor = fillColor;
 			_fillAlpha = fillAlpha;
 			_corner = corner;
-			_needRebuild = true;
+			setRequiresRebuild();
 		}
 		
 		public function drawEllipse(lineSize:int, lineColor:int, lineAlpha:Number,
@@ -67,7 +54,12 @@ package fairygui.display
 			_fillColor = fillColor;
 			_fillAlpha = fillAlpha;
 			_corner = null;
-			_needRebuild = true;
+			setRequiresRebuild();
+		}
+		
+		public function setShapeSize(width:Number, height:Number):void
+		{
+			setSize(width, height);
 		}
 		
 		public function clear():void
@@ -75,69 +67,69 @@ package fairygui.display
 			if(_type!=0)
 			{
 				_type = 0;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 				rebuild();
 			
-			support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+			super.render(painter);
 		}
 		
-		private static var sHelperTexCoords:Vector.<Number> = new Vector.<Number>(8);
-		private static var sHelperQuad:QuadExt;
 		private function rebuild():void
 		{
 			_needRebuild = false;
 			
-			this._batch.reset();
 			if(_type==0)
+			{
+				vertexData.numVertices = 0;
+				indexData.numIndices = 0;
 				return;
-			
-			if(sHelperQuad==null)
-			{
-				sHelperQuad = new QuadExt();
-				sHelperQuad.setPremultipliedAlpha(false);
 			}
 			
-			var rectWidth:int = _width * _scaleX;
-			var rectHeight:int = _height * _scaleY;
-			
-			if (_lineSize == 0)
+			if(_type == 1)
 			{
-				sHelperQuad.color = _fillColor;
-				sHelperQuad.alpha = _fillAlpha;
-				sHelperQuad.fillVerts(0, 0, rectWidth, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
+				if (_lineSize == 0)
+				{
+					VertexHelper.beginFill();
+					VertexHelper.addQuad(0, 0, _bounds.width, _bounds.height);
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _fillColor, _fillAlpha);
+				}
+				else
+				{
+					VertexHelper.beginFill();
+					
+					//left,right
+					VertexHelper.addQuad(0, 0, _lineSize, _bounds.height);
+					VertexHelper.addQuad(_bounds.width - _lineSize, 0, _lineSize, _bounds.height);
+	
+					//top, bottom
+					VertexHelper.addQuad(_lineSize, 0, _bounds.width - _lineSize, _lineSize);
+					VertexHelper.addQuad(_lineSize, _bounds.height - _lineSize, _bounds.width - _lineSize, _lineSize);
+					
+					//middle
+					VertexHelper.addQuad(_lineSize, _lineSize, _bounds.width-_lineSize*2, _bounds.height -_lineSize*2);
+					
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _lineColor, _lineAlpha, 0, 16);
+					vertexData.colorize("color", _fillColor, _fillAlpha, 16, 4);
+				}
 			}
-			else
+			else if(_type==2)
 			{
-				var lineSize:int = Math.ceil(Math.min(_lineSize*_scaleX, _lineSize*_scaleY));
+				var polygon:Polygon = Polygon.createEllipse(_bounds.width/2, _bounds.height/2, _bounds.width/2, _bounds.height/2);
 				
-				//left,right
-				sHelperQuad.color = _lineColor;
-				sHelperQuad.alpha = _lineAlpha;
-				sHelperQuad.fillVerts(0, 0, lineSize, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
+				vertexData.numVertices = 0;
+				indexData.numIndices = 0;
+					
+				polygon.triangulate(indexData);
+				polygon.copyToVertexData(vertexData);
 				
-				sHelperQuad.fillVerts(rectWidth - lineSize, 0, lineSize, rectHeight);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
-				//top, bottom
-				sHelperQuad.fillVerts(lineSize, 0, rectWidth - lineSize, lineSize);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
-				sHelperQuad.fillVerts(lineSize, rectHeight - lineSize, rectWidth - lineSize, lineSize);
-				_batch.addQuad(sHelperQuad, 1.0);
-				
-				//middle
-				sHelperQuad.color = _fillColor;
-				sHelperQuad.alpha = _fillAlpha;
-				sHelperQuad.fillVerts(lineSize, lineSize, rectWidth- lineSize*2, rectHeight - lineSize*2);
-				_batch.addQuad(sHelperQuad, 1.0);
+				vertexData.colorize("color", _fillColor, _fillAlpha);
 			}
 		}
 	}

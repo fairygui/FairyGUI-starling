@@ -1,23 +1,26 @@
 package fairygui 
-{
+{	
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	
 	import fairygui.display.UISprite;
+	import fairygui.utils.GTimers;
+	import fairygui.utils.PixelHitTest;
+	import fairygui.utils.PixelHitTestData;
 	
 	import starling.display.DisplayObjectContainer;
+	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.events.Event;
 
-	[Event(name = "___scroll", type = "starling.events.Event")]
+	[Event(name = "dropEvent", type = "fairygui.event.DropEvent")]
 	public class GComponent extends GObject
 	{
-		private var _boundsChanged:Boolean;
-		private var _bounds:Rectangle;
 		private var _sortingChildCount:int;
-		private var _opaque:Boolean;
-		
+
 		protected var _margin:Margin;
 		protected var _trackBounds:Boolean;
+		protected var _boundsChanged:Boolean;
 		
 		internal var _buildingDisplayList:Boolean;
 		internal var _children:Vector.<GObject>;
@@ -27,21 +30,21 @@ package fairygui
 		internal var _container:Sprite;
 		internal var _scrollPane:ScrollPane;
 		
+		private var _childrenRenderOrder:int;
+		private var _apexIndex:int;
+		
 		public function GComponent():void
 		{
-			_bounds = new Rectangle();
 			_children = new Vector.<GObject>();
 			_controllers = new Vector.<Controller>();
 			_transitions = new Vector.<Transition>();
 			_margin = new Margin();
-			this.opaque = true;	
 		}
 		
 		override protected function createDisplayObject():void
 		{
 			_rootContainer = new UISprite(this);
 			setDisplayObject(_rootContainer);
-			_rootContainer.renderCallback = onRender;
 			_container = _rootContainer;
 		}
 		
@@ -49,11 +52,16 @@ package fairygui
 		{
 			var numChildren:int = _children.length; 
 			for (var i:int=numChildren-1; i>=0; --i)
-				_children[i].dispose();
+			{
+				var obj:GObject = _children[i];
+				obj.parent = null; //avoid removeFromParent call
+				obj.dispose(); 
+			}
 			
 			if (_scrollPane != null)
 				_scrollPane.dispose();
 			
+			_boundsChanged = false;
 			super.dispose();
 		}
 		
@@ -153,7 +161,12 @@ package fairygui
 				
 				_children.splice(index, 1);
 				if(child.inContainer)
+				{
 					_container.removeChild(child.displayObject);
+					
+					if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+						GTimers.inst.callLater(buildNativeDisplayList);
+				}
 				
 				if(dispose)
 					child.dispose();
@@ -274,15 +287,37 @@ package fairygui
 			if(child.inContainer)
 			{			
 				var displayIndex:int;
-				for(var i:int=0;i<index;i++)
+				var g:GObject;
+				var i:int;
+				
+				if (_childrenRenderOrder == ChildrenRenderOrder.Ascent)
 				{
-					var g:GObject = _children[i];
-					if(g.inContainer)
-						displayIndex++;
+					for(i=0;i<index;i++)
+					{
+						g = _children[i];
+						if(g.inContainer)
+							displayIndex++;
+					}
+					if(displayIndex==_container.numChildren)
+						displayIndex--;
+					_container.setChildIndex(child.displayObject, displayIndex);
 				}
-				if(displayIndex==_container.numChildren)
-					displayIndex--;
-				_container.setChildIndex(child.displayObject, displayIndex);
+				else if (_childrenRenderOrder == ChildrenRenderOrder.Descent)
+				{
+					for (i = cnt - 1; i > index; i--)
+					{
+						g = _children[i];
+						if (g.inContainer)
+							displayIndex++;
+					}
+					if(displayIndex==_container.numChildren)
+						displayIndex--;
+					_container.setChildIndex(child.displayObject, displayIndex);
+				}
+				else
+				{
+					GTimers.inst.callLater(buildNativeDisplayList);
+				}
 				
 				setBoundsChangedFlag();
 			}
@@ -316,6 +351,11 @@ package fairygui
 			_controllers.push(controller);
 			controller._parent = this;
 			applyController(controller);
+		}
+		
+		public function getControllerAt(index:int):Controller
+		{
+			return _controllers[index];
 		}
 		
 		public function getController(name:String):Controller
@@ -354,10 +394,15 @@ package fairygui
 			if(_buildingDisplayList)
 				return;
 			
+			var cnt:int = _children.length;
+			var g:GObject;
+			var i:int;
+			
 			if(child is GGroup)
 			{
-				for each(var g:GObject in _children)
+				for (i = 0; i < cnt; i++)
 				{
+					g = _children[i];
 					if(g.group==child)
 						childStateChanged(g);
 				}
@@ -371,22 +416,101 @@ package fairygui
 			{
 				if(!child.displayObject.parent)
 				{
-					var index:int;
-					for each(g in _children)
+					var index:int;				
+					if (_childrenRenderOrder == ChildrenRenderOrder.Ascent)
 					{
-						if(g==child)
-							break;
-						
-						if(g.displayObject && g.displayObject.parent)
-							index++;
+						for (i = 0; i < cnt; i++)
+						{
+							g = _children[i];
+							if (g == child)
+								break;
+							
+							if (g.displayObject != null && g.displayObject.parent != null)
+								index++;
+						}
+						_container.addChildAt(child.displayObject, index);
 					}
-					_container.addChildAt(child.displayObject, index);
+					else if (_childrenRenderOrder == ChildrenRenderOrder.Descent)
+					{
+						for (i = cnt - 1; i >= 0; i--)
+						{
+							g = _children[i];
+							if (g == child)
+								break;
+							
+							if (g.displayObject != null && g.displayObject.parent != null)
+								index++;
+						}
+						_container.addChildAt(child.displayObject, index);
+					}
+					else
+					{
+						_container.addChild(child.displayObject);
+						
+						GTimers.inst.callLater(buildNativeDisplayList);
+					}
 				}
 			}
 			else
 			{
 				if(child.displayObject.parent)
+				{
 					_container.removeChild(child.displayObject);
+					if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+					{
+						GTimers.inst.callLater(buildNativeDisplayList);
+					}
+				}
+			}
+		}
+		
+		private function buildNativeDisplayList():void
+		{
+			var cnt:int = _children.length;
+			if (cnt == 0)
+				return;
+			
+			var i:int;
+			var child:GObject;
+			switch (_childrenRenderOrder)
+			{
+				case ChildrenRenderOrder.Ascent:
+				{
+					for (i = 0; i < cnt; i++)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
+				case ChildrenRenderOrder.Descent:
+				{
+					for (i = cnt - 1; i >= 0; i--)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
+				
+				case ChildrenRenderOrder.Arch:
+				{
+					for (i = 0; i < _apexIndex; i++)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+					for (i = cnt - 1; i >= _apexIndex; i--)
+					{
+						child = _children[i];
+						if (child.displayObject != null && child.finalVisible)
+							_container.addChild(child.displayObject);
+					}
+				}
+					break;
 			}
 		}
 		
@@ -430,6 +554,11 @@ package fairygui
 				this.swapChildrenAt(myIndex, maxIndex);
 		}
 		
+		public function getTransitionAt(index:int):Transition
+		{
+			return _transitions[index];
+		}
+		
 		public function getTransition(transName:String):Transition
 		{
 			var cnt:int = _transitions.length;
@@ -448,6 +577,33 @@ package fairygui
 			return _scrollPane;
 		}
 		
+		public function isChildInView(child:GObject):Boolean
+		{
+			if (_scrollPane != null)
+			{
+				return _scrollPane.isChildInView(child);
+			}
+			else if (_rootContainer.mask != null)
+			{
+				return child.x + child.width >= 0 && child.x <= this.width
+					&& child.y + child.height >= 0 && child.y <= this.height;
+			}
+			else
+				return true;
+		}
+		
+		virtual public function getFirstChildInView():int
+		{
+			var cnt:int = _children.length;
+			for (var i:int = 0; i < cnt; ++i)
+			{
+				var child:GObject = _children[i];
+				if (isChildInView(child))
+					return i;
+			}
+			return -1;
+		}
+		
 		final public function get opaque():Boolean
 		{
 			return _rootContainer.hitArea!=null;
@@ -455,42 +611,110 @@ package fairygui
 		
 		public function set opaque(value:Boolean):void
 		{
-			if(_opaque!=value)
+			if (value)
+				updateHitArea();
+			else
+				_rootContainer.hitArea = null;
+		}
+		
+		public function get margin():Margin
+		{
+			return _margin;
+		}
+		
+		public function set margin(value:Margin):void
+		{
+			_margin.copy(value);
+			if(_rootContainer.mask!=null)
 			{
-				_opaque = value;
-				if (_opaque)
-					updateOpaque();
-				else
-					_rootContainer.hitArea = null;
+				_container.x = _margin.left;
+				_container.y = _margin.top;
+			}
+			handleSizeChanged();
+		}
+		
+		public function get childrenRenderOrder():int
+		{
+			return _childrenRenderOrder;
+		}
+		
+		public function set childrenRenderOrder(value:int):void
+		{
+			if (_childrenRenderOrder != value)
+			{
+				_childrenRenderOrder = value;
+				buildNativeDisplayList();
 			}
 		}
 		
-		protected function updateOpaque():void
+		public function get apexIndex():int
 		{
-			if(_rootContainer.hitArea==null)
-				_rootContainer.hitArea = new Rectangle();
-			
-			_rootContainer.hitArea.width = this.width;
-			_rootContainer.hitArea.height = this.height;
+			return _apexIndex;
+		}
+		
+		public function set apexIndex(value:int):void
+		{
+			if (_apexIndex != value)
+			{
+				_apexIndex = value;
+				
+				if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+					buildNativeDisplayList();
+			}
+		}
+		
+		protected function updateHitArea():void
+		{
+			if(_rootContainer.hitArea is PixelHitTest)
+			{
+				var hitTest:PixelHitTest = PixelHitTest(_rootContainer.hitArea);
+				if(this.sourceWidth!=0)
+					hitTest.scaleX = this.width/this.sourceWidth;
+				if(this.sourceHeight!=0)
+					hitTest.scaleY = this.height/this.sourceHeight;
+			}
+			else
+			{
+				if(_rootContainer.hitArea==null)
+					_rootContainer.hitArea = new Rectangle();
+				
+				_rootContainer.hitArea.width = this.width;
+				_rootContainer.hitArea.height = this.height;
+			}
 		}
 		
 		protected function updateMask():void
 		{
-			if(_rootContainer.clipRect==null)
-				_rootContainer.clipRect = new Rectangle();
-			
 			var left:Number = _margin.left;
 			var top:Number = _margin.top;
 			var w:Number = this.width - (_margin.left + _margin.right);
 			var h:Number = this.height - (_margin.top + _margin.bottom);
-			_rootContainer.clipRect.setTo(left, top, w, h);
-		}		
+			
+			if(_rootContainer.mask==null)
+				_rootContainer.mask = new Quad(w,h);
+			else
+				Quad(_rootContainer.mask).readjustSize(w,h);
+
+			_rootContainer.mask.x = left;
+			_rootContainer.mask.y = top;
+		}
 		
-		protected function setupOverflowAndScroll(overflow:int, 
-											   scrollBarMargin:Margin,
-											   scroll:int,
-											   scrollBarDisplay:int,
-											   flags:int):void
+		protected function setupScroll(scrollBarMargin:Margin,
+									   scroll:int,
+									   scrollBarDisplay:int,
+									   flags:int,
+									   vtScrollBarRes:String,
+									   hzScrollBarRes:String):void
+		{
+			_container = new Sprite();
+			_rootContainer.addChild(_container);
+			_scrollPane = new ScrollPane(this, scroll, scrollBarMargin, scrollBarDisplay, flags,
+				vtScrollBarRes, hzScrollBarRes);
+			
+			setBoundsChangedFlag();
+		}
+		
+		protected function setupOverflow(overflow:int):void
 		{
 			if(overflow==OverflowType.Hidden)
 			{
@@ -499,12 +723,6 @@ package fairygui
 				updateMask();
 				_container.x = _margin.left;
 				_container.y = _margin.top;
-			}
-			else if(overflow==OverflowType.Scroll)
-			{
-				_container = new Sprite();
-				_rootContainer.addChild(_container);
-				_scrollPane = new ScrollPane(this, scroll, _margin, scrollBarMargin, scrollBarDisplay, flags);
 			}
 			else if(_margin.left!=0 || _margin.top!=0)
 			{
@@ -517,30 +735,15 @@ package fairygui
 			setBoundsChangedFlag();
 		}
 		
-		public function isChildInView(child:GObject):Boolean
-		{
-			if(_rootContainer.clipRect!=null)
-			{
-				return child.x+child.width>=0 && child.x<=this.width
-					&& child.y+child.height>=0 && child.y<=this.height;
-			}
-			else if(_scrollPane!=null)
-			{
-				return _scrollPane.isChildInView(child);
-			}
-			else
-				return true;
-		}
-		
 		override protected function handleSizeChanged():void
 		{
 			if(_scrollPane)
 				_scrollPane.setSize(this.width, this.height);
-			else if(_rootContainer.clipRect!=null)
+			else if(_rootContainer.mask!=null)
 				updateMask();
 			
-			if(_opaque)
-				updateOpaque();
+			if(_rootContainer.hitArea!=null)
+				updateHitArea();
 			
 			_rootContainer.scaleX = this.scaleX;
 			_rootContainer.scaleY = this.scaleY;
@@ -568,10 +771,14 @@ package fairygui
 			if(!_scrollPane && !_trackBounds)
 				return;
 			
-			_boundsChanged = true;
+			if(!_boundsChanged)
+			{
+				_boundsChanged = true;
+				GTimers.inst.callLater(__updateBounds);
+			}
 		}
 
-		private function onRender():void
+		private function __updateBounds():void
 		{
 			if(_boundsChanged)
 				updateBounds();
@@ -622,31 +829,18 @@ package fairygui
 				aw = 0;
 				ah = 0;
 			}
-			if(ax!=_bounds.x || ay!=_bounds.y || aw!=_bounds.width || ah!=_bounds.height)
-				setBounds(ax, ay, aw, ah);
-			else
-				_boundsChanged = false;
+			
+			setBounds(ax, ay, aw, ah);
 		}
 		
 		protected function setBounds(ax:int, ay:int, aw:int, ah:int):void
 		{
 			_boundsChanged = false;
-			_bounds.x = ax;
-			_bounds.y = ay;
-			_bounds.width = aw;
-			_bounds.height = ah;
-			
+
 			if(_scrollPane)
-				_scrollPane.setContentSize(_bounds.x+_bounds.width,  _bounds.y+_bounds.height);
+				_scrollPane.setContentSize(Math.round(ax+aw),  Math.round(ay+ah));
 		}
-		
-		public function get bounds():Rectangle
-		{
-			if(_boundsChanged)
-				updateBounds();
-			return _bounds;
-		}
-		
+
 		public function get viewWidth():int
 		{
 			if (_scrollPane != null)
@@ -679,10 +873,82 @@ package fairygui
 				this.height = value + _margin.top + _margin.bottom;
 		}
 		
-		public function findObjectNear(xValue:Number, yValue:Number, resultPoint:Point=null):Point
+		public function GetSnappingPosition(xValue:Number, yValue:Number, resultPoint:Point=null):Point
 		{
 			if(!resultPoint)
 				resultPoint = new Point();
+			
+			var cnt:int = _children.length;
+			if(cnt==0)
+			{
+				resultPoint.x = xValue;
+				resultPoint.y = yValue;
+				return resultPoint;
+			}
+			
+			ensureBoundsCorrect();			
+
+			var obj:GObject = null;
+			var prev:GObject;
+			
+			var i:int = 0;
+			if (yValue != 0)
+			{
+				for (; i < cnt; i++)
+				{
+					obj = _children[i];
+					if (yValue < obj.y)
+					{
+						if (i == 0)
+						{
+							yValue = 0;
+							break;
+						}
+						else
+						{
+							prev = _children[i - 1];
+							if (yValue < prev.y + prev.height / 2) //top half part
+								yValue = prev.y;
+							else//bottom half part
+								yValue = obj.y;
+							break;
+						}
+					}
+				}
+				
+				if (i == cnt)
+					yValue = obj.y;
+			}
+			
+			if (xValue != 0)
+			{
+				if (i > 0)
+					i--;
+				for (; i < cnt; i++)
+				{
+					obj = _children[i];
+					if (xValue < obj.x)
+					{
+						if (i == 0)
+						{
+							xValue = 0;
+							break;
+						}
+						else
+						{
+							prev = _children[i - 1];
+							if (xValue < prev.x + prev.width / 2) //top half part
+								xValue = prev.x;
+							else//bottom half part
+								xValue = obj.x;
+							break;
+						}
+					}
+				}
+				
+				if (i == cnt)
+					xValue = obj.x;
+			}
 			
 			resultPoint.x = xValue;
 			resultPoint.y = yValue;
@@ -730,6 +996,19 @@ package fairygui
 			_initWidth = _sourceWidth;
 			_initHeight = _sourceHeight;
 			
+			setSize(_sourceWidth, _sourceHeight);
+			
+			str = xml.@opaque;
+			this.opaque = str!="false";
+			str = xml.@hitTest;
+			if(str)
+			{
+				arr = str.split(",");
+				var hitTestData:PixelHitTestData = _packageItem.owner.getPixelHitTestData(arr[0]);
+				if (hitTestData != null)
+					this._rootContainer.hitArea = new PixelHitTest(hitTestData, parseInt(arr[1]), parseInt(arr[2]));
+			}
+			
 			var overflow:int;
 			str = xml.@overflow;
 			if(str)
@@ -737,36 +1016,47 @@ package fairygui
 			else
 				overflow = OverflowType.Visible;
 			
-			var scroll:int;
-			str = xml.@scroll;
-			if(str)
-				scroll = ScrollType.parse(str);
-			else
-				scroll = ScrollType.Vertical;
-			
-			var scrollBarDisplay:int;
-			str = xml.@scrollBar;
-			if(str)
-				scrollBarDisplay = ScrollBarDisplayType.parse(str);
-			else
-				scrollBarDisplay = ScrollBarDisplayType.Default;
-			var scrollBarFlags:int = parseInt(xml.@scrollBarFlags);
-			
-			var scrollBarMargin:Margin;
-			if(overflow==OverflowType.Scroll)
-			{
-				scrollBarMargin = new Margin();
-				str = xml.@scrollBarMargin;
-				if(str)
-					scrollBarMargin.parse(str);
-			}
-			
 			str = xml.@margin;
 			if(str)
 				_margin.parse(str);
-
-			setSize(_sourceWidth, _sourceHeight);
-			setupOverflowAndScroll(overflow, scrollBarMargin, scroll, scrollBarDisplay, scrollBarFlags);
+			
+			if(overflow==OverflowType.Scroll)
+			{
+				var scroll:int;
+				str = xml.@scroll;
+				if(str)
+					scroll = ScrollType.parse(str);
+				else
+					scroll = ScrollType.Vertical;
+				
+				var scrollBarDisplay:int;
+				str = xml.@scrollBar;
+				if(str)
+					scrollBarDisplay = ScrollBarDisplayType.parse(str);
+				else
+					scrollBarDisplay = ScrollBarDisplayType.Default;
+				var scrollBarFlags:int = parseInt(xml.@scrollBarFlags);
+				
+				var scrollBarMargin:Margin = new Margin();
+				str = xml.@scrollBarMargin;
+				if(str)
+					scrollBarMargin.parse(str);
+	
+				var vtScrollBarRes:String;
+				var hzScrollBarRes:String;
+				str = xml.@scrollBarRes;
+				if(str)
+				{
+					arr = str.split(",");
+					vtScrollBarRes = arr[0];
+					hzScrollBarRes = arr[1];
+				}
+				
+				setupScroll(scrollBarMargin, scroll, scrollBarDisplay, scrollBarFlags,
+					vtScrollBarRes, hzScrollBarRes);
+			}
+			else
+				setupOverflow(overflow);	
 			
 			_buildingDisplayList = true;
 			
@@ -820,15 +1110,38 @@ package fairygui
 				trans.setup(cxml);
 			}
 			
+			if(_transitions.length>0)
+			{
+				this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, __removedFromStage);
+			}
+			
 			applyAllControllers();
 			
 			_buildingDisplayList = false;
 			_underConstruct = false;
 			
-			for each(var child:GObject in _children)
+			buildNativeDisplayList();
+		}
+		
+		private function __addedToStage(evt:Event):void
+		{
+			var cnt:int = _transitions.length;
+			for (var i:int = 0; i < cnt; ++i)
 			{
-				if (child.displayObject != null && child.finalVisible)
-					_container.addChild(child.displayObject);
+				var trans:Transition = _transitions[i];
+				if (trans.autoPlay)
+					trans.play(null, null, trans.autoPlayRepeat, trans.autoPlayDelay);
+			}
+		}
+		
+		private function __removedFromStage(evt:Event):void
+		{
+			var cnt:int = _transitions.length;
+			for (var i:int = 0; i < cnt; ++i)
+			{
+				var trans:Transition = _transitions[i];
+				trans.stop(false, true);
 			}
 		}
 		
@@ -838,33 +1151,26 @@ package fairygui
 			var thisPkg:UIPackage = _packageItem.owner;
 			var pkg:UIPackage;
 			if(pkgId && pkgId!=thisPkg.id)
-			{
 				pkg = UIPackage.getById(pkgId);
-				if(!pkg)
-					return null;
-			}
 			else
 				pkg = thisPkg;
 			
-			var src:String = xml.@src;
-			if(src)
+			if(pkg)
 			{
-				var pi:PackageItem = pkg.getItemById(src);
-				if(!pi)
-					return null;
-				
-				var g:GObject = pkg.createObject2(pi);
-				return g;
+				var src:String = xml.@src;
+				if(src)
+				{
+					var pi:PackageItem = pkg.getItemById(src);
+					if(pi)
+						return pkg.createObject2(pi);
+				}
 			}
+
+			var str:String = xml.name().localName;
+			if(str=="text" && xml.@input=="true")
+				return new GTextInput();
 			else
-			{
-				var str:String = xml.name().localName;
-				if(str=="text" && xml.@input=="true")
-					g = new GTextInput();
-				else
-					g = UIObjectFactory.newObject2(str);
-				return g;
-			}
+				return UIObjectFactory.newObject2(str);
 		}
 	}	
 }

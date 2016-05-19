@@ -66,7 +66,7 @@ package fairygui
 				_owner.internalVisible--;
 			}
 			
-			if(_tween && !UIPackage._constructing
+			if(_tween && !UIPackage._constructing && !disableAllTweenEffect
 				&& ct && _pageSet.containsId(_controller.previousPageId))
 			{
 				var a:Boolean = gv.width != _owner.width || gv.height != _owner.height;
@@ -81,6 +81,7 @@ package fairygui
 								scaleX: gv.scaleX,
 								scaleY: gv.scaleY,
 								ease: _easeType,
+								delay: _delay,
 								overwrite:0
 							};
 					vars.onUpdate = __tweenUpdate;
@@ -144,6 +145,19 @@ package fairygui
 			gv.height = _owner.height;
 			gv.scaleX = _owner.scaleX;
 			gv.scaleY = _owner.scaleY;
+		}
+		
+		public function updateFromRelations(dx:Number, dy:Number):void
+		{
+			for each (var gv:GearSizeValue in _storage)
+			{
+				gv.width += dx;
+				gv.height += dy;
+			}
+			GearSizeValue(_default).width += dx;
+			GearSizeValue(_default).height += dy;
+			
+			updateState();
 		}
 	}
 }

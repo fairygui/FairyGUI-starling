@@ -1,6 +1,7 @@
 package fairygui
 {
 	import flash.display.Stage;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	import flash.media.Sound;
@@ -11,19 +12,17 @@ package fairygui
 	import flash.ui.MultitouchInputMode;
 	
 	import fairygui.display.UIDisplayObject;
-	import fairygui.event.FocusChangeEvent;
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Stage;
 	import starling.events.Event;
-	import starling.events.ResizeEvent;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	
-	[Event(name = "___focusChanged", type = "fairygui.event.FocusChangeEvent")]
+	[Event(name = "FocusChanged", type = "starling.events.Event")]
 	public class GRoot extends GComponent
 	{
 		private var _nativeStage:starling.display.Stage;
@@ -35,8 +34,10 @@ package fairygui
 		private var _tooltipWin:GObject;
 		private var _defaultTooltipWin:GObject;
 		private var _hitUI:Boolean;
-		private var _focusManagement:Boolean;
 		private var _volumeScale:Number;
+		private var _designResolutionX:int;
+		private var _designResolutionY:int;
+		private var _screenMatchMode:int;
 		
 		private static var _inst:GRoot;
 
@@ -47,6 +48,8 @@ package fairygui
 		public static var touchScreen:Boolean;
 		public static var touchPointInput:Boolean;
 		public static var contentScaleFactor:Number = 1;
+		
+		public const FOCUS_CHANGED:String = "FocusChanged";
 
 		public static function get inst():GRoot
 		{
@@ -64,7 +67,7 @@ package fairygui
 			this.opaque = false;
 			_popupStack = new Vector.<GObject>();
 			_justClosedPopups = new Vector.<GObject>();
-			displayObject.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			displayObject.addEventListener(starling.events.Event.ADDED_TO_STAGE, __addedToStage);
 		}
 		
 		public function get nativeStage():starling.display.Stage
@@ -72,41 +75,56 @@ package fairygui
 			return _nativeStage;
 		}
 		
-		public function setContentScaleFactor(designUIWidth:int, designUIHeight:int):void
+		public function setContentScaleFactor(designResolutionX:int, designResolutionY:int, 
+											  screenMatchMode:int=ScreenMatchMode.MatchWidthOrHeight):void
 		{
-			var w:int, h:int;
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac")
-			{
-				w = _nativeStage.stageWidth;
-				h = _nativeStage.stageHeight;
-			}
-			else
-			{
-				w = Capabilities.screenResolutionX;
-				h = Capabilities.screenResolutionY;
-			}
-
-			if(designUIWidth>0 && designUIHeight>0)
-			{
-				var s1:Number = w/designUIWidth;
-				var s2:Number = h/designUIHeight; 
-				contentScaleFactor = Math.min(s1, s2);
-			}
-			else if(designUIWidth>0)
-				contentScaleFactor = w/designUIWidth;
-			else if(designUIHeight>0)
-				contentScaleFactor = h/designUIHeight; 
-			else
-				contentScaleFactor = 1;
-			this.setSize(Math.round(w/contentScaleFactor),Math.round(h/contentScaleFactor));
-			this.scaleX = contentScaleFactor;
-			this.scaleY = contentScaleFactor;
+			_designResolutionX = designResolutionX;
+			_designResolutionY = designResolutionY;
+			_screenMatchMode = screenMatchMode;
+			
+			if(_designResolutionX==0) //backward compability
+				_screenMatchMode = ScreenMatchMode.MatchWidth;
+			else if(_designResolutionY==0) //backward compability
+				_screenMatchMode = ScreenMatchMode.MatchHeight;
+			
+			applyScaleFactor();
 		}
 		
-		public function enableFocusManagement():void
+		private function applyScaleFactor():void
 		{
-			_focusManagement = true;
+			var screenWidth:int = _nativeStage.stageWidth;
+			var screenHeight:int = _nativeStage.stageHeight;
+			
+			if(_designResolutionX==0 || _designResolutionY==0)
+			{
+				this.setSize(screenWidth, screenHeight);
+				return;
+			}
+			
+			var dx:int = _designResolutionX;
+			var dy:int = _designResolutionY;
+			if (screenWidth > screenHeight && dx < dy || screenWidth < screenHeight && dx > dy) 
+			{
+				//scale should not change when orientation change
+				var tmp:int = dx;
+				dx = dy;
+				dy = tmp;
+			}			
+
+			if (_screenMatchMode == ScreenMatchMode.MatchWidthOrHeight)
+			{
+				var s1:Number = screenWidth/dx;
+				var s2:Number = screenHeight/dy; 
+				contentScaleFactor = Math.min(s1, s2);
+			}
+			else if (_screenMatchMode == ScreenMatchMode.MatchWidth)
+				contentScaleFactor = screenWidth / dx;
+			else
+				contentScaleFactor = screenHeight / dy;
+			
+			this.setSize(Math.round(screenWidth/contentScaleFactor),Math.round(screenHeight/contentScaleFactor));
+			this.scaleX = contentScaleFactor;
+			this.scaleY = contentScaleFactor;
 		}
 		
 		public function showWindow(win:Window):void 
@@ -160,6 +178,26 @@ package fairygui
 				removeChild(win);
 			
 			adjustModalLayer();
+		}
+		
+		public function bringToFront(win: Window):void {
+			var cnt: int = this.numChildren;
+			var i:int;
+			if(this._modalLayer.parent!=null && !win.modal)
+				i = this.getChildIndex(this._modalLayer) - 1;
+			else
+				i = cnt - 1;
+			
+			for(;i >= 0;i--) {
+				var g: GObject = this.getChildAt(i);
+				if(g==win)
+					return;
+				if(g is Window)
+					break;
+			}
+			
+			if(i>=0)
+				this.setChildIndex(win, i);
 		}
 
 		public function showModalWait(msg:String=null):void
@@ -274,8 +312,7 @@ package fairygui
 				}
 			}
 			
-			popup.x = int(xx);
-			popup.y = int(yy);
+			popup.setXY(int(xx), int(yy));
 		}
 		
 		public function togglePopup(popup:GObject, target:GObject=null, downward:Object=null):void
@@ -295,7 +332,7 @@ package fairygui
 				{
 					for(var i:int=_popupStack.length-1;i>=k;i--)
 					{
-						var popup:GObject =  _popupStack.pop();
+						popup =  _popupStack.pop();
 						closePopup(popup);
 					}
 				}
@@ -419,19 +456,20 @@ package fairygui
 		
 		public function set focus(value:GObject):void
 		{
-			if(!_focusManagement)
-				return;
-			
 			if(value && (!value.focusable || !value.onStage))
 				throw new Error("invalid focus target");
 			
+			setFocus(value);
+			if(_focusedObject is GTextInput)
+				GTextInput(_focusedObject).startInput();
+		}
+		
+		private function setFocus(value:GObject):void
+		{
 			if(_focusedObject!=value)
 			{
-				var old:GObject;
-				if(_focusedObject!=null && _focusedObject.onStage)
-					old = _focusedObject;
 				_focusedObject = value;
-				dispatchEvent(new FocusChangeEvent(FocusChangeEvent.CHANGED, old, value));
+				this.dispatchEventWith(FOCUS_CHANGED);
 			}
 		}
 		
@@ -486,9 +524,9 @@ package fairygui
 				removeChild(_modalLayer);
 		}
 		
-		private function __addedToStage(evt:Event):void
+		private function __addedToStage(evt:starling.events.Event):void
 		{
-			displayObject.removeEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			displayObject.removeEventListener(starling.events.Event.ADDED_TO_STAGE, __addedToStage);
 
 			_nativeStage = displayObject.stage;
 
@@ -514,12 +552,9 @@ package fairygui
 			_modalLayer.setSize(this.width, this.height);
 			_modalLayer.drawRect(0,0,0,UIConfig.modalLayerColor, UIConfig.modalLayerAlpha);
 			_modalLayer.addRelation(this, RelationType.Size);
-			
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac") 
-				displayObject.stage.addEventListener(ResizeEvent.RESIZE, __winResize);
-			else 
-				stage.addEventListener("orientationChange", __orientationChange);
+
+			stage.addEventListener(flash.events.Event.RESIZE, __winResize);
+			stage.addEventListener("orientationChange", __orientationChange);
 			__winResize(null);
 		}
 		
@@ -531,23 +566,20 @@ package fairygui
 			var touch:Touch = evt.touches[0];
 			if(touch.phase==TouchPhase.BEGAN)
 			{
-				if(this._focusManagement)
-				{
-					//因为starling不支持事件的capture，所以焦点处理是在所有显示对象处理完touch begin之后。
-					//也就是说，在touch begin里获取当前焦点对象可能不是最新的
-					var mc:DisplayObject = touch.target;
-					while(mc!=_nativeStage && mc!=null) {
-						if(mc is UIDisplayObject)
+				//因为starling不支持事件的capture，所以焦点处理是在所有显示对象处理完touch begin之后。
+				//也就是说，在touch begin里获取当前焦点对象可能不是最新的
+				var mc:DisplayObject = touch.target;
+				while(mc!=_nativeStage && mc!=null) {
+					if(mc is UIDisplayObject)
+					{
+						var gg:GObject = UIDisplayObject(mc).owner;
+						if(gg.touchable && gg.focusable)
 						{
-							var gg:GObject = UIDisplayObject(mc).owner;
-							if(gg.touchable && gg.focusable)
-							{
-								this.focus = gg;
-								break;
-							}
+							this.setFocus(gg);
+							break;
 						}
-						mc = mc.parent;
 					}
+					mc = mc.parent;
 				}
 			}
 		}
@@ -599,33 +631,19 @@ package fairygui
 			}
 		}
 		
-		private function __stageMouseUpCapture(evt:MouseEvent):void 
+		private function __stageMouseUpCapture(evt:MouseEvent):void
 		{
 			buttonDown = false;
 		}
 		
-		private function __winResize(evt:Event):void
+		private function __winResize(evt:flash.events.Event):void
 		{
-			var w:int, h:int;
-			if(Capabilities.os.toLowerCase().slice(0,3)=="win" 
-				|| Capabilities.os.toLowerCase().slice(0,3)=="mac")
-			{
-				w = _nativeStage.stageWidth;
-				h = _nativeStage.stageHeight;
-			}
-			else
-			{
-				w = Capabilities.screenResolutionX;
-				h = Capabilities.screenResolutionY;
-			}
-			this.setSize(Math.round(w/contentScaleFactor),Math.round(h/contentScaleFactor));
-			
-			trace("screen size="+w+"x"+h+"/"+this.width+"x"+this.height);
+			applyScaleFactor();
 		}
 		
-		private function __orientationChange(evt:Event):void
+		private function __orientationChange(evt:flash.events.Event):void
 		{
-			__winResize(null);
+			applyScaleFactor();
 		}
 	}
 	

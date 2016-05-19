@@ -80,13 +80,14 @@ package fairygui
 		{
 			if(displayObject==_shape)
 			{
-				_shape.dispose();
+				if(_shape)
+					_shape.dispose();
 				_shape = null;
 				
 				setDisplayObject(new UISprite(this));
 				if(_parent)
 					_parent.childStateChanged(this);
-				handleXYChanged();
+				handlePositionChanged();
 				displayObject.alpha = this.alpha;
 				displayObject.rotation = deg2rad(this.normalizeRotation);
 				displayObject.visible = this.visible;
@@ -111,11 +112,11 @@ package fairygui
 			setDisplayObject(_shape);
 			if (parent!=null)
 				parent.childStateChanged(this);
-			handleXYChanged();
+			handlePositionChanged();
 			_shape.alpha = this.alpha;
 			_shape.rotation = this.normalizeRotation;
 			_shape.visible = this.visible;
-			_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+			_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			
 			return _shape;
 		}
@@ -124,7 +125,7 @@ package fairygui
 		{
 			if(_shape!=null)
 			{
-				_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			}
 		}
 
@@ -175,7 +176,7 @@ package fairygui
 				else
 					drawEllipse(lineSize, lineColor, lineAlpha, fillColor, fillAlpha);
 				
-				_shape.setSize(this.width*this.scaleX, this.height*this.scaleY);
+				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			}
 		}
 	}

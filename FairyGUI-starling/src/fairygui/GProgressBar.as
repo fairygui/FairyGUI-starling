@@ -1,5 +1,8 @@
 package fairygui
 {	
+	import com.greensock.TweenLite;
+	import com.greensock.easing.Linear;
+
 	public class GProgressBar extends GComponent
 	{
 		private var _max:int;
@@ -18,6 +21,9 @@ package fairygui
 		private var _barStartX:int;
 		private var _barStartY:int;
 		
+		private var _tweener:TweenLite;		
+		public var _tweenValue:int;
+		
 		public function GProgressBar()
 		{
 			super();
@@ -34,7 +40,11 @@ package fairygui
 
 		final public function set titleType(value:int):void
 		{
-			_titleType = value;
+			if (_titleType != value)
+			{
+				_titleType = value;
+				update(_value);
+			}
 		}
 
 		final public function get max():int
@@ -47,7 +57,7 @@ package fairygui
 			if(_max != value)
 			{
 				_max = value;
-				update();
+				update(_value);
 			}
 		}
 
@@ -58,16 +68,41 @@ package fairygui
 		
 		final public function set value(value:int):void
 		{
+			if(_tweener)
+			{
+				_tweener.kill();
+				_tweener = null;
+			}
+			
 			if(_value != value)
 			{
 				_value = value;
-				update();
+				update(_value);
 			}
 		}
 		
-		public function update():void
+		public function tweenValue(value:int, duration:Number):void
 		{
-			var percent:Number = Math.min(_value/_max,1);
+			if(_value != value)
+			{
+				if(_tweener)
+					_tweener.kill();
+				
+				_tweenValue = _value;
+				_value = value;
+				_tweener = TweenLite.to(this, duration,
+					{_tweenValue:value, onUpdate:onUpdateTween, ease: Linear.ease});
+			}
+		}
+		
+		private function onUpdateTween():void
+		{
+			update(_tweenValue);
+		}
+		
+		public function update(newValue:int):void
+		{
+			var percent:Number = Math.min(newValue/_max,1);
 			if(_titleObject)
 			{
 				switch(_titleType)
@@ -77,15 +112,15 @@ package fairygui
 						break;
 					
 					case ProgressTitleType.ValueAndMax:
-						_titleObject.text = _value + "/" + _max;
+						_titleObject.text = Math.round(newValue) + "/" + Math.round(_max);
 						break;
 					
 					case ProgressTitleType.Value:
-						_titleObject.text = ""+_value;
+						_titleObject.text = ""+Math.round(newValue);
 						break;
 					
 					case ProgressTitleType.Max:
-						_titleObject.text = ""+_max;
+						_titleObject.text = ""+Math.round(_max);
 						break;
 				}
 			}
@@ -95,22 +130,50 @@ package fairygui
 			if(!_reverse)
 			{
 				if(_barObjectH)
-					_barObjectH.width = fullWidth*percent;
+				{
+					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectH).fillAmount = percent;
+					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectH).fillAmount = percent;
+					else
+						_barObjectH.width = fullWidth*percent;
+				}
 				if(_barObjectV)
-					_barObjectV.height = fullHeight*percent;
+				{
+					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectV).fillAmount = percent;
+					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectV).fillAmount = percent;
+					else
+						_barObjectV.height = fullHeight*percent;
+				}
 			}
 			else
 			{
 				if(_barObjectH)
 				{
-					_barObjectH.width = fullWidth*percent;
-					_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
+					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectH).fillAmount = (1-percent);
+					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectH).fillAmount = (1-percent);
+					else
+					{
+						_barObjectH.width = fullWidth*percent;
+						_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
+					}
 					
 				}
 				if(_barObjectV)
 				{
-					_barObjectV.height = fullHeight*percent;
-					_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
+					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GImage(_barObjectV).fillAmount = (1-percent);
+					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
+						GLoader(_barObjectV).fillAmount = (1-percent);
+					else
+					{
+						_barObjectV.height = fullHeight*percent;
+						_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
+					}
 				}
 			}
 			if(_aniObject is GMovieClip)
@@ -160,7 +223,7 @@ package fairygui
 			if(_barObjectV)
 				_barMaxHeight = this.height - _barMaxHeightDelta;
 			if(!this._underConstruct)
-				update();
+				update(_value);
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
@@ -173,7 +236,14 @@ package fairygui
 				_value = parseInt(xml.@value);
 				_max = parseInt(xml.@max);
 			}
-			update();
+			update(_value);
+		}
+		
+		override public function dispose():void
+		{
+			if(_tweener)
+				_tweener.kill();
+			super.dispose();
 		}
 	}
 }

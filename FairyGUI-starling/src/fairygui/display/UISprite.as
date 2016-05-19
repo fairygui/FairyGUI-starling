@@ -1,21 +1,18 @@
 package fairygui.display
 {
 	import flash.geom.Point;
-	import flash.geom.Rectangle;
 	
 	import fairygui.GObject;
+	import fairygui.utils.PixelHitTest;
 	
-	import starling.core.RenderSupport;
 	import starling.display.DisplayObject;
 	import starling.display.Sprite;
+	import starling.rendering.Painter;
 
 	public class UISprite extends Sprite implements UIDisplayObject 
 	{
 		private var _owner:GObject;
-		private var _hitArea:Rectangle;
-		private var _skipRendering:Boolean;
-		
-		public var renderCallback:Function;
+		private var _hitArea:Object;
 		
 		public function UISprite(owner:GObject)
 		{
@@ -27,49 +24,42 @@ package fairygui.display
 			return _owner;
 		}
 		
-		public function get hitArea():Rectangle
+		public function get hitArea():Object
 		{
 			return _hitArea;
 		}
 		
-		public function set hitArea(value:Rectangle):void
+		public function set hitArea(value:Object):void
 		{
-			if (_hitArea && value) _hitArea.copyFrom(value);
-			else _hitArea = (value ? value.clone() : null);
+			_hitArea = value;
 		}
 		
 		override public function dispose():void
 		{
-			renderCallback = null;
 			super.dispose();
 		}
 		
-		public override function hitTest(localPoint:Point, forTouch:Boolean=false):DisplayObject
+		public override function hitTest(localPoint:Point):DisplayObject
 		{
-			if(_skipRendering)
-				return null;
-			
 			var localX:Number = localPoint.x;
 			var localY:Number = localPoint.y;
 			
-			var ret:DisplayObject = super.hitTest(localPoint, forTouch);
-			if(ret==null && (this.touchable || !forTouch) 
-				&& _hitArea!=null && _hitArea.contains(localX, localY))
-				ret = this;
-			
+			var ret:DisplayObject = super.hitTest(localPoint);
+			if(_hitArea!=null && this.touchable)
+			{
+				if(ret==null)
+				{
+					if(_hitArea.contains(localX, localY))
+						ret = this;
+				}
+				else
+				{
+					if((_hitArea is PixelHitTest) && !_hitArea.contains(localX, localY))
+						ret = null;
+				}
+			}
+
 			return ret;				
-		}
-		
-		override public function render(support:RenderSupport, parentAlpha:Number):void
-		{
-			_skipRendering = _owner.parent!=null && !_owner.parent.isChildInView(_owner);
-			if(_skipRendering)
-				return;
-			
-			if(renderCallback!=null)
-				renderCallback();
-			
-			super.render(support, parentAlpha);
 		}
 	}
 }

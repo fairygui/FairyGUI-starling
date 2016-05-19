@@ -22,12 +22,15 @@ package fairygui
 		private var _loading:Boolean;
 		
 		protected var _requestingCmd:int;
-
+		
+		public var bringToFontOnClick:Boolean;
+		
 		public function Window():void
 		{
 			super();
 			this.focusable = true;
 			_uiSources = new Vector.<IUISource>();
+			bringToFontOnClick = UIConfig.bringWindowToFrontOnClick;
 			
 			displayObject.addEventListener(Event.ADDED_TO_STAGE, __onShown);
 			displayObject.addEventListener(Event.REMOVED_FROM_STAGE, __onHidden);
@@ -146,14 +149,6 @@ package fairygui
 			r.hideWindowImmediately(this);
 		}
 		
-		override public function center(restraint:Boolean=false):void
-		{
-			var r:GRoot = this.root;
-			if(!r)
-				r = GRoot.inst;
-			centerOn(r, restraint);
-		}
-		
 		public function centerOn(r:GRoot, restraint:Boolean=false):void
 		{
 			this.setXY(int((r.width-this.width)/2), int((r.height-this.height)/2));
@@ -194,10 +189,7 @@ package fairygui
 		
 		public function bringToFront():void
 		{
-			var r:GRoot = this.root;
-			if(!r)
-				r = GRoot.inst;
-			r.showWindow(this);
+			this.root.bringToFront(this);
 		}
 
 		public function showModalWait(requestingCmd:int=0):void
@@ -357,7 +349,7 @@ package fairygui
 		
 		private function __mouseDown(evt:Event):void
 		{
-			if(this.isShowing)
+			if(this.isShowing && bringToFontOnClick)
 				this.bringToFront();
 		}
 

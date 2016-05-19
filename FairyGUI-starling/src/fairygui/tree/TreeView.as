@@ -1,7 +1,6 @@
 package fairygui.tree
 {
 	import fairygui.GButton;
-	import fairygui.GComponent;
 	import fairygui.GList;
 	import fairygui.GObject;
 	import fairygui.ListSelectionMode;
@@ -81,7 +80,7 @@ package fairygui.tree
 			return ret;
 		}
 		
-		public function addSelection(node:TreeNode):void
+		public function addSelection(node:TreeNode, scrollItToView:Boolean=false):void
 		{
 			var parentNode:TreeNode = node.parent;
 			while(parentNode!=null && parentNode!=_root)
@@ -89,17 +88,22 @@ package fairygui.tree
 				parentNode.expanded = true;
 				parentNode = parentNode.parent;
 			}
-			_list.addSelection(_list.getChildIndex(node.cell));
+			_list.addSelection(_list.getChildIndex(node.cell), scrollItToView);
 		}
 		
-		public function getNodeCell(node:TreeNode):GComponent
+		public function removeSelection(node:TreeNode):void
 		{
-			return node.cell;
+			_list.removeSelection(_list.getChildIndex(node.cell));
 		}
 		
 		public function clearSelection():void
 		{
 			_list.clearSelection();
+		}
+		
+		public function getNodeIndex(node:TreeNode):int
+		{
+			return _list.getChildIndex(node.cell);
 		}
 		
 		public function updateNode(node:TreeNode):void

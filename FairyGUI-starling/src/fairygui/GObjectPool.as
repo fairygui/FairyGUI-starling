@@ -50,15 +50,15 @@ package fairygui
 			if(arr.length)
 			{
 				_count--;
-				return arr.pop();
+				return arr.shift();
 			}
 			
 			var child:GObject = UIPackage.createObjectFromURL(url);
-			if(!child)
-				throw new Error(url + " not exists");
-			
-			if(_initCallback!=null)
-				_initCallback(child);
+			if(child)
+			{			
+				if(_initCallback!=null)
+					_initCallback(child);
+			}
 			
 			return child;
 		}

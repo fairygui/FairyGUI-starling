@@ -2,75 +2,119 @@ package fairygui.display
 {
 	import flash.geom.Rectangle;
 	
-	import fairygui.FlipType;
+	import fairygui.FillType;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
+	import starling.rendering.Painter;
 	import starling.textures.Texture;
-	import starling.textures.TextureSmoothing;
 
-	public class ImageExt extends FixedSizeObject
+	public class ImageExt extends MeshExt
 	{		
-		private var _texture:Texture;
-		private var _batch:QuadBatch;
-		private var _smoothing:String;
 		private var _color:uint;
 		private var _flip:int;
+		private var _fillMethod:int;
+		private var _fillOrigin:int;
+		private var _fillAmount:Number;
+		private var _fillClockwise:Boolean;
+		private var _textureScaleX:Number;
+		private var _textureScaleY:Number;
 		
 		private var _scaleByTile:Boolean;
 		private var _scale9Grid:Rectangle;
 		
 		public function ImageExt()
-		{
+		{			
 			super();
 			
-			//ImageExt is by default touchable
+			//ImageExt is by default not touchable
 			this.touchable = false;
-			
-			_batch = new QuadBatch();
-			_batch.capacity = 1;
-			_width = 0;
-			_height = 0;
 			_color = 0xFFFFFF;
-			_smoothing = TextureSmoothing.BILINEAR;
+
+			_textureScaleX = 1;
+			_textureScaleY = 1;
+			_fillAmount = 100;
+			_fillClockwise = true;
 		}
 		
-		override public function dispose():void
-		{
-			_batch.dispose();
-			
-			super.dispose();
-		}
-
-		public function get texture():Texture
-		{
-			return _texture;
-		}
-
-		public function set texture(value:Texture):void
-		{
-			if(_texture!=value)
-			{
-				_texture = value;
-				if(_texture!=null)
-					setSize(_texture.width, _texture.height);
-				else
-					setSize(0,0);
-				_needRebuild = true;
-			}
-		}
-		
-		public function get color():uint
+		override public function get color():uint
 		{
 			return _color;
 		}
 		
-		public function set color(value:uint):void
+		override public function set color(value:uint):void
 		{
-			if(_color != value)
+			_color = value;
+			this.style.color = value;
+		}
+		
+		public function get fillMethod():int
+		{
+			return _fillMethod;
+		}
+		
+		public function set fillMethod(value:int):void
+		{
+			if(_fillMethod != value)
 			{
-				_color = value;
-				_needRebuild = true;
+				_fillMethod = value;
+				setRequiresRebuild();
+			}
+		}
+		
+		public function get fillOrigin():int
+		{
+			return _fillOrigin;
+		}
+
+		public function set fillOrigin(value:int):void
+		{
+			if(_fillOrigin != value)
+			{
+				_fillOrigin = value;
+				setRequiresRebuild();
+			}
+		}
+
+		public function get fillAmount():Number
+		{
+			return _fillAmount;
+		}
+
+		public function set fillAmount(value:Number):void
+		{
+			if(_fillAmount != value)
+			{
+				_fillAmount = value;
+				setRequiresRebuild();
+			}
+		}
+
+		public function get fillClockwise():Boolean
+		{
+			return _fillClockwise;
+		}
+
+		public function set fillClockwise(value:Boolean):void
+		{
+			if(_fillClockwise != value)
+			{
+				_fillClockwise = value;
+				setRequiresRebuild();
+			}
+		}
+
+		override public function set texture(value:Texture):void
+		{
+			if (value != texture)
+			{
+				super.texture = value;
+				if(this.texture!=null)
+				{
+					vertexData.premultipliedAlpha = value.premultipliedAlpha;
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				}
+				else
+					setSize(0,0);
+				setRequiresRebuild();
 			}
 		}
 		
@@ -84,30 +128,10 @@ package fairygui.display
 			if(_flip!=value)
 			{
 				_flip = value;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
-		
-		public function get smoothing():String
-		{
-			return _smoothing;
-		}
-		
-		public function set smoothing(value:String):void
-		{
-			if(_smoothing != value)
-			{
-				_smoothing = value;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function set blendMode(value:String):void
-		{
-			super.blendMode = value;
-			_batch.blendMode = value;
-		}
-		
+
 		public function get scale9Grid():Rectangle
 		{
 			return _scale9Grid;
@@ -116,7 +140,7 @@ package fairygui.display
 		public function set scale9Grid(value:Rectangle):void
 		{
 			_scale9Grid = value;
-			_needRebuild = true;
+			setRequiresRebuild();
 		}
 		
 		public function get scaleByTile():Boolean
@@ -129,173 +153,169 @@ package fairygui.display
 			if(_scaleByTile!=value)
 			{
 				_scaleByTile = value;
-				_needRebuild = true;
+				setRequiresRebuild();
+			}
+		}
+		
+		public function get textureScaleX():Number
+		{
+			return _textureScaleX;
+		}
+		
+		public function set textureScaleX(value:Number):void
+		{
+			if(_textureScaleX != value)
+			{
+				_textureScaleX = value;
+				if(this.texture!=null)
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				setRequiresRebuild();
+			}
+		}
+		
+		public function get textureScaleY():Number
+		{
+			return _textureScaleY;
+		}
+		
+		public function set textureScaleY(value:Number):void
+		{
+			if(_textureScaleY != value)
+			{
+				_textureScaleY = value;
+				if(this.texture!=null)
+					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				setRequiresRebuild();
 			}
 		}
 
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 				rebuild();
-			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+
+			super.render(painter);
 		}
 		
-		private static var sHelperTexCoords:Vector.<Number> = new Vector.<Number>(8);
-		private static var sHelperRect:Rectangle = new Rectangle();
-		private static var sHelperQuad:QuadExt;
-		private static var QUADS_9_GRID:Array = [
-			[0,0,1,0,0,1,1,1],
-			[1,0,2,0,1,1,2,1],
-			[2,0,3,0,2,1,3,1],
-			
-			[0,1,1,1,0,2,1,2],
-			[1,1,2,1,1,2,2,2],
-			[2,1,3,1,2,2,3,2], 
-			
-			[0,2,1,2,0,3,1,3],
-			[1,2,2,2,1,3,2,3],
-			[2,2,3,2,2,3,3,3]
-		];
+		private static var vertRect:Rectangle = new Rectangle();
+		private static var uvRect:Rectangle = new Rectangle();
 		private function rebuild():void
 		{
 			_needRebuild = false;
 			
-			this._batch.reset();
-			if(_texture==null)
-				return;
+			var texture:Texture = this.texture;
 			
-			if(sHelperQuad==null)
-				sHelperQuad = new QuadExt();
-			
-			sHelperQuad.setPremultipliedAlpha(_texture.premultipliedAlpha);
-			
-			sHelperTexCoords.length = 0;			
-			if(_flip==FlipType.None)
-				sHelperTexCoords.push(0,0,1,0,0,1,1,1);
-			if(_flip==FlipType.Both)
-				sHelperTexCoords.push(1,1,0,1,1,0,0,0);
-			else if(_flip==FlipType.Horizontal)
-				sHelperTexCoords.push(1,0,0,0,1,1,0,1);
-			else
-				sHelperTexCoords.push(0,1,1,1,0,0,1,0);
-
-			if (_scaleByTile)
+			if(texture==null)
 			{
-				var hc:int = Math.ceil(_scaleX);
-				var vc:int = Math.ceil(_scaleY);
-				var remainWidth:Number = _width * (_scaleX - (hc - 1));
-				var remainHeight:Number = _height * (_scaleY - (vc - 1));
+				this.vertexData.clear();
+				this.indexData.clear();
+				this.setRequiresRedraw();
+				return;
+			}
 
-				_batch.capacity = hc*vc;
+			VertexHelper.getTextureUV(texture, uvRect);
+			if(_flip!=0)
+				VertexHelper.flipUV(uvRect, _flip);
+			vertRect.copyFrom(_bounds);
+			
+			VertexHelper.beginFill();
+			
+			if (_fillMethod != FillType.FillMethod_None)
+			{
+				VertexHelper.fillImage(_fillMethod, _fillAmount, _fillOrigin, _fillClockwise, vertRect, uvRect);
+			}
+			else if(_textureScaleX==1 && _textureScaleY==1)
+			{
+				VertexHelper.addQuad2(vertRect);
+				VertexHelper.fillUV2(uvRect);
+			}
+			else if (_scaleByTile)
+			{
+				var hc:int = Math.ceil(_textureScaleX);
+				var vc:int = Math.ceil(_textureScaleY);
+				var remainWidth:Number = _bounds.width - (hc - 1) * texture.width;
+				var remainHeight:Number = _bounds.height - (vc - 1) * texture.height;
 				
+				VertexHelper.alloc(hc*vc*4);
+
 				for (var i:int = 0; i < hc; i++)
 				{
 					for (var j:int = 0; j < vc; j++)
 					{
-						sHelperQuad.fillVerts(i * _width, j * _height, 
-							i==hc-1?remainWidth:_width, j==vc-1?remainHeight:_height);
+						VertexHelper.addQuad(i * texture.width, j * texture.height, 
+							i==hc-1?remainWidth:texture.width, j==vc-1?remainHeight:texture.height);
 
-						if(i==hc-1 && j==vc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, _scaleX-hc+1, _scaleY-vc+1);
-						else if(i==hc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, _scaleX-hc+1, 1);
-						else if(j==vc-1)
-							sHelperQuad.fillUVWithScale(sHelperTexCoords, _texture, 1, _scaleY-vc+1);
+						if(i==hc-1 || j==vc-1)
+						{
+							VertexHelper.fillUV3(uvRect,
+								i==hc-1?remainWidth/texture.width:1,
+								j==vc-1?remainHeight/texture.height:1);
+						}
 						else
-							sHelperQuad.fillUV(sHelperTexCoords, _texture);
-						
-						sHelperQuad.color = _color;
-						_batch.addQuad(sHelperQuad, 1.0, _texture, _smoothing);
+							VertexHelper.fillUV2(uvRect);
 					}
 				}
 			}
-			else if(_scale9Grid==null || (_scaleX==1 && _scaleY==1))
-			{
-				sHelperQuad.fillVertsWithScale(0, 0, _width, _height, _scaleX, _scaleY);
-				sHelperQuad.fillUV(sHelperTexCoords, _texture);
-				sHelperQuad.color = _color;
-				_batch.addQuad(sHelperQuad, 1.0, _texture, _smoothing);
-			}
-			else
+			else if(_scale9Grid!=null)
 			{				
-				var scale9Width:Number = _width * _scaleX;
-				var scale9Height:Number = _height * _scaleY;
-				
 				var rows:Array;
 				var cols:Array;
 				var dRows:Array;
 				var dCols:Array;
 	
-				rows = [ 0, _scale9Grid.top, _scale9Grid.bottom, _height ];
-				cols = [ 0, _scale9Grid.left, _scale9Grid.right, _width ];
+				rows = [ 0, _scale9Grid.top, _scale9Grid.bottom, texture.height ];
+				cols = [ 0, _scale9Grid.left, _scale9Grid.right, texture.width ];
 				
-				if (scale9Height >= (_height - _scale9Grid.height))
-					dRows = [ 0, _scale9Grid.top, scale9Height - (_height - _scale9Grid.bottom), scale9Height ];
+				if (_bounds.height >= (texture.height - _scale9Grid.height))
+					dRows = [ 0, _scale9Grid.top, _bounds.height - (texture.height - _scale9Grid.bottom), _bounds.height ];
 				else
 				{
-					var tmp:Number = _scale9Grid.top / (_height - _scale9Grid.bottom);
-					tmp = scale9Height * tmp / (1 + tmp);
-					dRows = [ 0, tmp, tmp, scale9Height ];
+					var tmp:Number = _scale9Grid.top / (texture.height - _scale9Grid.bottom);
+					tmp = _bounds.height * tmp / (1 + tmp);
+					dRows = [ 0, tmp, tmp, _bounds.height ];
 				}
 				
-				if (scale9Width >= (_width - _scale9Grid.width))
-					dCols = [ 0, _scale9Grid.left, scale9Width - (_width - _scale9Grid.right), scale9Width ];
+				if (_bounds.width >= (texture.width - _scale9Grid.width))
+					dCols = [ 0, _scale9Grid.left, _bounds.width - (texture.width - _scale9Grid.right), _bounds.width ];
 				else
 				{
-					tmp = _scale9Grid.left / (_width - _scale9Grid.right);
-					tmp = scale9Width * tmp / (1 + tmp);
-					dCols = [ 0, tmp, tmp, scale9Width ];
+					tmp = _scale9Grid.left / (texture.width - _scale9Grid.right);
+					tmp = _bounds.width * tmp / (1 + tmp);
+					dCols = [ 0, tmp, tmp, _bounds.width ];
 				}
-				
-				var texLeft:Number = sHelperTexCoords[0];
-				var texTop:Number = sHelperTexCoords[1];
-				var texWidth:Number = sHelperTexCoords[6]-sHelperTexCoords[0];
-				var texHeight:Number = sHelperTexCoords[7]-sHelperTexCoords[1];
-				
-				_batch.capacity = 9;
-				
+
+				var cx:int, cy:int;
+				var left:Number, right:Number, top:Number, bottom:Number;
 				for (i = 0; i < 9; i++)
 				{
-					for(j = 0; j < 8; j+=2)
-					{
-						var cx:int = QUADS_9_GRID[i][j];
-						var cy:int = QUADS_9_GRID[i][j+1];
-						
-						sHelperTexCoords[j] = texLeft + cols[cx] / _width * texWidth;
-						sHelperTexCoords[j+1] = texTop + rows[cy] / _height * texHeight;
+					cx = i%3;
+					cy = i/3;
 					
-						switch(j)
-						{
-							case 0:
-								sHelperRect.x = dCols[cx];
-								sHelperRect.y = dRows[cy];
-								break;
-							
-							case 2:
-								sHelperRect.right = dCols[cx];
-								break;
-							
-							case 4:
-								sHelperRect.bottom = dRows[cy];
-								break;
-						}
-					}
-					if(sHelperRect.width==0 || sHelperRect.height==0)
+					left = dCols[cx];
+					top = dRows[cy];
+					right = dCols[cx+1];
+					bottom = dRows[cy+1];
+					
+					if(right==left || bottom==top)
 						continue;
-
-					sHelperQuad.fillVertsByRect(sHelperRect);
-					sHelperQuad.fillUV(sHelperTexCoords, _texture);
-					sHelperQuad.color = _color;
-					_batch.addQuad(sHelperQuad, 1.0, _texture, _smoothing);
+					
+					VertexHelper.addQuad(left, top, right-left, bottom-top);
+					
+					left = uvRect.x + cols[cx] / texture.width * uvRect.width;
+					top = uvRect.y + rows[cy] / texture.height * uvRect.height;
+					right = uvRect.x + cols[cx+1] / texture.width * uvRect.width;
+					bottom = uvRect.y + rows[cy+1] / texture.height * uvRect.height;
+					VertexHelper.fillUV(left, top, right-left, bottom-top);
 				}
 			}
-			
-			_batch.blendMode = this.blendMode;
+			else
+			{
+				VertexHelper.addQuad2(vertRect);
+				VertexHelper.fillUV2(uvRect);
+			}
+
+			VertexHelper.flush(this.vertexData, this.indexData);
+			vertexData.colorize("color", _color);
 		}
 	}
 }
-
-
-

@@ -4,21 +4,21 @@ package fairygui.display
 	
 	import fairygui.utils.GTimers;
 	
-	import starling.core.RenderSupport;
-	import starling.display.QuadBatch;
-	import starling.textures.Texture;
+	import starling.animation.IAnimatable;
+	import starling.core.Starling;
+	import starling.events.Event;
+	import starling.rendering.Painter;
 	import starling.textures.TextureSmoothing;
 	
-	public class MovieClip extends FixedSizeObject
+	public class MovieClip extends MeshExt implements IAnimatable
 	{
 		public var interval:int;
 		public var swing:Boolean;
 		public var repeatDelay:int;
-		
-		private var _texture:Texture;
-		private var _batch:QuadBatch;
+
 		private var _frameRect:Rectangle;
 		private var _smoothing:String;
+		private var _color:uint;
 		
 		private var _playing:Boolean;
 		private var _playState:PlayState;
@@ -41,9 +41,23 @@ package fairygui.display
 			_playState = new PlayState();
 			_playing = true;
 			_smoothing = TextureSmoothing.BILINEAR;
+			_color = 0xFFFFFF;
+
+			setPlaySettings();
 			
-			_batch = new QuadBatch();
-			_batch.capacity = 1;
+			this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
+		}
+		
+		override public function get color():uint
+		{
+			return _color;
+		}
+		
+		override public function set color(value:uint):void
+		{
+			_color = value;
+			this.style.color = value;
 		}
 		
 		public function get playState():PlayState
@@ -56,33 +70,6 @@ package fairygui.display
 			_playState = value;
 		}
 		
-		override public function dispose():void
-		{
-			_batch.dispose();
-			
-			super.dispose();
-		}
-		
-		public function get smoothing():String
-		{
-			return _smoothing;
-		}
-		
-		public function set smoothing(value:String):void
-		{
-			if(_smoothing != value)
-			{
-				_smoothing = value;
-				_needRebuild = true;
-			}
-		}
-		
-		override public function set blendMode(value:String):void
-		{
-			super.blendMode = value;
-			_batch.blendMode = value;
-		}
-
 		public function get frames():Vector.<Frame>
 		{
 			return _frames;
@@ -95,8 +82,25 @@ package fairygui.display
 				_frameCount = _frames.length;
 			else
 				_frameCount = 0;
-			_currentFrame = -1;
-			setPlaySettings();
+			
+			if(_end==-1 || _end>_frameCount - 1)
+				_end = _frameCount - 1;
+			if(_endAt==-1 || _endAt>_frameCount - 1)
+				_endAt = _frameCount - 1;
+			
+			if(_currentFrame<0 || _currentFrame>_frameCount - 1)
+				_currentFrame = _frameCount - 1;
+			
+			if(_frameCount>0)
+			{
+				setFrame(_frames[_currentFrame]);
+				startPlay();
+			}
+			else
+			{
+				setFrame(null);
+				stopPlay();
+			}
 		}
 		
 		public function get frameCount():int
@@ -126,7 +130,9 @@ package fairygui.display
 			{
 				_currentFrame = value;
 				_playState.currentFrame = value;
-				setFrame(_currentFrame<frameCount?_frames[_currentFrame]:null);
+				
+				if(_frameCount>0)
+					setFrame(_currentFrame<_frameCount?_frames[_currentFrame]:_frames[_frameCount-1]);
 			}
 		}
 		
@@ -138,11 +144,6 @@ package fairygui.display
 		public function set playing(value:Boolean):void
 		{
 			_playing = value;
-
-			if (playing && frameCount != 0 && _status != 3)
-				GTimers.inst.callBy24Fps(update);
-			else
-				GTimers.inst.remove(update);
 		}
 		
 		//从start帧开始，播放到end帧（-1表示结尾），重复times次（0表示无限循环），循环结束后，停止在endAt帧（-1表示参数end）
@@ -152,8 +153,8 @@ package fairygui.display
 		{
 			_start = start;
 			_end = end;
-			if (_end == -1)
-				_end = frameCount - 1;
+			if(_end==-1 || _end>_frameCount - 1)
+				_end = _frameCount - 1;
 			_times = times;
 			_endAt = endAt;
 			if (_endAt == -1)
@@ -162,15 +163,11 @@ package fairygui.display
 			_callback = endCallback;
 			
 			this.currentFrame = start;
-			if (playing && frameCount != 0)
-				GTimers.inst.callBy24Fps(update);
-			else
-				GTimers.inst.remove(update);
 		}
 		
-		private function update():void
+		public function advanceTime(passedTime:Number):void
 		{
-			if (playing && frameCount != 0 && _status != 3)
+			if (_playing && _frameCount != 0 && _status != 3)
 			{
 				_playState.update(this);
 				if (_currentFrame != _playState.currentFrame)
@@ -188,16 +185,8 @@ package fairygui.display
 						_status = 3;
 						
 						//play end
-						GTimers.inst.remove(update);
 						if(_callback!=null)
-						{
-							var f:Function = _callback;
-							_callback = null;
-							if(f.length == 1)
-								f(this);
-							else
-								f();
-						}
+							GTimers.inst.callLater(__playEnd);
 					}
 					else
 					{
@@ -219,53 +208,83 @@ package fairygui.display
 					setFrame(_frames[_currentFrame]);
 				}
 			}
-			else
-				setFrame(null);
+		}
+		
+		private function __playEnd():void
+		{
+			if(_callback!=null)
+			{
+				var f:Function = _callback;
+				_callback = null;
+				if(f.length == 1)
+					f(this);
+				else
+					f();
+			}
 		}
 		
 		private function setFrame(frame:Frame):void
 		{
 			if(frame==null)
 			{
-				if(_texture!=null)
+				if(this.texture!=null)
 				{
-					_texture = null;
-					_needRebuild = true;
+					this.texture = null;
+					setRequiresRebuild();
 				}
 			}
-			else if(_texture != frame.texture)
+			else if(this.texture != frame.texture)
 			{
-				_texture = frame.texture;
+				this.style.texture = frame.texture;
 				_frameRect = frame.rect;
-				_needRebuild = true;
+				setRequiresRebuild();
 			}
 		}
 		
-		private static var sHelperQuad:QuadExt;
-		override public function render(support:RenderSupport, parentAlpha:Number):void
+		private function __addedToStage(evt:Event):void
+		{
+			startPlay();
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			stopPlay();
+		}
+		
+		private function startPlay():void
+		{
+			if(this.stage)
+				Starling.current.juggler.add(this);
+		}
+		
+		private function stopPlay():void
+		{
+			Starling.current.juggler.remove(this);
+		}
+		
+		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 			{
 				_needRebuild = false;
-				
-				if(sHelperQuad==null)
-					sHelperQuad = new QuadExt();
-			
-				_batch.reset();
-				if(_texture!=null)
+
+				if(this.texture!=null)
 				{
-					sHelperQuad.setPremultipliedAlpha(_texture.premultipliedAlpha);
-					sHelperQuad.fillVertsWithScale(_frameRect.x, _frameRect.y, _texture.width, _texture.height, 
-						_scaleX, _scaleY);
-					sHelperQuad.fillUVOfTexture(_texture);
-					_batch.addQuad(sHelperQuad, 1.0, _texture, _smoothing);
-					
-					_batch.blendMode = this.blendMode;
+					VertexHelper.beginFill();
+					VertexHelper.addQuad(_frameRect.x, _frameRect.y, this.texture.width, this.texture.height);
+					VertexHelper.fillUV4(this.texture);
+					VertexHelper.flush(vertexData, indexData);
+					vertexData.colorize("color", _color);
+					setRequiresRedraw();
+				}
+				else
+				{
+					vertexData.numVertices = 0;
+					indexData.numIndices = 0;
 				}
 			}
 			
-			if(_batch.numQuads>0)
-				support.batchQuadBatch(_batch, this.alpha*parentAlpha);
+			super.render(painter);
 		}
 	}
 }

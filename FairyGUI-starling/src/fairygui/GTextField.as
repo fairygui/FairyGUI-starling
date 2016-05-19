@@ -9,12 +9,12 @@ package fairygui
 	
 	import fairygui.display.TextCanvas;
 	import fairygui.display.UITextField;
+	import fairygui.display.VertexHelper;
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.CharSize;
+	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
-	
-	import starling.events.Event;
 
 	public class GTextField extends GObject implements IColorGear
 	{
@@ -85,7 +85,6 @@ package fairygui
 		{ 
 			_canvas = new UITextField(this);
 			setDisplayObject(_canvas); 
-			_canvas.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 			_canvas.renderCallback = onRender;
 		}
 		
@@ -360,7 +359,8 @@ package fairygui
 		
 		public function get textWidth():int
 		{
-			this.ensureSizeCorrect();
+			if(_requireRender)
+				renderNow();
 			return _textWidth;
 		}
 		
@@ -429,8 +429,13 @@ package fairygui
 		
 		protected function render():void
 		{
-			_requireRender = true;
-			if(_widthAutoSize || _heightAutoSize)
+			if(!_requireRender)
+			{
+				_requireRender = true;
+				_canvas.setRequiresRedraw();
+			}
+			
+			if(!_sizeDirty && (_widthAutoSize || _heightAutoSize))
 			{
 				_sizeDirty = true;
 				_dispatcher.dispatch(this, GObject.SIZE_DELAY_CHANGE);
@@ -442,20 +447,15 @@ package fairygui
 			if(_requireRender)
 				renderNow();
 		}
-
-		private function __removeFromStage(evt:Event):void
-		{
-			clearCanvas();
-		}
 		
-		protected function renderNow(updateBounds:Boolean=true):void
+		protected function renderNow():void
 		{
 			_requireRender = false;
 			_sizeDirty = false;
 			
 			if(_bitmapFont!=null)
 			{
-				renderWithBitmapFont(updateBounds);
+				renderWithBitmapFont();
 				return;
 			}
 			
@@ -519,16 +519,13 @@ package fairygui
 				renderTextField.height = _textHeight+_fontAdjustment+3;
 			}
 
-			if(updateBounds)
-			{
-				_updatingSize = true;
-				this.setSize(w,h);
-				_updatingSize = false;
-				
-				doAlign();
-			}
+			_updatingSize = true;
+			this.setSize(w,h);
+			_updatingSize = false;
 			
-			_canvas.renderText(renderTextField, _textWidth, _textHeight, _fontAdjustment, clearCanvas);
+			doAlign();
+			
+			_canvas.renderText(renderTextField, _textWidth, _textHeight+_fontAdjustment+3, render);
 			renderTextField.text = "";
 		}
 		
@@ -548,25 +545,22 @@ package fairygui
 				renderTextField.text = _text;
 		}
 		
-		private function clearCanvas():void
+		private function renderWithBitmapFont():void
 		{
-			if(_canvas.textureMemory>0)
-			{
-				_canvas.clear();
-				_requireRender = true;
-			}
-		}
-		
-		private function renderWithBitmapFont(updateBounds:Boolean):void
-		{
+			_canvas.clear();
 			if(!_lines)
 				_lines = new Vector.<LineInfo>();
 			else
 				LineInfo.returnList(_lines);
 			
+			if(_bitmapFont.mainTexture==null) {
+				_requireRender = true;
+				GTimers.inst.callLater(function():void { _canvas.setRequiresRedraw(); });
+				return;
+			}
+			
 			var letterSpacing:int = _letterSpacing;
 			var lineSpacing:int = _leading - 1;
-			var fontSize:int = int(_textFormat.size);
 			var rectWidth:int = this.width - GUTTER_X * 2;
 			var lineWidth:int = 0, lineHeight:int = 0, lineTextHeight:int = 0;
 			var glyphWidth:int = 0, glyphHeight:int = 0;
@@ -577,6 +571,8 @@ package fairygui
 			var line:LineInfo;
 			var textWidth:int, textHeight:int;
 			var wordWrap:Boolean = !_widthAutoSize && !_singleLine;
+			var fontScale:Number = _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
+			var charCount:int;
 			
 			var textLength:int = _text.length;
 			for (var offset:int = 0; offset < textLength; ++offset)
@@ -592,7 +588,7 @@ package fairygui
 					if (lineTextHeight == 0)
 					{
 						if (lastLineHeight == 0)
-							lastLineHeight = fontSize;
+							lastLineHeight = Math.ceil(_fontSize*fontScale);
 						if (lineHeight == 0)
 							lineHeight = lastLineHeight;
 						lineTextHeight = lineHeight;
@@ -632,21 +628,22 @@ package fairygui
 				
 				if(ch==" ")
 				{
-					glyphWidth = fontSize/2;
-					glyphHeight = fontSize;
+					glyphWidth = Math.ceil(_fontSize*fontScale/2);
+					glyphHeight = Math.ceil(_fontSize*fontScale);
 				}
 				else
 				{
-					var glyph:BMGlyph = _bitmapFont.glyphs[ch];				
+					var glyph:BMGlyph = _bitmapFont.glyphs[ch];
 					if(glyph)
 					{
-						glyphWidth = glyph.advance;
-						glyphHeight = glyph.lineHeight;
+						glyphWidth = Math.ceil(glyph.advance*fontScale);
+						glyphHeight = Math.ceil(glyph.lineHeight*fontScale);
+						charCount++;
 					}
 					else if(ch==" ")
 					{
-						glyphWidth = Math.ceil(_bitmapFont.lineHeight/2);
-						glyphHeight = _bitmapFont.lineHeight;
+						glyphWidth = Math.ceil(_bitmapFont.size*fontScale/2);
+						glyphHeight = Math.ceil(_bitmapFont.size*fontScale);
 					}
 					else
 					{
@@ -761,24 +758,24 @@ package fairygui
 			else
 				h = this.height;;
 			
-			if(updateBounds)
-			{
-				_updatingSize = true;
-				this.setSize(w,h);
-				_updatingSize = false;
-				
-				doAlign();
-			}
+			_updatingSize = true;
+			this.setSize(w,h);
+			_updatingSize = false;
 			
-			_canvas.clear();
-			_canvas.setSize(w, h);
+			doAlign();
+
+			_canvas.setCanvasSize(w, h);
 			
 			if(w==0 || h==0)
 				return;
 			
+			VertexHelper.beginFill();
+			VertexHelper.alloc(charCount);
+			
 			var charX:int = GUTTER_X;
 			var lineIndent:int;
 			var charIndent:int;
+			rectWidth = this.width - GUTTER_X * 2;
 			
 			var lineCount:int = _lines.length;
 			for(var i:int=0;i<lineCount;i++)
@@ -800,16 +797,28 @@ package fairygui
 					glyph = _bitmapFont.glyphs[ch];
 					if (glyph != null)
 					{
-						charIndent = (line.height + line.textHeight) / 2 - glyph.lineHeight;
+						charIndent = (line.height + line.textHeight) / 2 - Math.ceil(glyph.lineHeight*fontScale);
 						sHelperPoint.x = charX + lineIndent;
 						sHelperPoint.y = line.y + charIndent;
-						_canvas.drawChar(_bitmapFont, glyph, sHelperPoint, _color);
 						
-						charX += letterSpacing + glyph.advance;
+						if(fontScale==1)
+						{			
+							sHelperPoint.x += glyph.offsetX;
+							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, glyph.width, glyph.height);
+							VertexHelper.fillUV2(glyph.uvRect);
+						}
+						else
+						{
+							sHelperPoint.x += Math.ceil(glyph.offsetX*fontScale);				
+							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
+							VertexHelper.fillUV2(glyph.uvRect);
+						}
+						
+						charX += letterSpacing + Math.ceil(glyph.advance*fontScale);
 					}
 					else if(ch==" ")
 					{
-						charX += letterSpacing + Math.ceil(_bitmapFont.lineHeight/2);
+						charX += letterSpacing + Math.ceil(_bitmapFont.size*fontScale/2);
 					}
 					else
 					{
@@ -817,12 +826,14 @@ package fairygui
 					}
 				}//text loop
 			}//line loop
+
+			_canvas.renderBitmapText(_bitmapFont, _bitmapFont.ttf?_color:0xFFFFFF);
 		}
 		
-		override protected function handleXYChanged():void
+		override protected function handlePositionChanged():void
 		{
-			displayObject.x = this.x;
-			displayObject.y = this.y+_yOffset;
+			displayObject.x = int(this.x);
+			displayObject.y = int(this.y+_yOffset);
 		}
 		
 		override protected function handleSizeChanged():void
@@ -846,11 +857,15 @@ package fairygui
 		
 		private function doAlign():void
 		{
-			if(_verticalAlign==VertAlignType.Top || _textHeight==0)
+			if(_verticalAlign==VertAlignType.Top)
 				_yOffset = 0;
 			else
 			{
-				var dh:Number = this.height-_textHeight;
+				var dh:Number;
+				if(_textHeight==0)
+					dh = this.height-int(_textFormat.size);
+				else
+					dh = this.height-_textHeight;
 				if(dh<0)
 					dh = 0;
 				if(_verticalAlign==VertAlignType.Middle)

@@ -6,10 +6,13 @@ package fairygui
 	
 	public class GearBase
 	{
+		public static var disableAllTweenEffect:Boolean = false;
+		
 		protected var _pageSet:PageOptionSet;
 		protected var _tween:Boolean;
 		protected var _easeType:Ease;
 		protected var _tweenTime:Number;
+		protected var _delay:Number;
 		
 		protected var _owner:GObject;
 		protected var _controller:Controller;
@@ -20,6 +23,7 @@ package fairygui
 			_pageSet = new PageOptionSet();
 			_easeType = Quad.easeOut;
 			_tweenTime = 0.3;
+			_delay = 0;
 		}
 
 		final public function get controller():Controller
@@ -64,6 +68,16 @@ package fairygui
 			_tweenTime = value;
 		}
 		
+		final public function get delay():Number
+		{
+			return _delay;
+		}
+		
+		public function set delay(value:Number):void
+		{
+			_delay = value;
+		}
+
 		final public function get easeType():Ease
 		{
 			return _easeType;
@@ -111,6 +125,10 @@ package fairygui
 			str = xml.@duration;
 			if(str)
 				_tweenTime = parseFloat(str);
+			
+			str = xml.@delay;
+			if(str)
+				_delay = parseFloat(str);
 			
 			str = xml.@values;
 			var values:Array;

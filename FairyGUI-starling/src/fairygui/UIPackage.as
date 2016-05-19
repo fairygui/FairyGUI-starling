@@ -3,6 +3,7 @@ package fairygui
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.LoaderInfo;
+	import flash.display3D.Context3DTextureFormat;
 	import flash.events.Event;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -14,8 +15,8 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.GTimers;
+	import fairygui.utils.PixelHitTestData;
 	import fairygui.utils.ToolSet;
-	import fairygui.utils.ZipReader;
 	
 	import starling.textures.Texture;
 	
@@ -27,10 +28,11 @@ package fairygui
 		private var _items:Vector.<PackageItem>;
 		private var _itemsById:Object;
 		private var _itemsByName:Object;
-		private var _desc:ZipReader;
-		private var _files:ZipReader;
+		private var _hitTestDatas:Object;
 		private var _customId:String;
 		private var _sprites:Object;
+		
+		private var _reader:IUIPackageReader;
 		
 		internal static var _constructing:int;
 		
@@ -48,6 +50,7 @@ package fairygui
 		public function UIPackage()
 		{
 			_items = new Vector.<PackageItem>();
+			_hitTestDatas = {};
 			_sprites = {};
 		}
 		
@@ -64,7 +67,17 @@ package fairygui
 		public static function addPackage(desc:ByteArray, res:ByteArray):UIPackage
 		{
 			var pkg:UIPackage = new UIPackage();
-			pkg.create(desc, res);
+			var reader:ZipUIPackageReader = new ZipUIPackageReader(desc, res);
+			pkg.create(reader);
+			_packageInstById[pkg.id] = pkg;
+			_packageInstByName[pkg.name] = pkg;
+			return pkg;
+		}
+		
+		public static function addPackage2(reader:IUIPackageReader):UIPackage
+		{
+			var pkg:UIPackage = new UIPackage();
+			pkg.create(reader);
 			_packageInstById[pkg.id] = pkg;
 			_packageInstByName[pkg.name] = pkg;
 			return pkg;
@@ -172,24 +185,15 @@ package fairygui
 			}
 		}
 		
-		private function create(desc:ByteArray, res:ByteArray):void
+		private function create(reader:IUIPackageReader):void
 		{
-			_desc = new ZipReader(desc);
-			if(res && res.length)
-				_files = new ZipReader(res);
-			else
-				_files = _desc;
-			
-			loadPackage();
-		}
-		
-		private function loadPackage():void
-		{
+			_reader = reader;
+
 			var ba:ByteArray;
 			var str:String;
 			var arr:Array;
 			
-			ba = _files.getEntryData("sprites.bytes");
+			ba = _reader.readResFile("sprites.bytes");
 			str = ba.readUTFBytes(ba.length);
 			arr = str.split(sep1);
 			var cnt:int = arr.length;
@@ -222,8 +226,18 @@ package fairygui
 				_sprites[itemId] = sprite;
 			}
 			
-			ba = _desc.getEntryData("package.xml");
-			str = ba.readUTFBytes(ba.length);
+			ba = _reader.readResFile("hittest.bytes");
+			if(ba!=null)
+			{
+				while(ba.bytesAvailable)
+				{
+					var hitTestData:PixelHitTestData = new PixelHitTestData();
+					_hitTestDatas[ba.readUTF()] = hitTestData;
+					hitTestData.load(ba);
+				}
+			}
+			
+			str = _reader.readDescFile("package.xml");
 			
 			var ignoreWhitespace:Boolean = XML.ignoreWhitespace;
 			XML.ignoreWhitespace = true;
@@ -413,23 +427,14 @@ package fairygui
 		{
 			var ignoreWhitespace:Boolean = XML.ignoreWhitespace;
 			XML.ignoreWhitespace = true;
-			var ret:XML = new XML(getDesc(file));
+			var ret:XML = new XML(_reader.readDescFile(file));
 			XML.ignoreWhitespace = ignoreWhitespace;
 			return ret;
 		}
 		
-		private function getDesc(file:String):String
-		{
-			var ba:ByteArray = _desc.getEntryData(file);				
-			var str:String = ba.readUTFBytes(ba.length);
-			ba.clear();
-			
-			return str;
-		}
-		
 		public function getItemRaw(item:PackageItem):ByteArray
 		{
-			return _files.getEntryData(item.file);
+			return _reader.readResFile(item.file);
 		}
 		
 		public function getComponentData(item:PackageItem):XML
@@ -449,6 +454,11 @@ package fairygui
 			}
 			
 			return item.componentData;
+		}
+		
+		public function getPixelHitTestData(itemId:String):PixelHitTestData
+		{
+			return _hitTestDatas[itemId];
 		}
 		
 		private function translateComponent(xml:XML, strings:Object):void
@@ -655,7 +665,7 @@ package fairygui
 		
 		private function loadAtlas(pi:PackageItem):void
 		{
-			var ba:ByteArray = _files.getEntryData(pi.file?pi.file:(pi.id+".png"));
+			var ba:ByteArray = _reader.readResFile(pi.file?pi.file:(pi.id+".png"));
 			if(ba!=null)
 			{
 				var loader:PackageItemLoader = new PackageItemLoader();
@@ -668,7 +678,7 @@ package fairygui
 			}
 			else
 			{
-				ba = _files.getEntryData(pi.id+".atf");
+				ba = _reader.readResFile(pi.id+".atf");
 				if(ba!=null)
 				{
 					if(pi.texture!=null)
@@ -676,8 +686,15 @@ package fairygui
 					else
 					{
 						pi.loading = true;
+						_loadingQueue.push(pi);
 						Texture.fromAtfData(ba, 1, false, function(texture:Texture):void
 						{
+							var i:int = _loadingQueue.indexOf(pi);
+							if(i==-1)
+								return;
+							
+							_loadingQueue.splice(i, 1);
+							
 							pi.texture = texture;
 							pi.texture.root.onRestore = function():void
 							{
@@ -709,7 +726,10 @@ package fairygui
 				if(bmd.transparent)
 					pi.texture = Texture.fromBitmapData(bmd, false);
 				else
-					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, "bgrPacked565");
+				{
+					var format:String = "BGR_PACKED" in Context3DTextureFormat ? "bgrPacked565" : "bgra";
+					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, format);
+				}
 				pi.texture.root.onRestore = function():void
 				{
 					loadAtlas(pi);
@@ -805,7 +825,7 @@ package fairygui
 		private function loadSound(item:PackageItem):void
 		{
 			var sound:Sound = new Sound();
-			var ba:ByteArray = _files.getEntryData(item.file);
+			var ba:ByteArray = _reader.readResFile(item.file);
 			sound.loadCompressedDataFromByteArray(ba, ba.length);
 			item.sound = sound;
 			item.loaded = true;
@@ -815,14 +835,15 @@ package fairygui
 		{
 			var font:BitmapFont = new BitmapFont();
 			font.id = "ui://"+this.id+item.id;
-			var str:String = getDesc(item.id + ".fnt");
+			var str:String = _reader.readDescFile(item.id + ".fnt");
 			
 			var lines:Array = str.split(sep1);
 			var lineCount:int = lines.length;
 			var i:int;
 			var kv:Object = {};
 			var ttf:Boolean = false;
-			var lineHeight:int = 0;
+			var size:int = 0;
+			var resizable:Boolean = false;
 			var xadvance:int = 0;
 			var atlasOffsetX:int, atlasOffsetY:int;
 			var atlasWidth:int, atlasHeight:int;
@@ -898,7 +919,7 @@ package fairygui
 					}
 					
 					if(ttf)
-						bg.lineHeight = lineHeight;
+						bg.lineHeight = size;
 					else
 					{
 						if(bg.advance==0)
@@ -910,8 +931,8 @@ package fairygui
 						}
 						
 						bg.lineHeight = bg.offsetY < 0 ? bg.height : (bg.offsetY + bg.height);
-						if(bg.lineHeight < lineHeight)
-							bg.lineHeight = lineHeight;
+						if(bg.lineHeight < size)
+							bg.lineHeight = size;
 					}
 					
 					font.glyphs[String.fromCharCode(kv.id)] = bg;
@@ -919,6 +940,8 @@ package fairygui
 				else if(str=="info")
 				{
 					ttf = kv.face!=null;
+					resizable = kv.resizable=="true";
+					size = kv.size;
 					if(ttf)
 					{
 						var sprite:AtlasSprite = _sprites[item.id];
@@ -944,14 +967,19 @@ package fairygui
 				}
 				else if(str=="common")
 				{
-					lineHeight = kv.lineHeight;
+					if(size==0)
+						size = kv.lineHeight;
 					xadvance = kv.xadvance;
 				}
 			}
 			
+			if(size==0 && bg)
+				size = bg.height;
+			
 			font.mainTexture = mainTexture;
 			font.ttf = ttf;
-			font.lineHeight = lineHeight;
+			font.size = size;
+			font.resizable = resizable;
 			item.bitmapFont = font;
 		}
 	}

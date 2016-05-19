@@ -3,6 +3,7 @@ package fairygui.utils  {
 	import flash.events.TimerEvent;
 	import flash.utils.Dictionary;
 	import flash.utils.Timer;
+	import flash.utils.getTimer;
 	
 	import starling.core.Starling;
 	
@@ -23,7 +24,7 @@ package fairygui.utils  {
 		
 		public static const inst:GTimers = new GTimers();
 		
-		private static const FPS24:int = 1000/24;
+		private static const FPS24:int = 42;//1000/24;
 		
 		public function GTimers():void {
 			_items = new Vector.<TimerItem>();
@@ -31,7 +32,7 @@ package fairygui.utils  {
 			_itemPool = new Vector.<TimerItem>();
 			
 			deltaTime = 1;
-			_lastTime = new Date().time;
+			_lastTime = getTimer();
 			time = _lastTime;
 			
 			_timer = new Timer(10);
@@ -104,7 +105,7 @@ package fairygui.utils  {
 			if(!Starling.current.contextValid)
 				return;
 			
-			time =  new Date().time;
+			time =  getTimer();
 			workCount++;
 			
 			deltaTime = time-_lastTime;

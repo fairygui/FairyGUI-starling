@@ -7,8 +7,6 @@ package fairygui
 	import fairygui.text.RichTextField;
 	import fairygui.utils.ToolSet;
 	
-	import starling.events.Event;
-	
 	public class GRichTextField extends GTextField
 	{
 		private var _textField:RichTextField;
@@ -22,7 +20,6 @@ package fairygui
 		{ 
 			_textField = new UIRichTextField(this);
 			setDisplayObject(_textField);
-			_textField.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 		}
 
 		public function get ALinkFormat():TextFormat {
@@ -31,15 +28,14 @@ package fairygui
 		
 		public function set ALinkFormat(val:TextFormat):void {
 			_textField.ALinkFormat = val;
-			render();
 		}
 
 		override protected function render():void
 		{
-			renderNow(true);
+			renderNow();
 		}
 		
-		override protected function renderNow(updateBounds:Boolean=true):void
+		override protected function renderNow():void
 		{
 			if(_heightAutoSize)
 				_textField.autoSize = TextFieldAutoSize.LEFT;
@@ -84,11 +80,6 @@ package fairygui
 				_textField.width = this.width;
 				_textField.height = this.height+_fontAdjustment;
 			}
-		}
-		
-		private function __removeFromStage(evt:Event):void
-		{
-			_textField.clearCanvas();
 		}
 	}
 }

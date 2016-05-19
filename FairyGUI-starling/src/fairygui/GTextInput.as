@@ -1,7 +1,6 @@
 package fairygui
 {
 	import flash.display.Stage;
-	import flash.events.Event;
 	import flash.events.FocusEvent;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
@@ -11,6 +10,7 @@ package fairygui
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
+	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
@@ -33,6 +33,7 @@ package fairygui
 			_nativeTextField.addEventListener(FocusEvent.FOCUS_OUT, __focusOut);
 			
 			this.addEventListener(TouchEvent.TOUCH, __touch);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 		}
 		
 		override public function dispose():void
@@ -43,6 +44,22 @@ package fairygui
 				stage.removeChild(_nativeTextField);
 			}
 			super.dispose();
+		}
+		
+		override public function get text():String
+		{
+			if(_nativeTextField.parent)
+				_text = _nativeTextField.text;
+			
+			return _text;
+		}
+		
+		override public function set text(value:String):void
+		{
+			super.text = value;
+			
+			if(_nativeTextField.parent)
+				_nativeTextField.text = _text;
 		}
 		
 		public function get nativeTextField():TextField
@@ -85,7 +102,7 @@ package fairygui
 		{
 			super.handleSizeChanged();
 			
-			_canvas.setSize(this.width, this.height+_fontAdjustment);
+			_canvas.setCanvasSize(this.width, this.height+_fontAdjustment);
 		}
 		
 		override protected function updateTextFieldText():void
@@ -130,41 +147,44 @@ package fairygui
 			
 			var touch:Touch = evt.getTouch(displayObject);
 			if(touch && touch.phase==TouchPhase.BEGAN)
-			{
-				var textFormat:TextFormat;
-				if(_nativeTextField.defaultTextFormat==null)
-					textFormat = new TextFormat();
-				else
-					textFormat = _nativeTextField.defaultTextFormat;
-				textFormat.font = _textFormat.font;
-				textFormat.align = _textFormat.align;
-				textFormat.bold = _textFormat.bold;
-				textFormat.color = _textFormat.color;
-				textFormat.italic = _textFormat.italic;
-				textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
-				textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
-				textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
-				_nativeTextField.defaultTextFormat = textFormat;
-				_nativeTextField.displayAsPassword = _displayAsPassword;
-				_nativeTextField.wordWrap = !_singleLine;
-				_nativeTextField.multiline = !_singleLine;
-				_nativeTextField.text = _text;
-				_nativeTextField.setSelection(0, int.MAX_VALUE);
-				
-				var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
-				var stage:Stage = Starling.current.nativeStage;
-				_nativeTextField.x = rect.x;
-				_nativeTextField.y = rect.y;
-				_nativeTextField.width = rect.width;
-				_nativeTextField.height = rect.height;
-				stage.addChild(_nativeTextField);
-				stage.focus = _nativeTextField;
-				
-				_canvas.visible = false;
-			}
+				startInput();
 		}
 		
-		private function __focusOut(evt:Event):void
+		public function startInput():void
+		{
+			var textFormat:TextFormat;
+			if(_nativeTextField.defaultTextFormat==null)
+				textFormat = new TextFormat();
+			else
+				textFormat = _nativeTextField.defaultTextFormat;
+			textFormat.font = _textFormat.font;
+			textFormat.align = _textFormat.align;
+			textFormat.bold = _textFormat.bold;
+			textFormat.color = _textFormat.color;
+			textFormat.italic = _textFormat.italic;
+			textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
+			textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
+			textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
+			_nativeTextField.defaultTextFormat = textFormat;
+			_nativeTextField.displayAsPassword = _displayAsPassword;
+			_nativeTextField.wordWrap = !_singleLine;
+			_nativeTextField.multiline = !_singleLine;
+			_nativeTextField.text = _text;
+			_nativeTextField.setSelection(0, int.MAX_VALUE);
+			
+			var rect:Rectangle = this.localToGlobalRect(0, -_yOffset-_fontAdjustment, this.width, this.height+_fontAdjustment);
+			var stage:Stage = Starling.current.nativeStage;
+			_nativeTextField.x = int(rect.x);
+			_nativeTextField.y = int(rect.y);
+			_nativeTextField.width = int(rect.width);
+			_nativeTextField.height = int(rect.height);
+			stage.addChild(_nativeTextField);
+			stage.focus = _nativeTextField;
+			
+			_canvas.visible = false;
+		}
+		
+		private function __focusOut(evt:FocusEvent):void
 		{
 			if(_nativeTextField.parent)
 			{
@@ -172,6 +192,16 @@ package fairygui
 				stage.removeChild(_nativeTextField);
 				_canvas.visible = true;
 				this.text = _nativeTextField.text;
+			}
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			if(_nativeTextField.parent)
+			{
+				var stage:Stage = Starling.current.nativeStage;
+				stage.removeChild(_nativeTextField);
+				_canvas.visible = true;
 			}
 		}
 	}

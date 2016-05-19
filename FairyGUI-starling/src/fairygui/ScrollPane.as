@@ -14,25 +14,27 @@ package fairygui
 	import fairygui.utils.GTimers;
 	
 	import starling.core.Starling;
-	import starling.display.DisplayObject;
+	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.events.Event;
+	import starling.events.EventDispatcher;
 	
-	public class ScrollPane
+	[Event(name = "scroll", type = "starling.events.Event")]
+	public class ScrollPane extends EventDispatcher
 	{
 		private var _owner:GComponent;
 		private var _container:Sprite;
 		private var _maskHolder:Sprite;
 		private var _maskContentHolder:Sprite;
-
+		
 		private var _maskWidth:Number;
 		private var _maskHeight:Number;
 		private var _contentWidth:Number;
 		private var _contentHeight:Number;
-	
+		
 		private var _scrollType:int;
 		private var _scrollSpeed:int;
 		private var _mouseWheelSpeed:int;
-		private var _margin:Margin;
 		private var _scrollBarMargin:Margin;
 		private var _bouncebackEffect:Boolean;
 		private var _touchEffect:Boolean;
@@ -44,11 +46,15 @@ package fairygui
 		private var _snapToItem:Boolean;
 		private var _displayInDemand:Boolean;
 		private var _mouseWheelEnabled:Boolean;
+		private var _pageMode:Boolean;
+		private var _pageSizeH:Number;
+		private var _pageSizeV:Number;
 		
 		private var _yPerc:Number;
 		private var _xPerc:Number;
 		private var _vScroll:Boolean;
 		private var _hScroll:Boolean;
+		private var _needRefresh:Boolean;
 		
 		private static var _easeTypeFunc:Ease;
 		private var _throwTween:ThrowTween;
@@ -61,23 +67,22 @@ package fairygui
 		private var _isMouseMoved:Boolean;
 		private var _holdAreaPoint:Point;
 		private var _isHoldAreaDone:Boolean;
-		private var _holdArea:Number;
 		private var _aniFlag:Boolean;
 		private var _scrollBarVisible:Boolean;
 		
 		private var _hzScrollBar:GScrollBar;
 		private var _vtScrollBar:GScrollBar;
 		
-		public static const SCROLL:String = "___scroll";
-		
 		private static var sHelperPoint:Point = new Point();
+		private static var sHelperRect:Rectangle = new Rectangle();
 		
 		public function ScrollPane(owner:GComponent, 
 								   scrollType:int,
-								   margin:Margin,
 								   scrollBarMargin:Margin,
 								   scrollBarDisplay:int,
-								   flags:int):void
+								   flags:int,								   
+								   vtScrollBarRes:String,
+								   hzScrollBarRes:String):void
 		{	
 			if(_easeTypeFunc==null)
 				_easeTypeFunc = EaseLookup.find("Cubic.easeOut");
@@ -88,32 +93,42 @@ package fairygui
 			
 			_maskHolder = new Sprite();
 			_container.addChild(_maskHolder);
-	
+			
 			_maskContentHolder = _owner._container;
 			_maskContentHolder.x = 0;
 			_maskContentHolder.y = 0;
 			_maskHolder.addChild(_maskContentHolder);
-
-			if(GRoot.touchScreen)
-				_holdArea = 20;
-			else
-				_holdArea = 5;
-			_holdAreaPoint = new Point();
-			_margin = margin;
+			
 			_scrollBarMargin = scrollBarMargin;
-			_bouncebackEffect = UIConfig.defaultScrollBounceEffect;
-			_touchEffect = UIConfig.defaultScrollTouchEffect;
+			_scrollType = scrollType;
+			_scrollSpeed = UIConfig.defaultScrollSpeed;
+			_mouseWheelSpeed = _scrollSpeed*2;
+			
+			_displayOnLeft = (flags & 1)!=0;
+			_snapToItem = (flags & 2)!=0;
+			_displayInDemand = (flags & 4)!=0;
+			_pageMode = (flags & 8)!=0;
+			if(flags & 16)
+				_touchEffect = true;
+			else if(flags & 32)
+				_touchEffect = false;
+			else
+				_touchEffect = UIConfig.defaultScrollTouchEffect;
+			if(flags & 64)
+				_bouncebackEffect = true;
+			else if(flags & 128)
+				_bouncebackEffect = false;
+			else
+				_bouncebackEffect = UIConfig.defaultScrollBounceEffect;
+			
 			_xPerc = 0;
 			_yPerc = 0;
 			_aniFlag = true;
 			_scrollBarVisible = true;
-			_scrollSpeed = UIConfig.defaultScrollSpeed;
-			_mouseWheelSpeed = _scrollSpeed*2;
-			_displayOnLeft = (flags & 1)!=0;
-			_snapToItem = (flags & 2)!=0;
-			_displayInDemand = (flags & 4)!=0;
-			_scrollType = scrollType;
 			_mouseWheelEnabled = true;
+			_holdAreaPoint = new Point();
+			_pageSizeH = 1;
+			_pageSizeV = 1;
 			
 			if(scrollBarDisplay==ScrollBarDisplayType.Default)
 				scrollBarDisplay = UIConfig.defaultScrollBarDisplay;
@@ -122,22 +137,24 @@ package fairygui
 			{
 				if(_scrollType==ScrollType.Both || _scrollType==ScrollType.Vertical)
 				{
-					if(UIConfig.verticalScrollBar)
+					var res:String = vtScrollBarRes?vtScrollBarRes:UIConfig.verticalScrollBar;
+					if(res)
 					{
-						_vtScrollBar = UIPackage.createObjectFromURL(UIConfig.verticalScrollBar) as GScrollBar;
+						_vtScrollBar = UIPackage.createObjectFromURL(res) as GScrollBar;
 						if(!_vtScrollBar)
-							throw new Error("cannot create scrollbar from " + UIConfig.verticalScrollBar);
+							throw new Error("cannot create scrollbar from " + res);
 						_vtScrollBar.setScrollPane(this, true);
 						_container.addChild(_vtScrollBar.displayObject);
 					}
 				}
 				if(_scrollType==ScrollType.Both || _scrollType==ScrollType.Horizontal)
 				{
-					if(UIConfig.horizontalScrollBar)
+					res = hzScrollBarRes?hzScrollBarRes:UIConfig.horizontalScrollBar;
+					if(res)
 					{
-						_hzScrollBar = UIPackage.createObjectFromURL(UIConfig.horizontalScrollBar) as GScrollBar;
+						_hzScrollBar = UIPackage.createObjectFromURL(res) as GScrollBar;
 						if(!_hzScrollBar)
-							throw new Error("cannot create scrollbar from " + UIConfig.horizontalScrollBar);
+							throw new Error("cannot create scrollbar from " + res);
 						_hzScrollBar.setScrollPane(this, false);
 						_container.addChild(_hzScrollBar.displayObject);
 					}
@@ -162,16 +179,9 @@ package fairygui
 			else
 				_mouseWheelEnabled = false;
 			
-			if(_displayOnLeft && _vtScrollBar)
-				_maskHolder.x = int(_margin.left + _vtScrollBar.width);
-			else
-				_maskHolder.x = _margin.left;
-			_maskHolder.y = _margin.top;
-			
 			_contentWidth = 0;
 			_contentHeight = 0;
-			setSize(owner.width, owner.height);
-			setContentSize(owner.bounds.width, owner.bounds.height);
+			setSize(owner.width, owner.height, true);
 			
 			Starling.current.nativeStage.addEventListener(MouseEvent.MOUSE_WHEEL, __mouseWheel);
 			_owner.addEventListener(GTouchEvent.BEGIN, __mouseDown);
@@ -181,16 +191,6 @@ package fairygui
 		public function dispose():void
 		{
 			Starling.current.nativeStage.removeEventListener(MouseEvent.MOUSE_WHEEL, __mouseWheel);
-			
-			_owner.removeEventListener(GTouchEvent.BEGIN, __mouseDown);
-			_owner.removeEventListener(GTouchEvent.DRAG, __mouseMove);
-			_owner.removeEventListener(GTouchEvent.END, __mouseUp);
-			_owner.removeEventListener(GTouchEvent.ROLL_OVER, __rollOver);
-			_owner.removeEventListener(GTouchEvent.ROLL_OUT, __rollOut);
-			_container.removeChildren();
-			_maskContentHolder.x = 0;
-			_maskContentHolder.y = 0;
-			_container.addChild(_maskContentHolder);
 		}
 		
 		public function get owner():GComponent
@@ -270,7 +270,7 @@ package fairygui
 			if(sc != _xPerc)
 			{
 				_xPerc = sc;
-				posChanged(ani);
+				posChanged(ani);				
 			}
 		}
 		
@@ -332,7 +332,7 @@ package fairygui
 			else
 				this.setPercY(0, ani);
 		}
-
+		
 		public function get isBottomMost():Boolean
 		{
 			return _yPerc==1 || _contentHeight<=_maskHeight;
@@ -343,15 +343,35 @@ package fairygui
 			return _xPerc==1 || _contentWidth<=_maskWidth;
 		}
 		
+		public function get currentPageX():int
+		{
+			return _pageMode ? Math.floor(this.posX / _pageSizeH):0;
+		}
+		
+		public function set currentPageX(value:int):void
+		{
+			if (_pageMode && _hScroll)
+				this.setPosX(value * _pageSizeH, false);
+		}
+		
+		public function get currentPageY():int
+		{
+			return _pageMode ? Math.floor(this.posY / _pageSizeV):0;
+		}
+		
+		public function set currentPageY(value:int):void
+		{
+			if (_pageMode && _hScroll)
+				this.setPosY(value * _pageSizeV, false);
+		}
+		
 		public function get contentWidth():Number
 		{
-			_owner.ensureBoundsCorrect();
 			return _contentWidth;
 		}
 		
 		public function get contentHeight():Number
 		{
-			_owner.ensureBoundsCorrect();
 			return _contentHeight;
 		}
 		
@@ -362,7 +382,7 @@ package fairygui
 		
 		public function set viewWidth(value:int):void
 		{
-			value = value + _margin.left + _margin.right;
+			value = value + _owner.margin.left + _owner.margin.right;
 			if (_vtScrollBar != null)
 				value += _vtScrollBar.width;
 			_owner.width = value;
@@ -375,7 +395,7 @@ package fairygui
 		
 		public function set viewHeight(value:int):void
 		{
-			value = value + _margin.top + _margin.bottom;
+			value = value + _owner.margin.top + _owner.margin.bottom;
 			if (_hzScrollBar != null)
 				value += _hzScrollBar.height;
 			_owner.height = value;
@@ -383,12 +403,12 @@ package fairygui
 		
 		private function getDeltaX(move:Number):Number
 		{
-			return move/(_contentWidth-_maskWidth);
+			return (_pageMode?_pageSizeH:move)/(_contentWidth-_maskWidth);
 		}
 		
 		private function getDeltaY(move:Number):Number
 		{
-			return move/(_contentHeight-_maskHeight);
+			return (_pageMode?_pageSizeV:move)/(_contentHeight-_maskHeight);
 		}
 		
 		public function scrollTop(ani:Boolean=false):void 
@@ -421,79 +441,120 @@ package fairygui
 			this.setPercX(_xPerc + getDeltaX(_scrollSpeed*speed), ani);
 		}
 		
-		public function scrollToView(obj:GObject, ani:Boolean=false):void
+		/**
+		 * @param target GObject: can be any object on stage, not limited to the direct child of this container.
+		 * 				or Rectangle: Rect in local coordinates
+		 * @param ani If moving to target position with animation
+		 * @param setFirst If true, scroll to make the target on the top/left; If false, scroll to make the target any position in view.
+		 */
+		public function scrollToView(target:*, ani:Boolean=false, setFirst:Boolean=false):void
 		{
 			_owner.ensureBoundsCorrect();
-			if(GTimers.inst.exists(refresh))
+			if(_needRefresh)
 				refresh();
+			
+			var rect:Rectangle;
+			if(target is GObject)
+			{
+				if (target.parent != _owner)
+				{
+					GObject(target).parent.localToGlobalRect(target.x, target.y, 
+						target.width, target.height, sHelperRect);
+					rect = _owner.globalToLocalRect(sHelperRect.x, sHelperRect.y, 
+						sHelperRect.width, sHelperRect.height, sHelperRect);
+				}
+				else
+				{
+					rect = sHelperRect;
+					rect.setTo(target.x, target.y, target.width, target.height);					
+				}
+			}
+			else
+				rect = Rectangle(target);
 			
 			if(_vScroll)
 			{
-				var top:Number = (_contentHeight-_maskHeight)*_yPerc;
-				var bottom:Number = top+_maskHeight;
-				if(obj.y<top)
-					this.setPosY(obj.y, ani);
-				else if(obj.y+obj.height>bottom)
+				if(_pageMode)
 				{
-					if (obj.y + obj.height * 2 >= top)
-						this.setPosY(obj.y+obj.height*2-_maskHeight, ani);
-					else
-						this.setPosY(obj.y+obj.height-_maskHeight, ani);
+					this.setPosY(Math.floor(rect.y/_pageSizeV)*_pageSizeV, ani);
+				}
+				else
+				{
+					var top:Number = this.posY;
+					var bottom:Number = top+_maskHeight;
+					if(setFirst || rect.y<=top || rect.height>_maskHeight)
+						this.setPosY(rect.y, ani);
+					else if(rect.y+rect.height>bottom)
+					{
+						if (rect.height <= _maskHeight/2)
+							this.setPosY(rect.y+rect.height*2-_maskHeight, ani);
+						else
+							this.setPosY(rect.y+rect.height-_maskHeight, ani);
+					}
 				}
 			}
 			if(_hScroll)
 			{
-				var left:Number = (_contentWidth-_maskWidth)*_xPerc;
-				var right:Number = left+_maskWidth;
-				if(obj.x<left)
-					this.setPosX(obj.x, ani);
-				else if(obj.x+obj.width>right)
+				if(_pageMode)
 				{
-					if (obj.x + obj.width * 2 >= left)
-						this.setPosX(obj.x+obj.width*2-_maskWidth, ani);
-					else
-						this.setPosX(obj.x+obj.width-_maskWidth, ani);
+					this.setPosX(Math.floor(rect.x/_pageSizeH)*_pageSizeH, ani);
+				}
+				else
+				{
+					var left:Number = this.posX;
+					var right:Number = left+_maskWidth;
+					if(setFirst || rect.x<=left || rect.width>_maskWidth)
+						this.setPosX(rect.x, ani);
+					else if(rect.x+rect.width>right)
+					{
+						if (rect.width <= _maskWidth/2)
+							this.setPosX(rect.x+rect.width*2-_maskWidth, ani);
+						else
+							this.setPosX(rect.x+rect.width-_maskWidth, ani);
+					}
 				}
 			}
 			
-			if(!ani && GTimers.inst.exists(refresh))
+			if(!ani && _needRefresh)
 				refresh();
 		}
 		
+		/**
+		 * @param obj obj must be the direct child of this container
+		 */
 		public function isChildInView(obj:GObject):Boolean
 		{
 			if(_vScroll)
 			{
-				var top:Number = (_contentHeight-_maskHeight)*_yPerc;
-				var bottom:Number = top+_maskHeight;
-				if(obj.y+obj.height<top || obj.y>bottom)
+				var dist:Number = obj.y+_maskContentHolder.y;
+				if(dist<-obj.height-20 || dist>_maskHeight+20)
 					return false;
 			}
 			
 			if(_hScroll)
 			{
-				var left:Number = (_contentWidth-_maskWidth)*_xPerc;
-				var right:Number = left+_maskWidth;
-				if(obj.x+obj.width<left || obj.x>right)
+				dist = obj.x + _maskContentHolder.x;
+				if(dist<-obj.width-20 || dist>_maskWidth+20)
 					return false;
 			}
 			
 			return true;
 		}
-
-		internal function setSize(aWidth:Number, aHeight:Number):void 
+		
+		internal function setSize(aWidth:Number, aHeight:Number, noRefresh:Boolean=false):void 
 		{
-			var w:Number, h:Number;
-			w = aWidth;
-			h = aHeight;
+			if(_displayOnLeft && _vtScrollBar)
+				_maskHolder.x = int(_owner.margin.left + _vtScrollBar.width);
+			else
+				_maskHolder.x = _owner.margin.left;
+			_maskHolder.y = _owner.margin.top;
+			
 			if(_hzScrollBar)
 			{
-				if(!_hScrollNone)
-					h -= _hzScrollBar.height;
-				_hzScrollBar.y = h;
-				if(_vtScrollBar && !_vScrollNone)
+				_hzScrollBar.y = aHeight - _hzScrollBar.height;
+				if(_vtScrollBar)
 				{
-					_hzScrollBar.width = w - _vtScrollBar.width - _scrollBarMargin.left - _scrollBarMargin.right;
+					_hzScrollBar.width = aWidth - _vtScrollBar.width - _scrollBarMargin.left - _scrollBarMargin.right;
 					if(_displayOnLeft)
 						_hzScrollBar.x = _scrollBarMargin.left + _vtScrollBar.width;
 					else
@@ -501,29 +562,40 @@ package fairygui
 				}
 				else
 				{
-					_hzScrollBar.width = w - _scrollBarMargin.left - _scrollBarMargin.right;
+					_hzScrollBar.width = aWidth - _scrollBarMargin.left - _scrollBarMargin.right;
 					_hzScrollBar.x = _scrollBarMargin.left;
 				}
 			}
 			if(_vtScrollBar)
 			{
-				if(!_vScrollNone)
-					w -= _vtScrollBar.width;
 				if(!_displayOnLeft)
-					_vtScrollBar.x = w;
-				_vtScrollBar.height = h - _scrollBarMargin.top - _scrollBarMargin.bottom;
+					_vtScrollBar.x = aWidth - _vtScrollBar.width;
+				if(_hzScrollBar)
+					_vtScrollBar.height = aHeight - _hzScrollBar.height - _scrollBarMargin.top - _scrollBarMargin.bottom;
+				else
+					_vtScrollBar.height = aHeight - _scrollBarMargin.top - _scrollBarMargin.bottom;
 				_vtScrollBar.y = _scrollBarMargin.top;
 			}
-			w -= (_margin.left+_margin.right);
-			h -= (_margin.top+_margin.bottom);
 			
-			_maskWidth = Math.max(1, w);
-			_maskHeight = Math.max(1, h);
+			_maskWidth = aWidth;
+			_maskHeight = aHeight;
+			if(_hzScrollBar && !_hScrollNone)
+				_maskHeight -= _hzScrollBar.height;
+			if(_vtScrollBar && !_vScrollNone)
+				_maskWidth -= _vtScrollBar.width;
+			_maskWidth -= (_owner.margin.left+_owner.margin.right);
+			_maskHeight -= (_owner.margin.top+_owner.margin.bottom);
+			
+			_maskWidth = Math.max(1, _maskWidth);
+			_maskHeight = Math.max(1, _maskHeight);
+			_pageSizeH = _maskWidth;
+			_pageSizeV = _maskHeight;
 			
 			handleSizeChanged();
-			posChanged(false);
+			if(!noRefresh)
+				posChanged(false);
 		}
-
+		
 		internal function setContentSize(aWidth:Number, aHeight:Number):void
 		{
 			if(_contentWidth==aWidth && _contentHeight==aHeight)
@@ -608,7 +680,10 @@ package fairygui
 				}
 			}
 			
-			_maskHolder.clipRect = new Rectangle(0,0,_maskWidth,_maskHeight);
+			if(_maskHolder.mask==null)
+				_maskHolder.mask = new Quad(_maskWidth,_maskHeight);
+			else
+				Quad(_maskHolder.mask).readjustSize(_maskWidth,_maskHeight);
 			
 			_xOverlap = Math.ceil(Math.max(0, _contentWidth - _maskWidth));
 			_yOverlap = Math.ceil(Math.max(0, _contentHeight - _maskHeight));
@@ -673,29 +748,69 @@ package fairygui
 		{
 			if(_aniFlag)
 				_aniFlag = ani;
+			
+			_needRefresh = true;
 			GTimers.inst.callLater(refresh);
+			
+			//如果在甩手指滚动过程中用代码重新设置滚动位置，要停止滚动
+			if(_tweening==2)
+			{
+				killTweens();
+			}
 		}
 		
 		private function refresh():void
 		{
-			if(_isMouseMoved)
-			{
-				GTimers.inst.callLater(refresh);
-				return;
-			}
+			_needRefresh = false;
 			GTimers.inst.remove(refresh);
 			
-			var contentYLoc:Number;
-			var contentXLoc:Number;
-
+			var contentYLoc:Number = 0;
+			var contentXLoc:Number = 0;
+			
 			if(_vScroll)
 				contentYLoc = _yPerc * (_contentHeight - _maskHeight);
 			if(_hScroll)
 				contentXLoc = _xPerc * (_contentWidth - _maskWidth);
 			
-			if(_snapToItem)
+			if(_pageMode)
 			{
-				var pt:Point = _owner.findObjectNear(_xPerc==1?0:contentXLoc, _yPerc==1?0:contentYLoc, sHelperPoint);
+				var page:int;
+				var delta:Number;
+				if(_vScroll && _yPerc!=1 && _yPerc!=0)
+				{
+					page = Math.floor(contentYLoc / _pageSizeV);
+					delta = contentYLoc - page*_pageSizeV;
+					if(delta>_pageSizeV/2)
+						page++;
+					contentYLoc = page * _pageSizeV;
+					if(contentYLoc>_contentHeight-_maskHeight)
+					{
+						contentYLoc = _contentHeight-_maskHeight;
+						_yPerc = 1;
+					}
+					else
+						_yPerc = contentYLoc / (_contentHeight - _maskHeight);
+				}
+				
+				if(_hScroll && _xPerc!=1 && _xPerc!=0)
+				{
+					page = Math.floor(contentXLoc / _pageSizeH);
+					delta = contentXLoc - page*_pageSizeH;
+					if(delta>_pageSizeH/2)
+						page++;
+					contentXLoc = page * _pageSizeH;
+					if(contentXLoc>_contentWidth-_maskWidth)
+					{
+						contentXLoc = _contentWidth-_maskWidth;
+						_xPerc = 1;
+					}
+					else
+						_xPerc = contentXLoc / (_contentWidth - _maskWidth);
+				}
+			}
+			else if(_snapToItem)
+			{
+				var pt:Point = _owner.GetSnappingPosition(_xPerc==1?0:contentXLoc, _yPerc==1?0:contentYLoc, sHelperPoint);
 				if (_xPerc != 1 && pt.x!=contentXLoc)
 				{
 					_xPerc = pt.x / (_contentWidth - _maskWidth);
@@ -711,10 +826,32 @@ package fairygui
 					contentYLoc = _yPerc * (_contentHeight - _maskHeight);
 				}
 			}
+			
+			refresh2(contentXLoc, contentYLoc);
+			
+			dispatchEventWith(Event.SCROLL);
+			
+			if (_needRefresh) //user change scroll pos in on scroll
+			{
+				_needRefresh = false;
+				GTimers.inst.remove(refresh);
+				
+				if (_hScroll)
+					contentXLoc = _xPerc * (_contentWidth - _maskWidth);
+				if (_vScroll)
+					contentYLoc = _yPerc * (_contentHeight - _maskHeight);
+				refresh2(contentXLoc, contentYLoc);
+			}
+			
+			_aniFlag = true;
+		}
+		
+		private function refresh2(contentXLoc:Number, contentYLoc:Number):void
+		{
 			contentXLoc = int(contentXLoc);
 			contentYLoc = int(contentYLoc);
 			
-			if(_aniFlag)
+			if(_aniFlag && !_isMouseMoved)
 			{
 				var toX:Number = _maskContentHolder.x;
 				var toY:Number = _maskContentHolder.y;
@@ -751,40 +888,48 @@ package fairygui
 			}
 			else
 			{
-				killTweens();
+				killTweens();				
 				
-				if(_vScroll)
-					_maskContentHolder.y = -contentYLoc;
-				else
-					_maskContentHolder.y = 0;
-				if(_hScroll)
-					_maskContentHolder.x = -contentXLoc;
-				else
-					_maskContentHolder.x = 0;
+				//如果在拖动的过程中Refresh，这里要进行处理，保证拖动继续正常进行
+				if (_isMouseMoved)
+				{
+					_xOffset += _maskContentHolder.x - (-contentXLoc);
+					_yOffset += _maskContentHolder.y - (-contentYLoc);
+				}
+				
+				_maskContentHolder.y = -contentYLoc;
+				_maskContentHolder.x = -contentXLoc;
+				
+				//如果在拖动的过程中Refresh，这里要进行处理，保证手指离开是滚动正常进行
+				if (_isMouseMoved)
+				{
+					_y1 = _y2 = _maskContentHolder.y;
+					_x1 = _x2 = _maskContentHolder.x;
+				}
+				
 				if(_vtScrollBar)
 					_vtScrollBar.scrollPerc = _yPerc;
 				if(_hzScrollBar)
 					_hzScrollBar.scrollPerc = _xPerc;
 			}
-			
-			_aniFlag = true;
 		}
 		
 		private function killTweens():void
 		{
 			if(_tweening==1)
 			{
+				_tweening = 0;
 				TweenLite.killTweensOf(_maskContentHolder);
 				__tweenComplete();
 			}
 			else if(_tweening==2)
 			{
+				_tweening = 0;
 				TweenLite.killTweensOf(_throwTween);
 				_throwTween.value = 1;
 				__tweenUpdate2();
 				__tweenComplete2();
 			}
-			_tweening = 0;
 		}
 		
 		private function calcYPerc():Number
@@ -819,7 +964,7 @@ package fairygui
 				currX = diff;
 			else
 				currX = -mx;
-
+			
 			return currX / diff;
 		}
 		
@@ -851,11 +996,8 @@ package fairygui
 				if(_scrollBarDisplayAuto)
 					showScrollBar(false);
 			}
-			_tweening = 0;
-			
-			_owner.dispatchEventWith(SCROLL, false);
 		}
-
+		
 		private function __mouseDown(evt:GTouchEvent):void
 		{
 			if(!_touchEffect)
@@ -883,9 +1025,15 @@ package fairygui
 		
 		private function __mouseMove(evt:GTouchEvent):void
 		{
+			var sensitivity:int;
+			if (GRoot.touchScreen)
+				sensitivity = UIConfig.touchScrollSensitivity;
+			else
+				sensitivity = 5;
+			
 			var diff:Number;
 			var sv:Boolean, sh:Boolean, st:Boolean;
-
+			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
 			_container.globalToLocal(sHelperPoint, sHelperPoint);
@@ -895,7 +1043,7 @@ package fairygui
 				if (!_isHoldAreaDone)
 				{
 					diff = Math.abs(_holdAreaPoint.y - sHelperPoint.y);
-					if (diff < _holdArea)
+					if (diff < sensitivity)
 						return;
 				}
 				
@@ -906,7 +1054,7 @@ package fairygui
 				if (!_isHoldAreaDone)
 				{
 					diff = Math.abs(_holdAreaPoint.x - sHelperPoint.x);
-					if (diff < _holdArea)
+					if (diff < sensitivity)
 						return;
 				}
 				
@@ -917,10 +1065,10 @@ package fairygui
 				if (!_isHoldAreaDone)
 				{
 					diff = Math.abs(_holdAreaPoint.y - sHelperPoint.y);
-					if (diff < _holdArea)
+					if (diff < sensitivity)
 					{
 						diff = Math.abs(_holdAreaPoint.x - sHelperPoint.x);
-						if (diff < _holdArea)
+						if (diff < sensitivity)
 							return;
 					}
 				}
@@ -935,7 +1083,7 @@ package fairygui
 				_time1 = t;
 				st = true;
 			}
-
+			
 			if(sv)
 			{
 				var y:int = sHelperPoint.y - _yOffset;
@@ -988,7 +1136,7 @@ package fairygui
 				{
 					_maskContentHolder.x = x;
 				}
-
+				
 				if (st)
 				{
 					_x2 = _x1;
@@ -1007,7 +1155,8 @@ package fairygui
 				_owner.cancelChildrenClickEvent();
 			}
 			onScrolling();
-			_owner.dispatchEventWith(SCROLL, false);
+			
+			dispatchEventWith(Event.SCROLL);
 		}
 		
 		private function __mouseUp(evt:GTouchEvent):void
@@ -1022,7 +1171,7 @@ package fairygui
 			
 			if (!_isMouseMoved)
 				return;
-
+			
 			_isMouseMoved = false;
 			
 			var time:Number = (getTimer() - _time2) / 1000;
@@ -1031,10 +1180,6 @@ package fairygui
 			var yVelocity:Number = (_maskContentHolder.y - _y2) / time;
 			var xVelocity:Number = (_maskContentHolder.x - _x2) / time;
 			var duration:Number = 0.3;
-			var xMin:Number = -_xOverlap;
-			var yMin:Number = -_yOverlap;
-			var xMax:Number = 0;
-			var yMax:Number = 0;	
 
 			_throwTween.start.x = _maskContentHolder.x;
 			_throwTween.start.y = _maskContentHolder.y;
@@ -1043,12 +1188,46 @@ package fairygui
 			var change2:Point = _throwTween.change2;
 			var endX:Number = 0;
 			var endY:Number = 0;
+			var page:int;
+			var delta:Number;
 			
 			if(_scrollType==ScrollType.Both || _scrollType==ScrollType.Horizontal)
 			{
 				change1.x = ThrowTween.calculateChange(xVelocity, duration);
 				change2.x = 0;
 				endX = _maskContentHolder.x + change1.x;
+				
+				if(_pageMode)
+				{
+					page = Math.floor(-endX / _pageSizeH);
+					delta = -endX - page*_pageSizeH;
+					//页面吸附策略
+					if(change1.x>_pageSizeH)
+					{
+						if(delta>=_pageSizeH/2)
+							page++;
+					}
+					else if(endX<_maskContentHolder.x)
+					{
+						//触摸屏上需要翻半页才能翻页，PC上只要少量位移就到下一页
+						if(GRoot.touchScreen)
+						{
+							if(delta>=_pageSizeH/2) 
+								page++;
+						}
+						else
+						{
+							if(delta>=50) 
+								page++;
+						}						
+					}
+					
+					endX = -page * _pageSizeH;
+					if(endX<_maskWidth-_contentWidth)
+						endX = _maskWidth - _contentWidth;
+					
+					change1.x = endX - _maskContentHolder.x;
+				}
 			}
 			else
 				change1.x = change2.x = 0;
@@ -1058,30 +1237,76 @@ package fairygui
 				change1.y = ThrowTween.calculateChange(yVelocity, duration);
 				change2.y = 0;
 				endY = _maskContentHolder.y + change1.y;
+				
+				if(_pageMode)
+				{
+					page = Math.floor(-endY / _pageSizeV);
+					delta = -endY - page*_pageSizeV;
+					//页面吸附策略
+					if(change1.y>_pageSizeV)
+					{
+						if(delta>=_pageSizeV/2)
+							page++;
+					}
+					else if(endY<_maskContentHolder.y)
+					{
+						//触摸屏上需要翻半页才能翻页，PC上只要少量位移就到下一页
+						if(GRoot.touchScreen)
+						{
+							if(delta>=_pageSizeV/2) 
+								page++;
+						}
+						else
+						{
+							if(delta>=50) 
+								page++;
+						}						
+					}
+					endY = -page * _pageSizeV;
+					if(endY<_maskHeight - _contentHeight)
+						endY = _maskHeight - _contentHeight;
+					
+					change1.y = endY - _maskContentHolder.y;
+				}
 			}
 			else
 				change1.y = change2.y = 0;
 			
-			if (_snapToItem)
+			if (_snapToItem && !_pageMode)
 			{
 				endX = -endX;
 				endY = -endY;
-				var pt:Point = _owner.findObjectNear(endX, endY, sHelperPoint);
+				var pt:Point = _owner.GetSnappingPosition(endX, endY, sHelperPoint);
 				endX = -pt.x;
 				endY = -pt.y;
 				change1.x = endX - _maskContentHolder.x;
 				change1.y = endY - _maskContentHolder.y;
 			}
 			
-			if (xMax < endX)
-				change2.x = xMax - _maskContentHolder.x - change1.x;
-			else if (xMin > endX)
-				change2.x = xMin - _maskContentHolder.x - change1.x;
-			
-			if (yMax < endY)
-				change2.y = yMax - _maskContentHolder.y - change1.y;
-			else if (yMin > endY)
-				change2.y = yMin - _maskContentHolder.y - change1.y;
+			if(_bouncebackEffect)
+			{			
+				if (endX>0)
+					change2.x = 0 - _maskContentHolder.x - change1.x;
+				else if (endX<-_xOverlap)
+					change2.x = -_xOverlap - _maskContentHolder.x - change1.x;
+				
+				if (endY>0)
+					change2.y = 0 - _maskContentHolder.y - change1.y;
+				else if (endY<-_yOverlap)
+					change2.y = -_yOverlap - _maskContentHolder.y - change1.y;
+			}
+			else
+			{
+				if (endX>0)
+					change1.x = 0 - _maskContentHolder.x;
+				else if (endX<-_xOverlap)
+					change1.x = -_xOverlap - _maskContentHolder.x;
+				
+				if (endY>0)
+					change1.y = 0 - _maskContentHolder.y;
+				else if (endY<-_yOverlap)
+					change1.y = -_yOverlap - _maskContentHolder.y;
+			}
 			
 			_throwTween.value = 0;
 			_throwTween.change1 = change1;
@@ -1104,7 +1329,7 @@ package fairygui
 			sHelperPoint.y = evt.stageY;
 			_container.globalToLocal(sHelperPoint, sHelperPoint);
 			
-			if(!_container.hitTest(sHelperPoint, true))
+			if(!_container.hitTest(sHelperPoint))
 				return;
 			
 			var delta:Number = evt.delta;
@@ -1161,10 +1386,11 @@ package fairygui
 		
 		private function __tweenComplete():void
 		{
+			_tweening = 0;
 			_maskHolder.touchable = true;
 			onScrollEnd();
 		}
-
+		
 		private function __tweenUpdate2():void
 		{
 			_throwTween.update(_maskContentHolder);
@@ -1180,10 +1406,17 @@ package fairygui
 			}
 			
 			onScrolling();
+			
+			dispatchEventWith(Event.SCROLL);
 		}
 		
 		private function __tweenComplete2():void
 		{
+			if(_tweening==0)
+				return;
+			
+			_tweening = 0;
+			
 			if (_scrollType == ScrollType.Vertical)
 				_yPerc = calcYPerc();
 			else if (_scrollType == ScrollType.Horizontal)
@@ -1193,9 +1426,11 @@ package fairygui
 				_yPerc = calcYPerc();
 				_xPerc = calcXPerc();
 			}
-
+			
 			_maskHolder.touchable = true;
 			onScrollEnd();
+			
+			dispatchEventWith(Event.SCROLL);
 		}
 	}
 }

@@ -15,6 +15,7 @@ package fairygui
 	
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
+	import starling.display.Stage;
 	import starling.events.Event;
 	import starling.events.EventDispatcher;
 	import starling.events.Touch;
@@ -39,8 +40,8 @@ package fairygui
 		private var _y:Number;
 		private var _width:Number;
 		private var _height:Number;
-		private var _pivotX:int;
-		private var _pivotY:int;
+		private var _pivotX:Number;
+		private var _pivotY:Number;
 		private var _alpha:Number;
 		private var _rotation:int;
 		private var _visible:Boolean;
@@ -103,6 +104,8 @@ package fairygui
 			_touchable = true;
 			_scaleX = 1;
 			_scaleY = 1;
+			_pivotX = 0;
+			_pivotY = 0;
 			_pivotOffsetX = 0;
 			_pivotOffsetY = 0;
 			
@@ -161,7 +164,7 @@ package fairygui
 				_x = xv;
 				_y = yv;
 				
-				handleXYChanged();
+				handlePositionChanged();
 				if(this is GGroup)
 					GGroup(this).moveChildren(dx, dy);
 				
@@ -182,11 +185,7 @@ package fairygui
 			if (parent != null)
 				r = parent;
 			else
-			{
 				r = this.root;
-				if (r == null)
-					r = GRoot.inst;
-			}
 			
 			this.setXY(int((r.width-this.width)/2), int((r.height-this.height)/2));
 			if (restraint)
@@ -237,11 +236,10 @@ package fairygui
 				_width = wv;
 				_height = hv;
 				
-				if((_pivotX!=0 || _pivotY!=0) && sourceWidth!=0 && sourceHeight!=0)
+				if(_pivotX!=0 || _pivotY!=0)
 				{
 					if(!ignorePivot)
-						this.setXY(this.x-_pivotX*dWidth/sourceWidth, 
-							this.y-_pivotY*dHeight/sourceHeight);
+						this.setXY(this.x-_pivotX*dWidth, this.y-_pivotY*dHeight);
 					applyPivot();
 				}
 				
@@ -328,27 +326,27 @@ package fairygui
 			}
 		}
 		
-		final public function get pivotX():int
+		final public function get pivotX():Number
 		{
 			return _pivotX;
 		}
 		
-		final public function set pivotX(value:int):void
+		final public function set pivotX(value:Number):void
 		{
 			setPivot(value, _pivotY);
 		}
 		
-		final public function get pivotY():int
+		final public function get pivotY():Number
 		{
 			return _pivotY;
 		}
 		
-		final public function set pivotY(value:int):void
+		final public function set pivotY(value:Number):void
 		{
 			setPivot(_pivotX, value);
 		}
 		
-		final public function setPivot(xv:int, yv:int):void
+		final public function setPivot(xv:Number, yv:Number):void
 		{
 			if(_pivotX!=xv || _pivotY!=yv)
 			{
@@ -375,10 +373,8 @@ package fairygui
 					var b:Number   = _scaleX *  sin;
 					var c:Number   = _scaleY * -sin;
 					var d:Number   = _scaleY *  cos;
-					var sx:Number = sourceWidth != 0 ? (_width / sourceWidth) : 1;
-					var sy:Number = sourceHeight != 0 ? (_height / sourceHeight) : 1;
-					var px:Number = _pivotX*sx;
-					var py:Number = _pivotY*sy;
+					var px:Number = _pivotX*_width;
+					var py:Number = _pivotY*_height;
 					_pivotOffsetX = px -  (a * px + c * py);
 					_pivotOffsetY = py - (d * py + b * px);
 				}
@@ -394,7 +390,7 @@ package fairygui
 				_pivotOffsetY = 0;
 			}
 			if(ox!=_pivotOffsetX || oy!=_pivotOffsetY)
-				handleXYChanged();
+				handlePositionChanged();
 		}
 
 		final public function get touchable():Boolean
@@ -481,12 +477,17 @@ package fairygui
 			if(_alpha!=value)
 			{
 				_alpha = value;
-				if(_displayObject)
-					_displayObject.alpha = _alpha;
-				
-				if(_gearLook.controller)
-					_gearLook.updateState();
+				updateAlpha();
 			}
+		}
+		
+		protected function updateAlpha():void
+		{
+			if(_displayObject)
+				_displayObject.alpha = _alpha;
+			
+			if(_gearLook.controller)
+				_gearLook.updateState();
 		}
 		
 		final public function get visible():Boolean
@@ -560,24 +561,16 @@ package fairygui
 		
 		public function get focused():Boolean
 		{
-			var r:GRoot = this.root;
-			if(r)
-				return r.focus == this;
-			else
-				return false;
+			return this.root.focus == this;
 		}
 		
 		public function requestFocus():void
 		{
-			var r:GRoot = this.root;
-			if(r)
-			{
-				var p:GObject = this;
-				while(p && !p._focusable)
-					p = p.parent;
-				if(p!=null)
-					r.focus = p;
-			}
+			var p:GObject = this;
+			while(p && !p._focusable)
+				p = p.parent;
+			if(p!=null)
+				this.root.focus = p;
 		}
 		
 		final public function get tooltips():String
@@ -605,22 +598,18 @@ package fairygui
 		{
 			var r:GRoot = this.root;
 			if(r)
-				GTimers.inst.callDelay(100, __doShowTooltips, r);
+				GTimers.inst.callDelay(100, __doShowTooltips);
 		}
 		
 		private function __doShowTooltips(r:GRoot):void
 		{
-			r.showTooltips(_tooltips);
+			this.root.showTooltips(_tooltips);
 		}
 		
 		private function __rollOut(evt:GTouchEvent):void
 		{
-			var r:GRoot = this.root;
-			if(r)
-			{
-				GTimers.inst.remove(__doShowTooltips);
-				r.hideTooltips();
-			}
+			GTimers.inst.remove(__doShowTooltips);
+			this.root.hideTooltips();
 		}
 		
 		final public function get inContainer():Boolean
@@ -714,6 +703,9 @@ package fairygui
 		
 		public function get root():GRoot
 		{
+			if(this is GRoot)
+				return GRoot(this);
+			
 			var p:GObject = _parent;
 			while(p)
 			{
@@ -789,6 +781,11 @@ package fairygui
 			return this as GComboBox;
 		}
 		
+		final public function get asImage():GImage
+		{
+			return this as GImage;
+		}
+		
 		final public function get asMovieClip():GMovieClip
 		{
 			return this as GMovieClip;
@@ -805,6 +802,7 @@ package fairygui
 		
 		public function dispose():void
 		{
+			removeFromParent();
 			_relations.dispose();
 			if(_displayObject!=null)
 			{
@@ -995,7 +993,7 @@ package fairygui
 			
 		}
 
-		protected function handleXYChanged():void
+		protected function handlePositionChanged():void
 		{
 			if(_displayObject)
 			{
@@ -1079,7 +1077,25 @@ package fairygui
 			if(str)
 			{
 				arr = str.split(",");
-				this.setPivot(int(arr[0]), int(arr[1]));
+				var n1:Number = parseFloat(arr[0]);
+				var n2:Number = parseFloat(arr[1])
+				//旧版本的兼容性处理
+				if(n1>2)
+				{
+					if(_sourceWidth!=0)
+						n1 = n1/_sourceWidth;
+					else
+						n1 = 0;
+				}
+				
+				if(n2>2)
+				{
+					if(_sourceHeight!=0)
+						n2 = n2/_sourceHeight;
+					else
+						n2 = 0;
+				}
+				this.setPivot(n1, n2);
 			}
 			
 			this.touchable = xml.@touchable!="false";
@@ -1118,7 +1134,8 @@ package fairygui
 		private var _touchPointId:int;
 		private var _lastClick:int;
 		private var _buttonStatus:int;
-		private var _rollOver:Boolean;		
+		private var _rollOver:Boolean;
+		private var _touchDownPoint:Point;
 		private static var sHelperPoint:Point = new Point();
 		private static const MTOUCH_EVENTS:Array = 
 			[GTouchEvent.BEGIN, GTouchEvent.DRAG, GTouchEvent.END, GTouchEvent.CLICK,
@@ -1131,10 +1148,14 @@ package fairygui
 		
 		public function triggerDown(touchPointID:int=-1):void
 		{
-			_buttonStatus = 1;
-			_touchPointId = touchPointID;
+			var st:Stage = _displayObject.stage;
+			if(st!=null)
+			{
+				_buttonStatus = 1;
+				_touchPointId = touchPointID;
 			
-			_displayObject.stage.addEventListener(TouchEvent.TOUCH, __stageTouch);
+				_displayObject.stage.addEventListener(TouchEvent.TOUCH, __stageTouch);
+			}
 		}
 		
 		private function initMTouch():void
@@ -1144,7 +1165,13 @@ package fairygui
 
 		private function __stageTouch(evt:TouchEvent):void
 		{
-			var touch:Touch = evt.getTouch(_displayObject.stage);
+			var st:Stage = _displayObject.stage;
+			if(st==null) { //maybe remove from stage, or disposed
+				evt.currentTarget.removeEventListener(TouchEvent.TOUCH, __stageTouch);
+				return;
+			}
+			
+			var touch:Touch = evt.getTouch(st);
 			if(touch)
 			{
 				if(touch.phase==TouchPhase.MOVED)
@@ -1153,6 +1180,16 @@ package fairygui
 						|| GRoot.touchPointInput && _touchPointId!=touch.id)
 						return;
 					
+					var sensitivity:int;
+					if(GRoot.touchScreen)
+						sensitivity = UIConfig.touchDragSensitivity;
+					else
+						sensitivity = UIConfig.clickDragSensitivity;
+					if(_touchDownPoint!=null 
+						&& Math.abs(_touchDownPoint.x - touch.globalX) < sensitivity
+							&& Math.abs(_touchDownPoint.y - touch.globalY) < sensitivity)
+							return;
+						
 					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.DRAG);
 					devt.copyFrom(evt, touch);
 					this.dispatchEvent(devt);
@@ -1187,6 +1224,11 @@ package fairygui
 				this.dispatchEvent(devt);
 				if(devt.isPropagationStop)
 					evt.stopPropagation();
+				
+				if(_touchDownPoint==null)
+					_touchDownPoint = new Point();
+				_touchDownPoint.x = touch.globalX;
+				_touchDownPoint.y = touch.globalY;
 				
 				triggerDown(touch.id);
 			}
@@ -1245,7 +1287,12 @@ package fairygui
 				var child:GObject = GComponent(this).getChildAt(i);
 				child._buttonStatus = 2;
 				if(child is GComponent)
+				{
+					//当拖动发生，没有办法在starling里找到rollout的触发点，只好强制rollout
+					if((child is GButton) && GButton(child)._over)
+						GButton(child).__rollout(null);
 					child.cancelChildrenClickEvent();
+				}
 			}
 		}
 		//-------------------------------------------------------------------

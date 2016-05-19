@@ -11,7 +11,11 @@ package fairygui
 	
 	public class Transition
 	{
-		private var _name:String;
+		public var name:String;
+		public var autoPlay:Boolean;
+		public var autoPlayRepeat:int;
+		public var autoPlayDelay:Number;
+
 		private var _owner:GComponent;
 		private var _ownerBaseX:Number;
 		private var _ownerBaseY:Number;
@@ -22,35 +26,47 @@ package fairygui
 		private var _onComplete:Function;
 		private var _onCompleteParam:Object;
 		private var _options:int;
+		private var _reversed:Boolean;
+		private var _maxTime:Number;
 		
 		public const OPTION_IGNORE_DISPLAY_CONTROLLER:int = 1;
-
+		
 		private const FRAME_RATE:int = 24;
 		
 		public function Transition(owner:GComponent)
 		{
-			_owner = owner;
+			_owner = owner;			
 			_items = new Vector.<TransitionItem>();
+			_maxTime = 0;
+			autoPlayDelay = 0;
 		}
-		
-		public function get name():String
+
+		public function play(onComplete:Function = null, onCompleteParam:Object = null,
+							 times:int = 1, delay:Number = 0):void
 		{
-			return _name;
+			_play(onComplete, onCompleteParam, times, delay, false);
 		}
 		
-		public function set name(value:String):void
+		public function playReverse(onComplete:Function = null, onCompleteParam:Object = null,
+									times:int = 1, delay:Number = 0):void
 		{
-			_name = value;
+			_play(onComplete, onCompleteParam, 1, delay, true);
 		}
 		
-		public function play(onComplete:Function = null, onCompleteParam:Object = null, times:int = 1, delay:Number = 0):void
+		private function _play(onComplete:Function = null, onCompleteParam:Object = null,
+							   times:int = 1, delay:Number = 0, reversed:Boolean = false):void
 		{
 			stop();
-			if (times <= 0)
+			
+			if (times < 0)
+				times = int.MAX_VALUE;
+			else if(times==0)
 				times = 1;
 			_totalTimes = times;
+			_reversed = reversed;
 			internalPlay(delay);
 			_playing = _totalTasks>0;
+			
 			if (_playing)
 			{
 				_onComplete = onComplete;
@@ -92,57 +108,26 @@ package fairygui
 				_owner.internalVisible--;
 				
 				var cnt:int = _items.length;
-				for (var i:int = 0; i < cnt; i++)
+				if(_reversed)
 				{
-					var item:TransitionItem = _items[i];
-					if(item.target==null)
-						continue;
-					
-					if ((_options & OPTION_IGNORE_DISPLAY_CONTROLLER) != 0)
+					for (var i:int = cnt-1; i >=0 ; i--)
 					{
-						if(item.target!=_owner)
-							item.target.internalVisible--;
+						var item:TransitionItem = _items[i];
+						if(item.target==null)
+							continue;
+						
+						stopItem(item, setToComplete);
 					}
-					
-					if(item.completed)
-						continue;
-					
-					if (item.tweener != null)
+				}
+				else
+				{
+					for (i = 0; i < cnt; i++)
 					{
-						item.tweener.kill();
-						item.tweener = null;
-					}
-					
-					if (item.type == TransitionActionType.Transition)
-					{
-						var trans:Transition  = GComponent(item.target).getTransition(item.value.s);
-						if (trans != null)
-							trans.stop(setToComplete, false);
-					}
-					else if(item.type == TransitionActionType.Shake)
-					{
-						if (GTimers.inst.exists(item.__shake))
-						{
-							GTimers.inst.remove(item.__shake);
-							item.target._gearLocked = true;
-							item.target.setXY(item.target.x-item.startValue.f1, item.target.y-item.startValue.f2);
-							item.target._gearLocked = false;
-						}
-					}
-					else
-					{
-						if (setToComplete)
-						{
-							if (item.tween)
-							{
-								if (!item.yoyo || item.repeat % 2 == 0)
-									applyValue(item, item.endValue);
-								else
-									applyValue(item, item.startValue);
-							}
-							else if(item.type != TransitionActionType.Sound)
-								applyValue(item, item.value);
-						}
+						item = _items[i];
+						if(item.target==null)
+							continue;
+						
+						stopItem(item, setToComplete);
 					}
 				}
 				
@@ -156,6 +141,55 @@ package fairygui
 			}
 		}
 		
+		private function stopItem(item:TransitionItem, setToComplete:Boolean):void
+		{
+			if ((_options & OPTION_IGNORE_DISPLAY_CONTROLLER) != 0)
+			{
+				if (item.target != _owner)
+					item.target.internalVisible--;
+			}
+			
+			if(item.completed)
+				return;
+			
+			if (item.tweener != null)
+			{
+				item.tweener.kill();
+				item.tweener = null;
+			}
+			
+			if (item.type == TransitionActionType.Transition)
+			{
+				var trans:Transition  = GComponent(item.target).getTransition(item.value.s);
+				if (trans != null)
+					trans.stop(setToComplete, false);
+			}
+			else if(item.type == TransitionActionType.Shake)
+			{
+				if (GTimers.inst.exists(item.__shake))
+				{
+					GTimers.inst.remove(item.__shake);
+					item.target._gearLocked = true;
+					item.target.setXY(item.target.x-item.startValue.f1, item.target.y-item.startValue.f2);
+					item.target._gearLocked = false;
+				}
+			}
+			else
+			{
+				if (setToComplete)
+				{
+					if (item.tween)
+					{
+						if (!item.yoyo || item.repeat % 2 == 0)
+							applyValue(item, _reversed?item.startValue:item.endValue);
+						else
+							applyValue(item, _reversed?item.endValue:item.startValue);
+					}
+					else if(item.type != TransitionActionType.Sound)
+						applyValue(item, item.value);
+				}
+			}
+		}		
 		
 		public function get playing():Boolean
 		{
@@ -303,21 +337,15 @@ package fairygui
 				{
 					if (item.tween)
 					{
-						if (item.startValue.b1)
-							item.startValue.f1 += dx;
-						if (item.startValue.b2)
-							item.startValue.f2 += dy;
-						if (item.endValue.b1)
-							item.endValue.f1 += dx;
-						if (item.endValue.b2)
-							item.endValue.f2 += dy;
+						item.startValue.f1 += dx;
+						item.startValue.f2 += dy;
+						item.endValue.f1 += dx;
+						item.endValue.f2 += dy;
 					}
 					else
 					{
-						if (item.value.b1)
-							item.value.f1 += dx;
-						if (item.value.b2)
-							item.value.f2 += dy;
+						item.value.f1 += dx;
+						item.value.f2 += dy;
 					}
 				}
 			}
@@ -331,9 +359,13 @@ package fairygui
 			_totalTasks = 0;
 			var cnt:int = _items.length;
 			var parms:Object;
-			for (var i:int = 0; i < cnt; i++)
+			var i:int;
+			var item:TransitionItem;
+			var startTime:Number;
+			
+			for (i = 0; i < cnt; i++)
 			{
-				var item:TransitionItem = _items[i];
+				item = _items[i];
 				if (item.targetId)
 					item.target = _owner.getChildById(item.targetId);
 				else
@@ -341,11 +373,13 @@ package fairygui
 				if (item.target == null)
 					continue;
 				
-				var startTime:Number = delay + item.time;
-				
 				if (item.tween)
 				{
 					item.completed = false;
+					if(_reversed)
+						startTime = delay + _maxTime - item.time - item.duration;
+					else
+						startTime = delay + item.time;
 					switch (item.type)
 					{
 						case TransitionActionType.XY:
@@ -358,60 +392,54 @@ package fairygui
 							break;
 						
 						case TransitionActionType.Scale:
-							_totalTasks++;
-							item.value.f1 = item.startValue.f1;
-							item.value.f2 = item.startValue.f2;
-							parms = {};
-							parms.f1 = item.endValue.f1;
-							parms.f2 = item.endValue.f2;
-							parms.ease = item.easeType;
-							parms.onStart = __tweenStart;
-							parms.onStartParams = item.params;
-							parms.onUpdate = __tweenUpdate;
-							parms.onUpdateParams = item.params;
-							parms.onComplete = __tweenComplete;
-							parms.onCompleteParams = item.params;
-							if (startTime > 0)
-								parms.delay = startTime;
-							else
-								applyValue(item, item.value);
-							if (item.repeat > 0)
-							{
-								parms.repeat = item.repeat;
-								parms.yoyo = item.yoyo;
-							}
-							item.tweener = TweenMax.to(item.value, item.duration, parms);
-							break;
-						
 						case TransitionActionType.Alpha:
-							_totalTasks++;
-							item.value.f1 = item.startValue.f1;
-							parms = {};
-							parms.f1 = item.endValue.f1;
-							parms.ease = item.easeType;
-							parms.onStart = __tweenStart;
-							parms.onStartParams = item.params;
-							parms.onUpdate = __tweenUpdate;
-							parms.onUpdateParams = item.params;
-							parms.onComplete = __tweenComplete;
-							parms.onCompleteParams = item.params;
-							if (startTime > 0)
-								parms.delay = startTime;
-							else
-								applyValue(item, item.value);							
-							if (item.repeat > 0)
-							{
-								parms.repeat = item.repeat;
-								parms.yoyo = item.yoyo;
-							}
-							item.tweener = TweenMax.to(item.value, item.duration, parms);
-							break;
-						
 						case TransitionActionType.Rotation:
 							_totalTasks++;
-							item.value.i = item.startValue.i;
 							parms = {};
-							parms.i = item.endValue.i;
+							if(_reversed)
+							{
+								switch(item.type)
+								{
+									case TransitionActionType.Scale:
+										item.value.f1 = item.endValue.f1;
+										item.value.f2 = item.endValue.f2;
+										parms.f1 = item.startValue.f1;
+										parms.f2 = item.startValue.f2;
+										break;
+									
+									case TransitionActionType.Alpha:
+										item.value.f1 = item.endValue.f1;
+										parms.f1 = item.startValue.f1;
+										break;
+									
+									case TransitionActionType.Rotation:
+										item.value.i = item.endValue.i;
+										parms.i = item.startValue.i;										
+										break;
+								}
+							}
+							else
+							{
+								switch(item.type)
+								{
+									case TransitionActionType.Scale:
+										item.value.f1 = item.startValue.f1;
+										item.value.f2 = item.startValue.f2;
+										parms.f1 = item.endValue.f1;
+										parms.f2 = item.endValue.f2;
+										break;
+									
+									case TransitionActionType.Alpha:
+										item.value.f1 = item.startValue.f1;
+										parms.f1 = item.endValue.f1;
+										break;
+									
+									case TransitionActionType.Rotation:
+										item.value.i = item.startValue.i;
+										parms.i = item.endValue.i;							
+										break;
+								}
+							}
 							parms.ease = item.easeType;
 							parms.onStart = __tweenStart;
 							parms.onStartParams = item.params;
@@ -423,17 +451,25 @@ package fairygui
 								parms.delay = startTime;
 							else
 								applyValue(item, item.value);
-							if (item.repeat > 0)
+							if (item.repeat != 0)
 							{
-								parms.repeat = item.repeat;
+								if(item.repeat==-1)
+									parms.repeat = int.MAX_VALUE;
+								else
+									parms.repeat = item.repeat;
 								parms.yoyo = item.yoyo;
-							}
+							}							
 							item.tweener = TweenMax.to(item.value, item.duration, parms);
 							break;
 					}
 				}
 				else
 				{
+					if(_reversed)
+						startTime = delay + _maxTime - item.time;
+					else
+						startTime = delay + item.time;
+					
 					if (startTime == 0)
 						applyValue(item, item.value);
 					else
@@ -448,36 +484,65 @@ package fairygui
 		
 		private function startTween(item:TransitionItem):void
 		{
-			if (item.type == TransitionActionType.XY)
-			{
-				if (item.target == _owner)
-				{
-					item.value.f1 = item.startValue.b1 ? item.startValue.f1 : 0;
-					item.value.f2 = item.startValue.b2 ? item.startValue.f2 : 0;
-				}
-				else
-				{
-					item.value.f1 = item.startValue.b1 ? item.startValue.f1 : item.target.x;
-					item.value.f2 = item.startValue.b2 ? item.startValue.f2 : item.target.y;
-				}
-			}
-			else
-			{
-				item.value.f1 = item.startValue.b1 ? item.startValue.f1 : item.target.width;
-				item.value.f2 = item.startValue.b2 ? item.startValue.f2 : item.target.height;
-			}
-			
 			var parms:Object = {};
 			parms.ease = item.easeType;
 			parms.onUpdate = __tweenUpdate;
 			parms.onUpdateParams = item.params;
 			parms.onComplete = __tweenComplete;
 			parms.onCompleteParams = item.params;
-			parms.f1 = item.endValue.b1 ? item.endValue.f1 : item.value.f1;
-			parms.f2 = item.endValue.b2 ? item.endValue.f2 : item.value.f2
-			if (item.repeat > 0)
+			
+			if(_reversed)
 			{
-				parms.repeat = item.repeat;
+				item.value.f1 = item.endValue.f1;
+				item.value.f2 = item.endValue.f2;				
+				parms.f1 = item.startValue.f1;
+				parms.f2 = item.startValue.f2;
+			}
+			else
+			{
+				if (item.type == TransitionActionType.XY)
+				{
+					if (item.target == _owner)
+					{
+						if(!item.startValue.b1)
+							item.startValue.f1 = 0;
+						if(!item.startValue.b2)
+							item.startValue.f2 = 0;
+					}
+					else
+					{
+						if(!item.startValue.b1)
+							item.startValue.f1 = item.target.x;
+						if(!item.startValue.b2)
+							item.startValue.f2 = item.target.y;
+					}
+				}
+				else
+				{
+					if(!item.startValue.b1)
+						item.startValue.f1 = item.target.width;
+					if(!item.startValue.b2)
+						item.startValue.f2 = item.target.height;
+				}
+				
+				item.value.f1 = item.startValue.f1;
+				item.value.f2 = item.startValue.f2;
+				
+				if(!item.endValue.b1)
+					item.endValue.f1 = item.value.f1;
+				if(!item.endValue.b2)
+					item.endValue.f2 = item.value.f2;
+				
+				parms.f1 = item.endValue.f1;
+				parms.f2 = item.endValue.f2;
+			}
+			
+			if (item.repeat != 0)
+			{
+				if(item.repeat==-1)
+					parms.repeat = int.MAX_VALUE;
+				else
+					parms.repeat = item.repeat;
 				parms.yoyo = item.yoyo;
 			}
 			
@@ -554,10 +619,10 @@ package fairygui
 					{
 						_playing = false;
 						_owner.internalVisible--;
+						var cnt:int = _items.length;
 						
 						if ((_options & OPTION_IGNORE_DISPLAY_CONTROLLER) != 0)
 						{
-							var cnt:int = _items.length;
 							for (var i:int = 0; i < cnt; i++)
 							{
 								var item:TransitionItem = _items[i];
@@ -653,21 +718,21 @@ package fairygui
 				case TransitionActionType.Controller:
 					var arr:Array = value.s.split(",");
 					for each(var str:String in arr)
+				{
+					var arr2:Array = str.split("=");
+					var cc:Controller = GComponent(item.target).getController(arr2[0]);
+					if(cc)
 					{
-						var arr2:Array = str.split("=");
-						var cc:Controller = GComponent(item.target).getController(arr2[0]);
-						if(cc)
+						str = arr2[1];
+						if(str.charAt(0)=="$")
 						{
-							str = arr2[1];
-							if(str.charAt(0)=="$")
-							{
-								str = str.substring(1);
-								cc.selectedPage = str;
-							}
-							else
-								cc.selectedIndex = parseInt(str);	
-						}							
-					}
+							str = str.substring(1);
+							cc.selectedPage = str;
+						}
+						else
+							cc.selectedIndex = parseInt(str);	
+					}							
+				}
 					break;
 				
 				case TransitionActionType.Transition:
@@ -677,12 +742,15 @@ package fairygui
 						if (value.i == 0)
 							trans.stop(false, true);
 						else if (trans.playing)
-							trans._totalTimes = value.i;
+							trans._totalTimes = value.i==-1?int.MAX_VALUE:value.i;
 						else
 						{
 							item.completed = false;
 							_totalTasks++;
-							trans.play(__playTransComplete, item, value.i);
+							if(_reversed)
+								trans.playReverse(__playTransComplete, item, value.i);
+							else
+								trans.play(__playTransComplete, item, value.i);
 						}
 					}
 					break;
@@ -748,7 +816,15 @@ package fairygui
 			this.name = xml.@name;
 			var str:String = xml.@options;
 			if(str)
-				_options = parseInt(str); 
+				_options = parseInt(str);
+			this.autoPlay = xml.@autoPlay=="true";
+			str = xml.@autoPlayRepeat;
+			if(str)
+				this.autoPlayRepeat = parseInt(str);
+			str = xml.@autoPlayDelay;
+			if(str)
+				this.autoPlayDelay = parseFloat(str);
+			
 			var col:XMLList = xml.item;
 			for each (var cxml:XML in col)
 			{
@@ -811,6 +887,8 @@ package fairygui
 				if (item.tween)
 				{
 					item.duration = parseInt(cxml.@duration) / FRAME_RATE;
+					if(item.time+item.duration>_maxTime)
+						_maxTime = item.time+item.duration;
 					
 					str = cxml.@ease;
 					if (str)
@@ -841,22 +919,11 @@ package fairygui
 						item.tween = false;
 						decodeValue(item.type, cxml.@startValue, item.value);
 					}
-					
-					v = cxml.@throughPoints;
-					if (v != null)
-					{
-						/*string[] arr = v.Split(jointChar1);
-						foreach (string str in arr)
-						{
-						if (str.Length == 0)
-						continue;
-						string[] arr2 = str.Split(jointChar0);
-						item.throughPoints.Add(new Point(int.Parse(arr2[0]), int.Parse(arr2[1])));
-						}*/
-					}
 				}
 				else
 				{
+					if(item.time>_maxTime)
+						_maxTime = item.time;
 					decodeValue(item.type, cxml.@value, item.value);
 				}
 			}
@@ -877,7 +944,7 @@ package fairygui
 					}
 					else
 					{
-						value.f1 = parseInt(arr[0]);
+						value.f1 = parseFloat(arr[0]);
 						value.b1 = true;
 					}
 					if(arr[1]=="-")
@@ -886,7 +953,7 @@ package fairygui
 					}
 					else
 					{
-						value.f2 = parseInt(arr[1]);
+						value.f2 = parseFloat(arr[1]);
 						value.b2 = true;
 					}
 					break;
@@ -1038,5 +1105,9 @@ class TransitionValue
 	
 	public var b1:Boolean = true;
 	public var b2:Boolean = true;
+	
+	public function TransitionValue()
+	{
+	}
 }
 
