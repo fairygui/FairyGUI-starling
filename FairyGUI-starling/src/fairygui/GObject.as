@@ -1264,12 +1264,17 @@ package fairygui
 					_lastClick = 0;
 				}
 				else
-					_lastClick = now;
+					_lastClick = now;				
 				
-				var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
-				devt.copyFrom(evt, touch, cc);
-				
-				this.dispatchEvent(devt);
+				globalToLocal(touch.globalX, touch.globalY, sHelperPoint);
+				var isWithinBounds:Boolean = sHelperPoint.x >= 0 && sHelperPoint.x <= width && sHelperPoint.y >= 0 && sHelperPoint.y <= height;
+				if (isWithinBounds)
+				{
+					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
+					devt.copyFrom(evt, touch, cc);
+					
+					this.dispatchEvent(devt);
+				}
 			}
 			
 			_buttonStatus = 0;
