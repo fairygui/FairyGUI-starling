@@ -690,6 +690,9 @@ package fairygui
 			var w:Number = this.width - (_margin.left + _margin.right);
 			var h:Number = this.height - (_margin.top + _margin.bottom);
 			
+			//starling用Quad遮罩不允许0大小。。。
+			if(w==0) w=0.0001;
+			if(h==0) h=0.0001;
 			if(_rootContainer.mask==null)
 				_rootContainer.mask = new Quad(w,h);
 			else
