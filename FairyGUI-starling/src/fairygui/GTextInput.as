@@ -1,7 +1,6 @@
 package fairygui
 {
 	import flash.display.Stage;
-	import flash.events.Event;
 	import flash.events.FocusEvent;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
@@ -11,6 +10,7 @@ package fairygui
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
+	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
@@ -33,6 +33,7 @@ package fairygui
 			_nativeTextField.addEventListener(FocusEvent.FOCUS_OUT, __focusOut);
 			
 			this.addEventListener(TouchEvent.TOUCH, __touch);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 		}
 		
 		override public function dispose():void
@@ -183,7 +184,7 @@ package fairygui
 			_canvas.visible = false;
 		}
 		
-		private function __focusOut(evt:Event):void
+		private function __focusOut(evt:FocusEvent):void
 		{
 			if(_nativeTextField.parent)
 			{
@@ -191,6 +192,16 @@ package fairygui
 				stage.removeChild(_nativeTextField);
 				_canvas.visible = true;
 				this.text = _nativeTextField.text;
+			}
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			if(_nativeTextField.parent)
+			{
+				var stage:Stage = Starling.current.nativeStage;
+				stage.removeChild(_nativeTextField);
+				_canvas.visible = true;
 			}
 		}
 	}

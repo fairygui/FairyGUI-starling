@@ -61,10 +61,5 @@ package fairygui.display
 
 			return ret;				
 		}
-		
-		override public function render(painter:Painter):void
-		{
-			super.render(painter);
-		}
 	}
 }

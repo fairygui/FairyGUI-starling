@@ -6,6 +6,7 @@ package fairygui.display
 	
 	import fairygui.text.BitmapFont;
 	
+	import starling.events.Event;
 	import starling.rendering.Painter;
 	import starling.textures.Texture;
 	import starling.utils.MathUtil;
@@ -13,22 +14,33 @@ package fairygui.display
 	public class TextCanvas extends MeshExt
 	{
 		public var renderCallback:Function;
-
+		
+		//to save memory. If you dont like this, change to false
+		public static var freeTextureOnRemoved:Boolean = true;
+		
 		private static var sDefaultTextureFormat:String = Context3DTextureFormat.BGRA_PACKED;
 
 		private var _ownsTexture:Boolean;
+		private var _restoreFunction:Function;
+		private var _needRestore:Boolean;
 		
 		public function TextCanvas()
 		{
 			//TextCanvas is by default touchable
 			this.touchable = false;
+			
+			if(freeTextureOnRemoved)
+			{
+				this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+				this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
+			}
 		}
 		
 		override public function dispose():void
 		{
-			clear();
-
+			freeTexture();
 			renderCallback = null;
+			_restoreFunction = null;
 			
 			super.dispose();
 		}
@@ -44,9 +56,13 @@ package fairygui.display
 			if(textWidth==0 || textHeight==0 || nw==0)
 			{
 				clear();
+				setRequiresRedraw();
+				_restoreFunction = null;
 			}
 			else
 			{
+				_restoreFunction = restoreFunc;
+				
 				var bw:int, bh:int;
 				bw = MathUtil.getNextPowerOfTwo(nw);
 				if(bw>2048)
@@ -93,32 +109,51 @@ package fairygui.display
 		{
 			_ownsTexture = false;
 			this.style.texture = font.mainTexture;
-			this.vertexData.premultipliedAlpha = font.mainTexture.premultipliedAlpha;
 			VertexHelper.flush(this.vertexData, this.indexData);
 			vertexData.colorize("color", color);
 			setRequiresRedraw();
 		}
 		
-		public function clear():void
+		public function freeTexture():void
 		{
-			if(_ownsTexture && this.texture!=null)
+			if(_ownsTexture && this.style.texture!=null)
 			{
 				this.style.texture.dispose();
 				this.style.texture = null;
-				
-				this.vertexData.numVertices = 0;
-				this.indexData.numIndices = 0;
-				
-				setRequiresRedraw();
 			}
 		}
-
+		
+		public function clear():void
+		{
+			freeTexture();
+			
+			this.vertexData.numVertices = 0;
+			this.indexData.numIndices = 0;
+		}		
+		
 		override public function render(painter:Painter):void
 		{
 			if(renderCallback!=null)
 				renderCallback();
 			
 			super.render(painter);
+		}
+		
+		private function __addedToStage(evt:Event):void
+		{
+			if(_needRestore && _restoreFunction!=null)
+				_restoreFunction();
+		}
+		
+		private function __removeFromStage(evt:Event):void
+		{
+			if(_ownsTexture)
+			{
+				freeTexture();
+				_needRestore = true;
+			}
+			else
+				_needRestore = false;
 		}
 	}
 }

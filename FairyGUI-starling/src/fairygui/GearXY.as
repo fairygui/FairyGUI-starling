@@ -71,6 +71,7 @@ package fairygui
 								x: pt.x,
 								y: pt.y,
 								ease: _easeType,
+								delay: _delay,
 								overwrite:0
 							};
 					vars.onUpdate = __tweenUpdate;

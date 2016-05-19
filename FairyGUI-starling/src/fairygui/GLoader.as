@@ -470,19 +470,30 @@ package fairygui
 			
 			_activeObject.x = 0;
 			_activeObject.y = 0;
-			_activeObject.scaleX = 1;
-			_activeObject.scaleY = 1;
 			_contentWidth = _contentSourceWidth;
 			_contentHeight = _contentSourceHeight;
 			
 			if(_autoSize)
 			{
 				_updatingLayout = true;
+				
+				if(_activeObject is ImageExt)
+				{
+					ImageExt(_activeObject).textureScaleX = 1;
+					ImageExt(_activeObject).textureScaleY = 1;
+				}
+				else
+				{
+					_activeObject.scaleX =  1;
+					_activeObject.scaleY =  1;
+				}
+				
 				if(_contentWidth==0)
 					_contentWidth = 50;
 				if(_contentHeight==0)
 					_contentHeight = 30;
 				this.setSize(_contentWidth, _contentHeight);
+				
 				_updatingLayout = false;
 			}
 			else
@@ -507,8 +518,16 @@ package fairygui
 					}
 				}	
 				
-				_activeObject.scaleX =  sx;
-				_activeObject.scaleY =  sy;
+				if(_activeObject is ImageExt)
+				{
+					ImageExt(_activeObject).textureScaleX = sx;
+					ImageExt(_activeObject).textureScaleY = sy;
+				}
+				else
+				{
+					_activeObject.scaleX =  sx;
+					_activeObject.scaleY =  sy;
+				}
 				
 				if(_align==AlignType.Center)
 					_activeObject.x = int((this.width-_contentWidth)/2);

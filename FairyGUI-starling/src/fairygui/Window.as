@@ -189,7 +189,7 @@ package fairygui
 		
 		public function bringToFront():void
 		{
-			this.root.showWindow(this);
+			this.root.bringToFront(this);
 		}
 
 		public function showModalWait(requestingCmd:int=0):void

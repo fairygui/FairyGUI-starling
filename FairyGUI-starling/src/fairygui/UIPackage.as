@@ -686,8 +686,15 @@ package fairygui
 					else
 					{
 						pi.loading = true;
+						_loadingQueue.push(pi);
 						Texture.fromAtfData(ba, 1, false, function(texture:Texture):void
 						{
+							var i:int = _loadingQueue.indexOf(pi);
+							if(i==-1)
+								return;
+							
+							_loadingQueue.splice(i, 1);
+							
 							pi.texture = texture;
 							pi.texture.root.onRestore = function():void
 							{

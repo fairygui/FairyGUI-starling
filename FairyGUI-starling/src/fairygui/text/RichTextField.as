@@ -40,7 +40,6 @@ package fairygui.text
 
 		public function RichTextField():void 
 		{
-
 			_linkButtonCache = new Vector.<LinkButton>();
 			_nodeCache = new Vector.<HtmlNode>();
 			_ALinkFormat = new TextFormat();
@@ -62,7 +61,7 @@ package fairygui.text
 			if(_textField.height!=value)
 			{
 				_textField.width = value;
-				_needRebuild = true;
+				setRequiresRedraw();
 			}
 		}
 		
@@ -71,7 +70,7 @@ package fairygui.text
 			if(_textField.height!=value) 
 			{
 				_textField.height = value;
-				_needRebuild = true;
+				setRequiresRedraw();
 				adjustNodes();
 			}
 		}
@@ -128,7 +127,7 @@ package fairygui.text
 					_defaultTextFormat.kerning = false;
 			}
 			_textField.defaultTextFormat = val;
-			_needRebuild = true;
+			setRequiresRedraw();
 		}
 		
 		public function get defaultTextFormat():TextFormat
@@ -144,6 +143,7 @@ package fairygui.text
 		public function set ALinkFormat(val:TextFormat):void
 		{
 			_ALinkFormat = val;
+			setRequiresRedraw();
 		}
 
 		public function set multiline(val:Boolean):void
@@ -151,7 +151,7 @@ package fairygui.text
 			if(_textField.multiline != val)
 			{
 				_textField.multiline = val;
-				_needRebuild = true;
+				setRequiresRedraw();
 			}
 		}
 		
@@ -165,7 +165,7 @@ package fairygui.text
 			if(_textField.wordWrap != val)
 			{
 				_textField.wordWrap = val;
-				_needRebuild = true;
+				setRequiresRedraw();
 			}
 		}
 		
@@ -190,7 +190,7 @@ package fairygui.text
 			if(_textField.border != val)
 			{
 				_textField.border = val;
-				_needRebuild = true;
+				setRequiresRedraw();
 			}
 		}
 		
@@ -404,7 +404,7 @@ package fairygui.text
 					addImage(startPos, e);
 			}
 
-			_needRebuild = true;
+			setRequiresRedraw();
 			if(_textField.parent!=null)
 				Starling.current.nativeStage.removeChild(_textField);
 		}
@@ -467,7 +467,7 @@ package fairygui.text
 					}
 				}
 			}
-			_needRebuild = true;
+			setRequiresRedraw();
 			
 			if(_textField.parent!=null)
 				Starling.current.nativeStage.removeChild(_textField);
@@ -527,7 +527,7 @@ package fairygui.text
 				_textField.defaultTextFormat = _defaultTextFormat;
 
 			_canvas.clear();
-			_needRebuild = false;
+			setRequiresRedraw();
 		}
 		
 		private function fixTextSize():void 
@@ -832,27 +832,21 @@ package fairygui.text
 			}
 		}
 		
+		override public function setRequiresRedraw():void
+		{
+			super.setRequiresRedraw();
+			_needRebuild = true;
+		}
+		
 		override public function render(painter:Painter):void
 		{
 			if(_needRebuild)
 			{
 				_needRebuild = false;
-				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, clearCanvas);
+				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, setRequiresRedraw);
 			}
 			
 			super.render(painter);
 		}
-		
-		public function clearCanvas():void
-		{
-			if(_canvas.texture!=null)
-			{
-				_canvas.clear();
-				_needRebuild = true;
-			}
-		}
 	}
-	
 }
-
-

@@ -6,7 +6,6 @@ package fairygui
 	
 	import fairygui.display.Frame;
 	import fairygui.text.BitmapFont;
-	import fairygui.utils.PixelHitTest;
 	
 	import starling.textures.Texture;
 

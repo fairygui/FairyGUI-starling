@@ -13,9 +13,8 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.CharSize;
+	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
-	
-	import starling.events.Event;
 
 	public class GTextField extends GObject implements IColorGear
 	{
@@ -86,7 +85,6 @@ package fairygui
 		{ 
 			_canvas = new UITextField(this);
 			setDisplayObject(_canvas); 
-			_canvas.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 			_canvas.renderCallback = onRender;
 		}
 		
@@ -361,7 +359,8 @@ package fairygui
 		
 		public function get textWidth():int
 		{
-			this.ensureSizeCorrect();
+			if(_requireRender)
+				renderNow();
 			return _textWidth;
 		}
 		
@@ -436,7 +435,7 @@ package fairygui
 				_canvas.setRequiresRedraw();
 			}
 			
-			if(_widthAutoSize || _heightAutoSize)
+			if(!_sizeDirty && (_widthAutoSize || _heightAutoSize))
 			{
 				_sizeDirty = true;
 				_dispatcher.dispatch(this, GObject.SIZE_DELAY_CHANGE);
@@ -448,20 +447,15 @@ package fairygui
 			if(_requireRender)
 				renderNow();
 		}
-
-		private function __removeFromStage(evt:Event):void
-		{
-			clearCanvas();
-		}
 		
-		protected function renderNow(updateBounds:Boolean=true):void
+		protected function renderNow():void
 		{
 			_requireRender = false;
 			_sizeDirty = false;
 			
 			if(_bitmapFont!=null)
 			{
-				renderWithBitmapFont(updateBounds);
+				renderWithBitmapFont();
 				return;
 			}
 			
@@ -525,16 +519,13 @@ package fairygui
 				renderTextField.height = _textHeight+_fontAdjustment+3;
 			}
 
-			if(updateBounds)
-			{
-				_updatingSize = true;
-				this.setSize(w,h);
-				_updatingSize = false;
-				
-				doAlign();
-			}
+			_updatingSize = true;
+			this.setSize(w,h);
+			_updatingSize = false;
 			
-			_canvas.renderText(renderTextField, _textWidth, _textHeight+_fontAdjustment+3, clearCanvas);
+			doAlign();
+			
+			_canvas.renderText(renderTextField, _textWidth, _textHeight+_fontAdjustment+3, render);
 			renderTextField.text = "";
 		}
 		
@@ -554,22 +545,19 @@ package fairygui
 				renderTextField.text = _text;
 		}
 		
-		private function clearCanvas():void
+		private function renderWithBitmapFont():void
 		{
-			if(_canvas.texture!=null)
-			{
-				_canvas.clear();
-				_requireRender = true;
-				_canvas.setRequiresRedraw();
-			}
-		}
-		
-		private function renderWithBitmapFont(updateBounds:Boolean):void
-		{
+			_canvas.clear();
 			if(!_lines)
 				_lines = new Vector.<LineInfo>();
 			else
 				LineInfo.returnList(_lines);
+			
+			if(_bitmapFont.mainTexture==null) {
+				_requireRender = true;
+				GTimers.inst.callLater(function():void { _canvas.setRequiresRedraw(); });
+				return;
+			}
 			
 			var letterSpacing:int = _letterSpacing;
 			var lineSpacing:int = _leading - 1;
@@ -770,16 +758,12 @@ package fairygui
 			else
 				h = this.height;;
 			
-			if(updateBounds)
-			{
-				_updatingSize = true;
-				this.setSize(w,h);
-				_updatingSize = false;
-				
-				doAlign();
-			}
+			_updatingSize = true;
+			this.setSize(w,h);
+			_updatingSize = false;
 			
-			_canvas.clear();
+			doAlign();
+
 			_canvas.setCanvasSize(w, h);
 			
 			if(w==0 || h==0)
@@ -873,11 +857,15 @@ package fairygui
 		
 		private function doAlign():void
 		{
-			if(_verticalAlign==VertAlignType.Top || _textHeight==0)
+			if(_verticalAlign==VertAlignType.Top)
 				_yOffset = 0;
 			else
 			{
-				var dh:Number = this.height-_textHeight;
+				var dh:Number;
+				if(_textHeight==0)
+					dh = this.height-int(_textFormat.size);
+				else
+					dh = this.height-_textHeight;
 				if(dh<0)
 					dh = 0;
 				if(_verticalAlign==VertAlignType.Middle)

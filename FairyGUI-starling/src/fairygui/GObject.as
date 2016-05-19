@@ -1165,7 +1165,13 @@ package fairygui
 
 		private function __stageTouch(evt:TouchEvent):void
 		{
-			var touch:Touch = evt.getTouch(_displayObject.stage);
+			var st:Stage = _displayObject.stage;
+			if(st==null) { //maybe remove from stage, or disposed
+				evt.currentTarget.removeEventListener(TouchEvent.TOUCH, __stageTouch);
+				return;
+			}
+			
+			var touch:Touch = evt.getTouch(st);
 			if(touch)
 			{
 				if(touch.phase==TouchPhase.MOVED)

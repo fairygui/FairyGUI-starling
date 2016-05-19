@@ -7,9 +7,7 @@ package fairygui.display
 	import starling.animation.IAnimatable;
 	import starling.core.Starling;
 	import starling.events.Event;
-	import starling.rendering.IndexData;
 	import starling.rendering.Painter;
-	import starling.rendering.VertexData;
 	import starling.textures.TextureSmoothing;
 	
 	public class MovieClip extends MeshExt implements IAnimatable
