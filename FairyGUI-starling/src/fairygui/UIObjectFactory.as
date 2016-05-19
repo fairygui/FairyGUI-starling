@@ -15,6 +15,11 @@ package fairygui
 			packageItemExtensions[url.substring(5)] = type;
 		}
 		
+		public static function setComponentItemClass(comp:*, type:Class):void
+		{
+			componentItemClass[comp] = type;
+		}
+		
 		public static function setLoaderExtension(type:Class):void
 		{
 			loaderExtension = type;
@@ -48,6 +53,10 @@ package fairygui
 					var extention:String = xml.@extention;
 					if (extention != null)
 					{
+						cls = componentItemClass[extention];
+						if(cls)
+							return new cls();
+						
 						switch (extention)
 						{
 							case "Button":
