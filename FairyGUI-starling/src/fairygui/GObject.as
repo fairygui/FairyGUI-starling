@@ -1136,7 +1136,6 @@ package fairygui
 		private var _buttonStatus:int;
 		private var _rollOver:Boolean;
 		private var _touchDownPoint:Point;
-		private static var sHelpRect:Rectangle = new Rectangle();
 		private static var sHelperPoint:Point = new Point();
 		private static const MTOUCH_EVENTS:Array = 
 			[GTouchEvent.BEGIN, GTouchEvent.DRAG, GTouchEvent.END, GTouchEvent.CLICK,
@@ -1166,7 +1165,7 @@ package fairygui
 
 		private function __stageTouch(evt:TouchEvent):void
 		{
-			var st:Stage = _displayObject.stage;
+			var st:Stage = _displayObject?_displayObject.stage:null;
 			if(st==null) { //maybe remove from stage, or disposed
 				evt.currentTarget.removeEventListener(TouchEvent.TOUCH, __stageTouch);
 				return;
@@ -1267,16 +1266,10 @@ package fairygui
 				else
 					_lastClick = now;
 				
+				var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
+				devt.copyFrom(evt, touch, cc);
 				
-				var isWithinBounds:Boolean = localToGlobalRect(0, 0, width, height, sHelpRect).contains(touch.globalX, touch.globalY);
-				
-				if (isWithinBounds)
-				{
-					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
-					devt.copyFrom(evt, touch, cc);
-					
-					this.dispatchEvent(devt);
-				}
+				this.dispatchEvent(devt);
 			}
 			
 			_buttonStatus = 0;
