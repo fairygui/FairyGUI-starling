@@ -2,7 +2,8 @@ package fairygui
 {
 	public class UIObjectFactory
 	{
-		internal static var packageItemExtensions:Object = {};
+		private static var packageItemExtensions:Object = {};
+		private static var componentItemClass:Object = {};
 		private static var loaderExtension:Class;
 		
 		public function UIObjectFactory()
@@ -21,6 +22,10 @@ package fairygui
 		
 		public static function newObject(pi:PackageItem):GObject
 		{
+			var cls:Object = componentItemClass[pi.type];
+			if(cls)
+				return new cls();
+			
 			switch (pi.type)
 			{
 				case PackageItemType.Image:
@@ -34,7 +39,7 @@ package fairygui
 				
 				case PackageItemType.Component:
 				{
-					var cls:Class = packageItemExtensions[pi.owner.id + pi.id];
+					cls = packageItemExtensions[pi.owner.id + pi.id];
 					if (cls)
 						return new cls();
 					
@@ -76,6 +81,10 @@ package fairygui
 		
 		public static function newObject2(type:String):GObject
 		{
+			var cls:Object = componentItemClass[type];
+			if(cls)
+				return new cls();
+			
 			switch (type)
 			{
 				case "image":

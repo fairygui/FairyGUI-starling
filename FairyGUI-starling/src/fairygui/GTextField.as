@@ -569,10 +569,11 @@ package fairygui
 			var lineBuffer:String = "";
 			var lineY:int = GUTTER_Y;
 			var line:LineInfo;
-			var textWidth:int, textHeight:int;
 			var wordWrap:Boolean = !_widthAutoSize && !_singleLine;
 			var fontScale:Number = _bitmapFont.resizable?_fontSize/_bitmapFont.size:1;
 			var charCount:int;
+			_textWidth = 0;
+			_textHeight = 0;
 			
 			var textLength:int = _text.length;
 			for (var offset:int = 0; offset < textLength; ++offset)
@@ -599,8 +600,8 @@ package fairygui
 					line.text = lineBuffer;
 					line.y = lineY;
 					lineY += (line.height + lineSpacing);
-					if (line.width > textWidth)
-						textWidth = line.width;
+					if (line.width > _textWidth)
+						_textWidth = line.width;
 					_lines.push(line);
 					
 					lineBuffer = "";
@@ -695,8 +696,8 @@ package fairygui
 					}
 					line.y = lineY;
 					lineY += (line.height + lineSpacing);
-					if (line.width > textWidth)
-						textWidth = line.width;
+					if (line.width > _textWidth)
+						_textWidth = line.width;
 					
 					wordChars = 0;
 					wordStart = 0;
@@ -718,23 +719,23 @@ package fairygui
 				line.textHeight = lineTextHeight;
 				line.text = lineBuffer;
 				line.y = lineY;
-				if (line.width > textWidth)
-					textWidth = line.width;
+				if (line.width > _textWidth)
+					_textWidth = line.width;
 				_lines.push(line);
 			}
 			
-			if (textWidth > 0)
-				textWidth += GUTTER_X * 2;
+			if (_textWidth > 0)
+				_textWidth += GUTTER_X * 2;
 			
 			var count:int = _lines.length;
 			if(count==0)
 			{
-				textHeight = 0;
+				_textHeight = 0;
 			}
 			else
 			{
 				line = _lines[_lines.length - 1];
-				textHeight = line.y + line.height + GUTTER_Y;
+				_textHeight = line.y + line.height + GUTTER_Y;
 			}
 			
 			var w:int, h:int;
@@ -750,10 +751,10 @@ package fairygui
 			
 			if(_heightAutoSize)
 			{
-				if(textHeight==0)
+				if(_textHeight==0)
 					h = 0;
 				else
-					h = textHeight;
+					h = _textHeight;
 			}
 			else
 				h = this.height;;
