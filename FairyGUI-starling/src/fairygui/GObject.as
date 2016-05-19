@@ -118,8 +118,6 @@ package fairygui
 			_gearXY = new GearXY(this);
 			_gearSize = new GearSize(this);
 			_gearLook = new GearLook(this);
-			
-			_triggerBounds = new Rectangle();
 		}
 
 		final public function get id():String
@@ -1138,9 +1136,7 @@ package fairygui
 		private var _buttonStatus:int;
 		private var _rollOver:Boolean;
 		private var _touchDownPoint:Point;
-		/** 组件触发click的区域大小*/
-		private var _triggerBounds:Rectangle;
-		private var _isRealDown:Boolean;
+		private static var sHelpRect:Rectangle = new Rectangle();
 		private static var sHelperPoint:Point = new Point();
 		private static const MTOUCH_EVENTS:Array = 
 			[GTouchEvent.BEGIN, GTouchEvent.DRAG, GTouchEvent.END, GTouchEvent.CLICK,
@@ -1200,23 +1196,11 @@ package fairygui
 					this.dispatchEvent(devt);
 					if(devt.isPropagationStop)
 						evt.stopPropagation();
-					
-					var isWithinBounds:Boolean = _triggerBounds.contains(touch.globalX, touch.globalY);
-					
-					if (_isRealDown && !isWithinBounds)
-					{
-						_isRealDown = false;
-					}
-					else if (!_isRealDown && isWithinBounds)
-					{
-						_isRealDown = true;
-					}
 				}
 				else if(touch.phase==TouchPhase.ENDED)
 				{
 					_displayObject.stage.removeEventListener(TouchEvent.TOUCH, __stageTouch);
 					handleEnded(evt, touch);
-					_isRealDown = false;
 				}
 			}
 		}
@@ -1248,17 +1232,10 @@ package fairygui
 				_touchDownPoint.y = touch.globalY;
 				
 				triggerDown(touch.id);
-				
-				if (!_isRealDown)
-				{
-					_isRealDown = true;
-					localToGlobalRect(0, 0, width, height, _triggerBounds);
-				}
 			}
 			else if(touch.phase==TouchPhase.ENDED)
 			{
 				handleEnded(evt, touch);
-				_isRealDown = false;
 			}
 			else if(touch.phase==TouchPhase.HOVER)
 			{
@@ -1290,7 +1267,10 @@ package fairygui
 				else
 					_lastClick = now;
 				
-				if (_isRealDown)
+				
+				var isWithinBounds:Boolean = localToGlobalRect(0, 0, width, height, sHelpRect).contains(touch.globalX, touch.globalY);
+				
+				if (isWithinBounds)
 				{
 					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
 					devt.copyFrom(evt, touch, cc);
