@@ -21,11 +21,12 @@ package fairygui
 		
 		public function get color():uint
 		{
-			return 0;
+			return _movieClip.color;
 		}
 		
 		public function set color(value:uint):void
 		{
+			_movieClip.color = value;
 		}
 		
 		override protected function createDisplayObject():void
