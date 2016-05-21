@@ -101,6 +101,7 @@ package fairygui.display
 				setFrame(null);
 				stopPlay();
 			}
+			_playState.rewind();
 		}
 		
 		public function get frameCount():int

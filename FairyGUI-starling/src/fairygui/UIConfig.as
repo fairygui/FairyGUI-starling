@@ -22,6 +22,8 @@ package fairygui
 		public static var buttonSound:String;
 		public static var buttonSoundVolumeScale:Number = 1;
 		
+		public static var buttonUseHandCursor:Boolean = true;
+		
 		//Resources for scrollbars
 		public static var horizontalScrollBar:String;
 		public static var verticalScrollBar:String;
