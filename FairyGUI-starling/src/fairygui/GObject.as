@@ -1275,8 +1275,30 @@ package fairygui
 					
 					this.dispatchEvent(devt);
 				}
+				else if(_rollOver)
+				{
+					_rollOver = false;
+					devt = new GTouchEvent(GTouchEvent.ROLL_OUT);
+					devt.copyFrom(evt, touch);
+					this.dispatchEvent(devt);
+				}
 			}
-			
+			else if(_buttonStatus==2) //cancelled 
+			{
+				if(_rollOver)
+				{
+					globalToLocal(touch.globalX, touch.globalY, sHelperPoint);
+					isWithinBounds = sHelperPoint.x >= 0 && sHelperPoint.x <= width && sHelperPoint.y >= 0 && sHelperPoint.y <= height;
+					
+					if(!isWithinBounds) 
+					{
+						_rollOver = false;
+						devt = new GTouchEvent(GTouchEvent.ROLL_OUT);
+						devt.copyFrom(evt, touch);
+						this.dispatchEvent(devt);
+					}
+				}
+			}
 			_buttonStatus = 0;
 			
 			devt = new GTouchEvent(GTouchEvent.END);
@@ -1292,12 +1314,7 @@ package fairygui
 				var child:GObject = GComponent(this).getChildAt(i);
 				child._buttonStatus = 2;
 				if(child is GComponent)
-				{
-					//当拖动发生，没有办法在starling里找到rollout的触发点，只好强制rollout
-					if((child is GButton) && GButton(child)._over)
-						GButton(child).__rollout(null);
 					child.cancelChildrenClickEvent();
-				}
 			}
 		}
 		//-------------------------------------------------------------------

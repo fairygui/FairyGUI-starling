@@ -201,7 +201,7 @@ package fairygui.display
 		public static function fillImage(method:int, amount:Number, origin:int, clockwise:Boolean,
 									vertRect:Rectangle, uvRect:Rectangle):void
 		{
-			var amount:Number = amount>1?1:(amount<0?0:amount);
+			amount = amount>1?1:(amount<0?0:amount);
 			switch(method)
 			{
 				case FillType.FillMethod_Horizontal:

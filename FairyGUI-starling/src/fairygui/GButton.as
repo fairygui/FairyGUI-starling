@@ -1,6 +1,8 @@
 package fairygui
 {
 	import flash.media.Sound;
+	import flash.ui.Mouse;
+	import flash.ui.MouseCursor;
 	
 	import fairygui.event.GTouchEvent;
 	import fairygui.event.StateChangeEvent;
@@ -28,8 +30,9 @@ package fairygui
 		private var _linkedPopup:GObject;
 		private var _downEffect:int;
 		private var _downEffectValue:Number;
+		private var _useHandCursor:Boolean;
 		
-		internal var _over:Boolean;
+		private var _over:Boolean;
 		
 		public static const UP:String = "up";
 		public static const DOWN:String = "down";
@@ -50,6 +53,7 @@ package fairygui
 			_pageOption = new PageOption();
 			_changeStateOnClick = true;
 			_downEffectValue = 0.8;
+			_useHandCursor = UIConfig.buttonUseHandCursor;
 		}
 		
 		final public function get icon():String
@@ -232,6 +236,16 @@ package fairygui
 				_pageOption.controller = val;
 				_pageOption.clear();
 			}
+		}
+		
+		final public function get useHandCursor():Boolean
+		{
+			return _useHandCursor;
+		}
+		
+		public function set useHandCursor(value:Boolean):void
+		{
+			_useHandCursor = value;
 		}
 		
 		final public function get pageOption():PageOption
@@ -447,6 +461,9 @@ package fairygui
 		
 		private function __rollover(evt:GTouchEvent):void
 		{
+			if(_useHandCursor)
+				Mouse.cursor = MouseCursor.BUTTON;
+			
 			if(!_buttonController || !_buttonController.hasPage(OVER))
 				return;
 			
@@ -460,8 +477,11 @@ package fairygui
 			setState(_selected?SELECTED_OVER:OVER);
 		}
 		
-		internal function __rollout(evt:GTouchEvent):void
+		private function __rollout(evt:GTouchEvent):void
 		{
+			if(_useHandCursor)
+				Mouse.cursor = MouseCursor.AUTO;
+			
 			if(!_buttonController || !_buttonController.hasPage(OVER))
 				return;
 			

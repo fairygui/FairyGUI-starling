@@ -920,7 +920,8 @@ package fairygui
 			{
 				_tweening = 0;
 				TweenLite.killTweensOf(_maskContentHolder);
-				__tweenComplete();
+				_maskHolder.touchable = true;
+				onScrollEnd();
 			}
 			else if(_tweening==2)
 			{
@@ -928,7 +929,8 @@ package fairygui
 				TweenLite.killTweensOf(_throwTween);
 				_throwTween.value = 1;
 				__tweenUpdate2();
-				__tweenComplete2();
+				_maskHolder.touchable = true;
+				onScrollEnd();
 			}
 		}
 		
