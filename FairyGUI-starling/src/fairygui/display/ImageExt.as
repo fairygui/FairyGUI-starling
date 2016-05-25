@@ -3,6 +3,7 @@ package fairygui.display
 	import flash.geom.Rectangle;
 	
 	import fairygui.FillType;
+	import fairygui.FlipType;
 	
 	import starling.rendering.Painter;
 	import starling.textures.Texture;
@@ -258,28 +259,47 @@ package fairygui.display
 			}
 			else if(_scale9Grid!=null)
 			{				
+				var gridRect:Rectangle;
+				if(_flip!=FlipType.None)
+				{
+					gridRect = _scale9Grid.clone();
+					if(_flip==FlipType.Horizontal || _flip==FlipType.Both)
+					{
+						gridRect.x = texture.width - gridRect.right;
+						gridRect.right = gridRect.x + gridRect.width;
+					}
+					
+					if(_flip==FlipType.Vertical || _flip==FlipType.Both)
+					{
+						gridRect.y = texture.height - gridRect.bottom;
+						gridRect.bottom = gridRect.y + gridRect.height;
+					}
+				}
+				else
+					gridRect = _scale9Grid;
+				
 				var rows:Array;
 				var cols:Array;
 				var dRows:Array;
 				var dCols:Array;
 	
-				rows = [ 0, _scale9Grid.top, _scale9Grid.bottom, texture.height ];
-				cols = [ 0, _scale9Grid.left, _scale9Grid.right, texture.width ];
+				rows = [ 0, gridRect.top, gridRect.bottom, texture.height ];
+				cols = [ 0, gridRect.left, gridRect.right, texture.width ];
 				
-				if (_bounds.height >= (texture.height - _scale9Grid.height))
-					dRows = [ 0, _scale9Grid.top, _bounds.height - (texture.height - _scale9Grid.bottom), _bounds.height ];
+				if (_bounds.height >= (texture.height - gridRect.height))
+					dRows = [ 0, gridRect.top, _bounds.height - (texture.height - gridRect.bottom), _bounds.height ];
 				else
 				{
-					var tmp:Number = _scale9Grid.top / (texture.height - _scale9Grid.bottom);
+					var tmp:Number = gridRect.top / (texture.height - gridRect.bottom);
 					tmp = _bounds.height * tmp / (1 + tmp);
 					dRows = [ 0, tmp, tmp, _bounds.height ];
 				}
 				
-				if (_bounds.width >= (texture.width - _scale9Grid.width))
-					dCols = [ 0, _scale9Grid.left, _bounds.width - (texture.width - _scale9Grid.right), _bounds.width ];
+				if (_bounds.width >= (texture.width - gridRect.width))
+					dCols = [ 0, gridRect.left, _bounds.width - (texture.width - gridRect.right), _bounds.width ];
 				else
 				{
-					tmp = _scale9Grid.left / (texture.width - _scale9Grid.right);
+					tmp = gridRect.left / (texture.width - gridRect.right);
 					tmp = _bounds.width * tmp / (1 + tmp);
 					dCols = [ 0, tmp, tmp, _bounds.width ];
 				}

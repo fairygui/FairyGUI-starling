@@ -9,6 +9,8 @@ package fairygui
 	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
 	
+	import starling.events.Event;
+	
 	[Event(name = "stateChanged", type = "fairygui.event.StateChangeEvent")]
 	public class GButton extends GComponent
 	{
@@ -402,7 +404,6 @@ package fairygui
 				_downEffect = str=="dark"?1:(str=="scale"?2:0);
 				str = xml.@downEffectValue;
 				_downEffectValue = parseFloat(str);
-				this.setPivot(0.5, 0.5);
 			}
 			
 			_buttonController = getController("button");
@@ -420,11 +421,16 @@ package fairygui
 			this.addEventListener(GTouchEvent.BEGIN, __mousedown);
 			this.addEventListener(GTouchEvent.END, __mouseup);
 			this.addEventListener(GTouchEvent.CLICK, __click);
+			
+			displayObject.addEventListener(Event.REMOVED_FROM_STAGE, __removedFromStage);
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
 		{
 			super.setup_afterAdd(xml);
+			
+			if(_downEffect==2)
+				this.setPivot(0.5, 0.5);
 			
 			xml = xml.Button[0];
 			if(xml)
@@ -565,6 +571,12 @@ package fairygui
 					dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGED));
 				}
 			}
+		}
+		
+		private function __removedFromStage(evt:Event):void
+		{
+			if(_over && _useHandCursor)
+				Mouse.cursor = MouseCursor.AUTO;
 		}
 	}
 }

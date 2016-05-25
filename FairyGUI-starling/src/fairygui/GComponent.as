@@ -8,6 +8,7 @@ package fairygui
 	import fairygui.utils.PixelHitTest;
 	import fairygui.utils.PixelHitTestData;
 	
+	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
 	import starling.display.Sprite;
@@ -32,6 +33,8 @@ package fairygui
 		
 		private var _childrenRenderOrder:int;
 		private var _apexIndex:int;
+		
+		private var _clipMask:Quad;
 		
 		public function GComponent():void
 		{
@@ -583,7 +586,7 @@ package fairygui
 			{
 				return _scrollPane.isChildInView(child);
 			}
-			else if (_rootContainer.mask != null)
+			else if (_clipMask != null)
 			{
 				return child.x + child.width >= 0 && child.x <= this.width
 					&& child.y + child.height >= 0 && child.y <= this.height;
@@ -625,7 +628,7 @@ package fairygui
 		public function set margin(value:Margin):void
 		{
 			_margin.copy(value);
-			if(_rootContainer.mask!=null)
+			if(_clipMask!=null)
 			{
 				_container.x = _margin.left;
 				_container.y = _margin.top;
@@ -663,6 +666,18 @@ package fairygui
 			}
 		}
 		
+		public function get mask():DisplayObject
+		{
+			return _container.mask;
+		}
+		
+		public function set mask(value:DisplayObject):void
+		{
+			_container.mask = value;
+			if(value==null && _clipMask!=null)
+				_container.mask = _clipMask;
+		}
+		
 		protected function updateHitArea():void
 		{
 			if(_rootContainer.hitArea is PixelHitTest)
@@ -685,21 +700,13 @@ package fairygui
 		
 		protected function updateMask():void
 		{
-			var left:Number = _margin.left;
-			var top:Number = _margin.top;
 			var w:Number = this.width - (_margin.left + _margin.right);
 			var h:Number = this.height - (_margin.top + _margin.bottom);
 			
 			//starling用Quad遮罩不允许0大小。。。
 			if(w==0) w=0.0001;
 			if(h==0) h=0.0001;
-			if(_rootContainer.mask==null)
-				_rootContainer.mask = new Quad(w,h);
-			else
-				Quad(_rootContainer.mask).readjustSize(w,h);
-
-			_rootContainer.mask.x = left;
-			_rootContainer.mask.y = top;
+			_clipMask.readjustSize(w,h);
 		}
 		
 		protected function setupScroll(scrollBarMargin:Margin,
@@ -723,6 +730,8 @@ package fairygui
 			{
 				_container = new Sprite();
 				_rootContainer.addChild(_container);
+				_clipMask = new Quad(1,1);
+				_container.mask = _clipMask;
 				updateMask();
 				_container.x = _margin.left;
 				_container.y = _margin.top;
@@ -742,7 +751,7 @@ package fairygui
 		{
 			if(_scrollPane)
 				_scrollPane.setSize(this.width, this.height);
-			else if(_rootContainer.mask!=null)
+			else if(_clipMask!=null)
 				updateMask();
 			
 			if(_rootContainer.hitArea!=null)
@@ -1086,6 +1095,10 @@ package fairygui
 				u.setup_beforeAdd(cxml);
 				addChild(u);
 			}
+			
+			str = xml.@mask;
+			if(str)
+				this.mask = getChildById(str).displayObject;
 			
 			this.relations.setup(xml);
 			

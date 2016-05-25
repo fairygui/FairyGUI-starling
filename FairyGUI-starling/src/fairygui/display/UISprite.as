@@ -7,7 +7,6 @@ package fairygui.display
 	
 	import starling.display.DisplayObject;
 	import starling.display.Sprite;
-	import starling.rendering.Painter;
 
 	public class UISprite extends Sprite implements UIDisplayObject 
 	{
