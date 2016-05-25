@@ -353,7 +353,7 @@ package fairygui
 				_pivotX = xv;
 				_pivotY = yv;
 				
-				updatePivotOffset();
+				applyPivot();
 			}
 		}
 		
