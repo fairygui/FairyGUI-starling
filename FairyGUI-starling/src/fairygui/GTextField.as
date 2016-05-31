@@ -364,6 +364,13 @@ package fairygui
 			return _textWidth;
 		}
 		
+		public function get textHeight():int
+		{
+			if(_requireRender)
+				renderNow();
+			return _textHeight;
+		}
+		
 		override public function ensureSizeCorrect():void
 		{
 			if(_sizeDirty && _requireRender)

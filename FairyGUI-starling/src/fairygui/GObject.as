@@ -1264,7 +1264,8 @@ package fairygui
 					_lastClick = now;				
 				
 				globalToLocal(touch.globalX, touch.globalY, sHelperPoint);
-				var isWithinBounds:Boolean = sHelperPoint.x >= 0 && sHelperPoint.x <= width && sHelperPoint.y >= 0 && sHelperPoint.y <= height;
+				var isWithinBounds:Boolean = 
+					sHelperPoint.x >= 0 && sHelperPoint.x <= width && sHelperPoint.y >= 0 && sHelperPoint.y <= height;
 				if (isWithinBounds)
 				{
 					var devt:GTouchEvent = new GTouchEvent(GTouchEvent.CLICK);
@@ -1272,7 +1273,8 @@ package fairygui
 					
 					this.dispatchEvent(devt);
 				}
-				else if(_rollOver)
+				
+				if(_rollOver && (!isWithinBounds || !evt.interactsWith(_displayObject)))
 				{
 					_rollOver = false;
 					devt = new GTouchEvent(GTouchEvent.ROLL_OUT);
