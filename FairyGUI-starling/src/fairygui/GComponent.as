@@ -1129,7 +1129,7 @@ package fairygui
 			if(_transitions.length>0)
 			{
 				this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
-				this.removeEventListener(Event.REMOVED_FROM_STAGE, __removedFromStage);
+				this.addEventListener(Event.REMOVED_FROM_STAGE, __removedFromStage);
 			}
 			
 			applyAllControllers();
@@ -1142,22 +1142,28 @@ package fairygui
 		
 		private function __addedToStage(evt:Event):void
 		{
-			var cnt:int = _transitions.length;
-			for (var i:int = 0; i < cnt; ++i)
+			if(evt.target==this.displayObject)
 			{
-				var trans:Transition = _transitions[i];
-				if (trans.autoPlay)
-					trans.play(null, null, trans.autoPlayRepeat, trans.autoPlayDelay);
+				var cnt:int = _transitions.length;
+				for (var i:int = 0; i < cnt; ++i)
+				{
+					var trans:Transition = _transitions[i];
+					if (trans.autoPlay)
+						trans.play(null, null, trans.autoPlayRepeat, trans.autoPlayDelay);
+				}
 			}
 		}
 		
 		private function __removedFromStage(evt:Event):void
 		{
-			var cnt:int = _transitions.length;
-			for (var i:int = 0; i < cnt; ++i)
+			if(evt.target==this.displayObject)
 			{
-				var trans:Transition = _transitions[i];
-				trans.stop(false, true);
+				var cnt:int = _transitions.length;
+				for (var i:int = 0; i < cnt; ++i)
+				{
+					var trans:Transition = _transitions[i];
+					trans.stop(false, true);
+				}
 			}
 		}
 		

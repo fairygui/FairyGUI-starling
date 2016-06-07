@@ -291,7 +291,7 @@ package fairygui.display
 				else
 				{
 					var tmp:Number = gridRect.top / (texture.height - gridRect.bottom);
-					tmp = _bounds.height * tmp / (1 + tmp);
+					tmp = Math.round(_bounds.height * tmp / (1 + tmp));
 					dRows = [ 0, tmp, tmp, _bounds.height ];
 				}
 				
@@ -300,7 +300,7 @@ package fairygui.display
 				else
 				{
 					tmp = gridRect.left / (texture.width - gridRect.right);
-					tmp = _bounds.width * tmp / (1 + tmp);
+					tmp = Math.round(_bounds.width * tmp / (1 + tmp));
 					dCols = [ 0, tmp, tmp, _bounds.width ];
 				}
 
