@@ -19,7 +19,7 @@ package fairygui
 			}
 			
 			_contentPane = GComponent(UIPackage.createObjectFromURL(resourceURL));
-			_contentPane.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
+			_contentPane.displayObject.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
 			
 			_list = GList(_contentPane.getChild("list"));
 			_list.removeChildrenToPool();
@@ -201,8 +201,11 @@ package fairygui
 		
 		private function __addedToStage(evt:Event):void
 		{
-			_list.selectedIndex = -1;
-			_list.resizeToFit(int.MAX_VALUE, 10);
+			if(evt.target==_contentPane.displayObject)
+			{
+				_list.selectedIndex = -1;
+				_list.resizeToFit(int.MAX_VALUE, 10);
+			}
 		}
 	}
 }
