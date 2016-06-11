@@ -22,6 +22,8 @@ package fairygui
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	import starling.filters.ColorMatrixFilter;
+	import starling.filters.FragmentFilter;
+	import starling.utils.MatrixUtil;
 	import starling.utils.deg2rad;
 	
 	[Event(name = "startDrag", type = "fairygui.event.DragEvent")]
@@ -50,6 +52,8 @@ package fairygui
 		private var _draggable:Boolean;
 		private var _scaleX:Number;
 		private var _scaleY:Number;
+		private var _skewX:Number;
+		private var _skewY:Number;
 		private var _pivotOffsetX:Number;
 		private var _pivotOffsetY:Number;
 		private var _sortingOrder:int;
@@ -65,6 +69,10 @@ package fairygui
 		private var _gearLook:GearLook;
 		private var _displayObject:DisplayObject;
 		private var _dragBounds:Rectangle;
+		
+		protected var _yOffset:int;
+		//Size的实现方式，有两种，0-GObject的w/h等于DisplayObject的w/h。1-GObject的sourceWidth/sourceHeight等于DisplayObject的w/h，剩余部分由scale实现
+		protected var _sizeImplType:int;
 		
 		internal var _parent:GComponent;
 		internal var _dispatcher:SimpleDispatcher;
@@ -104,6 +112,8 @@ package fairygui
 			_touchable = true;
 			_scaleX = 1;
 			_scaleY = 1;
+			_skewX = 0;
+			_skewY = 0;
 			_pivotX = 0;
 			_pivotY = 0;
 			_pivotOffsetX = 0;
@@ -236,14 +246,18 @@ package fairygui
 				_width = wv;
 				_height = hv;
 				
+				handleSizeChanged();
 				if(_pivotX!=0 || _pivotY!=0)
 				{
 					if(!ignorePivot)
 						this.setXY(this.x-_pivotX*dWidth, this.y-_pivotY*dHeight);
+					if(_sizeImplType==0)
+					{
+						_displayObject.pivotX = _pivotX * _width;
+						_displayObject.pivotY = _pivotY * _height;
+					}
 					updatePivotOffset();
-				}
-				
-				handleSizeChanged();
+				}				
 				
 				if(_gearSize.controller)
 					_gearSize.updateState();
@@ -318,11 +332,46 @@ package fairygui
 			{
 				_scaleX = sx;
 				_scaleY = sy;
-				applyPivot();
-				handleSizeChanged();
+				handleScaleChanged();
+				updatePivotOffset();
 				
 				if(_gearSize.controller)
 					_gearSize.updateState();
+			}
+		}
+		
+		final public function get skewX():Number
+		{
+			return _skewX;
+		}
+		
+		public function set skewX(value:Number):void
+		{
+			setSkew(value, _skewY);
+		}
+		
+		final public function get skewY():Number
+		{
+			return _skewY;
+		}
+		
+		public function set skewY(value:Number):void
+		{
+			setSkew(_skewX, value);
+		}
+		
+		public function setSkew(xv:Number, yv:Number):void
+		{
+			if(_skewX!=xv || _skewY!=yv)
+			{
+				_skewX = xv;
+				_skewY = yv;
+				if(_displayObject!=null)
+				{
+					_displayObject.skewX = _skewX*Math.PI/180;
+					_displayObject.skewY = _skewY*Math.PI/180;
+					updatePivotOffset();
+				}				
 			}
 		}
 		
@@ -352,41 +401,41 @@ package fairygui
 			{
 				_pivotX = xv;
 				_pivotY = yv;
-				
-				applyPivot();
+				if(_displayObject!=null)
+				{				
+					if(_sizeImplType==0)
+					{
+						_displayObject.pivotX = _pivotX * _width;
+						_displayObject.pivotY = _pivotY * _height;
+					}
+					else
+					{
+						_displayObject.pivotX = _pivotX * _sourceWidth;
+						_displayObject.pivotY = _pivotY * _sourceHeight;
+					}
+					updatePivotOffset();
+					handlePositionChanged();
+				}
 			}
 		}
 		
 		private function updatePivotOffset():void
 		{
-			var rot:int = this.normalizeRotation;
-			if(rot!=0 || _scaleX!=1 || _scaleY!=1)
-			{				
-				var rotInRad:Number = rot*Math.PI/180;
-				var cos:Number = Math.cos(rotInRad);
-				var sin:Number = Math.sin(rotInRad);
-				var a:Number   = _scaleX *  cos;
-				var b:Number   = _scaleX *  sin;
-				var c:Number   = _scaleY * -sin;
-				var d:Number   = _scaleY *  cos;
-				var px:Number = _pivotX*_width;
-				var py:Number = _pivotY*_height;
-				_pivotOffsetX = px -  (a * px + c * py);
-				_pivotOffsetY = py - (d * py + b * px);
-			}
-			else
+			if(_displayObject!=null)
 			{
-				_pivotOffsetX = 0;
-				_pivotOffsetY = 0;
-			}
-		}
-		
-		private function applyPivot():void
-		{
-			if(_pivotX!=0 || _pivotY!=0)
-			{
-				updatePivotOffset();
-				handlePositionChanged();
+				//GObject的特点是旋转和缩放不影响坐标，所以要有一个GObject坐标和DisplayObject坐标的转换。pivotOffset就是两个坐标的偏移值
+				if(_pivotX!=0 || _pivotY!=0)
+				{
+					var pt:Point = MatrixUtil.transformCoords(_displayObject.transformationMatrix, 
+						_displayObject.pivotX, _displayObject.pivotY, sHelperPoint);
+					_pivotOffsetX = _pivotX*_width - (pt.x - _displayObject.x);
+					_pivotOffsetY = _pivotY*_height - (pt.y - _displayObject.y);
+				}
+				else					
+				{
+					_pivotOffsetX = 0;
+					_pivotOffsetY = 0;
+				}				
 			}
 		}
 
@@ -445,9 +494,11 @@ package fairygui
 			if(_rotation!=value)
 			{
 				_rotation = value;
-				applyPivot();
-				if(_displayObject)
+				if(_displayObject!=null)
+				{
 					_displayObject.rotation = deg2rad(this.normalizeRotation);
+					updatePivotOffset();
+				}
 				
 				if(_gearLook.controller)
 					_gearLook.updateState();
@@ -589,6 +640,26 @@ package fairygui
 				this.addEventListener(GTouchEvent.ROLL_OVER, __rollOver);
 				this.addEventListener(GTouchEvent.ROLL_OUT, __rollOut);
 			}
+		}
+		
+		public function get blendMode():String
+		{
+			return _displayObject.blendMode;
+		}
+		
+		public function set blendMode(value:String):void
+		{
+			_displayObject.blendMode = value;
+		}
+		
+		public function get filter():FragmentFilter
+		{
+			return _displayObject.filter;
+		}
+		
+		public function set filter(value:FragmentFilter):void
+		{
+			_displayObject.filter = value;
 		}
 		
 		private function __rollOver(evt:GTouchEvent):void
@@ -994,13 +1065,35 @@ package fairygui
 		{
 			if(_displayObject)
 			{
-				_displayObject.x = int(_x+_pivotOffsetX);
-				_displayObject.y = int(_y+_pivotOffsetY);
+				_displayObject.x = int(_x)+_pivotOffsetX;
+				_displayObject.y = int(_y+_yOffset)+_pivotOffsetY;
 			}
 		}
 		
 		protected function handleSizeChanged():void
 		{
+			if(_displayObject!=null && _sizeImplType==1 && _sourceWidth!=0 && _sourceHeight!=0)
+			{
+				_displayObject.scaleX = _width/_sourceWidth*_scaleX;
+				_displayObject.scaleY = _height/_sourceHeight*_scaleY;
+			}
+		}
+		
+		protected function handleScaleChanged():void
+		{
+			if(_displayObject!=null)
+			{
+				if( _sizeImplType==0 || _sourceWidth==0 || _sourceHeight==0)
+				{
+					_displayObject.scaleX = _scaleX;
+					_displayObject.scaleY = _scaleY;
+				}
+				else
+				{
+					_displayObject.scaleX = _width/_sourceWidth*_scaleX;
+					_displayObject.scaleY = _height/_sourceHeight*_scaleY;
+				}
+			}
 		}
 		
 		public function handleControllerChanged(c:Controller):void
@@ -1062,6 +1155,13 @@ package fairygui
 				setScale(parseFloat(arr[0]), parseFloat(arr[1]));
 			}
 			
+			str = xml.@skew;
+			if(str)
+			{
+				arr = str.split(",");
+				setSkew(parseInt(arr[0]),parseInt(arr[1]));
+			}
+			
 			str = xml.@rotation;
 			if(str)
 				this.rotation = parseInt(str);
@@ -1097,8 +1197,30 @@ package fairygui
 			
 			this.touchable = xml.@touchable!="false";
 			this.visible = xml.@visible!="false";
-			this.grayed = xml.@grayed=="true";			
+			this.grayed = xml.@grayed=="true";	
 			this.tooltips = xml.@tooltips;
+			
+			str = xml.@blend;
+			if (str)
+				this.blendMode = str;
+			
+			str = xml.@filter;
+			if (str)
+			{
+				switch (str)
+				{
+					case "color":
+						var cf:ColorMatrixFilter = new ColorMatrixFilter();
+						this.filter = cf;
+						str = xml.@filterData;
+						arr = str.split(",");
+						cf.adjustBrightness(parseFloat(arr[0]));
+						cf.adjustContrast(parseFloat(arr[1]));
+						cf.adjustSaturation(parseFloat(arr[2]));
+						cf.adjustHue(parseFloat(arr[3]));
+						break;
+				}
+			}
 		}
 		
 		public function setup_afterAdd(xml:XML):void

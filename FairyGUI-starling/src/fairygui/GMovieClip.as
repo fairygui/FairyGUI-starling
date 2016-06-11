@@ -17,6 +17,8 @@ package fairygui
 		{
 			_gearAnimation = new GearAnimation(this);
 			_gearColor = new GearColor(this);
+			
+			_sizeImplType = 1;
 		}
 		
 		public function get color():uint
@@ -91,13 +93,7 @@ package fairygui
 			if(_gearColor.controller==c)
 				_gearColor.apply();
 		}
-		
-		override protected function handleSizeChanged():void
-		{
-			displayObject.scaleX = this.width/_sourceWidth*this.scaleX;
-			displayObject.scaleY = this.height/_sourceHeight*this.scaleY;
-		}
-		
+
 		override public function constructFromResource(pkgItem:PackageItem):void
 		{
 			_packageItem = pkgItem;
@@ -120,7 +116,6 @@ package fairygui
 			_movieClip.interval = _packageItem.interval;
 			_movieClip.frames = _packageItem.frames;
 			_movieClip.boundsRect = new Rectangle(0, 0, sourceWidth, sourceHeight);
-			handleSizeChanged();
 		}
 
 		override public function setup_beforeAdd(xml:XML):void

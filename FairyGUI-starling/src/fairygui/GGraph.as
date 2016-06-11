@@ -113,10 +113,11 @@ package fairygui
 			if (parent!=null)
 				parent.childStateChanged(this);
 			handlePositionChanged();
+			handleSizeChanged();
+			handleScaleChanged();
 			_shape.alpha = this.alpha;
 			_shape.rotation = this.normalizeRotation;
 			_shape.visible = this.visible;
-			_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
 			
 			return _shape;
 		}
@@ -124,9 +125,7 @@ package fairygui
 		override protected function handleSizeChanged():void
 		{
 			if(_shape!=null)
-			{
-				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
-			}
+				_shape.setShapeSize(this.width, this.height);
 		}
 
 		override public function setup_beforeAdd(xml:XML):void
@@ -176,7 +175,7 @@ package fairygui
 				else
 					drawEllipse(lineSize, lineColor, lineAlpha, fillColor, fillAlpha);
 				
-				_shape.setShapeSize(this.width*this.scaleX, this.height*this.scaleY);
+				_shape.setShapeSize(this.width, this.height);
 			}
 		}
 	}

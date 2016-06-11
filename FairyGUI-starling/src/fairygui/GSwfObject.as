@@ -15,6 +15,7 @@ package fairygui
 		public function GSwfObject()
 		{
 			_playing = true;
+			_sizeImplType = 1;
 			
 			_gearAnimation = new GearAnimation(this);
 		}
@@ -59,15 +60,6 @@ package fairygui
 		final public function get gearAnimation():GearAnimation
 		{
 			return _gearAnimation;
-		}
-		
-		override protected function handleSizeChanged():void
-		{
-			if(_content)
-			{
-				_container.scaleX = this.width/_sourceWidth*this.scaleX;
-				_container.scaleY = this.height/_sourceHeight*this.scaleY;
-			}
 		}
 
 		override public function handleControllerChanged(c:Controller):void

@@ -141,8 +141,6 @@ package fairygui
 		{
 			_content.textureScaleX = this.width/this.sourceWidth;
 			_content.textureScaleY = this.height/this.sourceHeight;
-			_content.scaleX = this.scaleX;
-			_content.scaleY = this.scaleY;
 		}
 		
 		override public function setup_beforeAdd(xml:XML):void

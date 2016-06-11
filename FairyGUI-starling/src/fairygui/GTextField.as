@@ -47,7 +47,6 @@ package fairygui
 		protected var _updatingSize:Boolean;
 		protected var _requireRender:Boolean;
 		protected var _sizeDirty:Boolean;
-		protected var _yOffset:int;
 		protected var _textWidth:int;
 		protected var _textHeight:int;
 		protected var _fontAdjustment:int;
@@ -836,12 +835,6 @@ package fairygui
 			}//line loop
 
 			_canvas.renderBitmapText(_bitmapFont, _bitmapFont.ttf?_color:0xFFFFFF);
-		}
-		
-		override protected function handlePositionChanged():void
-		{
-			displayObject.x = int(this.x);
-			displayObject.y = int(this.y+_yOffset);
 		}
 		
 		override protected function handleSizeChanged():void

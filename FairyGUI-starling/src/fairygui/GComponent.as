@@ -756,9 +756,6 @@ package fairygui
 			
 			if(_rootContainer.hitArea!=null)
 				updateHitArea();
-			
-			_rootContainer.scaleX = this.scaleX;
-			_rootContainer.scaleY = this.scaleY;
 		}
 		
 		override protected function handleGrayChanged():void
