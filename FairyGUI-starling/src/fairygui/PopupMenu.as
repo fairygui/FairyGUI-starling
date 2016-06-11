@@ -199,8 +199,11 @@ package fairygui
 		
 		private function __addedToStage(evt:Event):void
 		{
-			_list.selectedIndex = -1;
-			_list.resizeToFit(int.MAX_VALUE, 10);
+			if(evt.target==_contentPane.displayObject)
+			{
+				_list.selectedIndex = -1;
+				_list.resizeToFit(int.MAX_VALUE, 10);
+			}
 		}
 	}
 }
