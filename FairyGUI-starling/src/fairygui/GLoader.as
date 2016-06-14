@@ -365,6 +365,8 @@ package fairygui
 			_contentSourceWidth = pi.width;
 			_contentSourceHeight = pi.height;
 			_movieClip.interval = pi.interval;
+			_movieClip.swing = pi.swing;
+			_movieClip.repeatDelay = pi.repeatDelay;
 			_movieClip.frames = pi.frames;
 			_movieClip.boundsRect = new Rectangle(0,0,_contentSourceWidth,_contentSourceHeight);
 			

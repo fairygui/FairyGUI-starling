@@ -769,14 +769,8 @@ package fairygui
 		private function loadMovieClip(item:PackageItem):void
 		{
 			var xml:XML = getXMLDesc(item.id + ".xml");
-			item.pivot = new Point();
-			var str:String = xml.@pivot;
-			if(str)
-			{
-				var arr:Array = str.split(sep0);
-				item.pivot.x = int(arr[0]);
-				item.pivot.y = int(arr[1]);
-			}
+			var str:String;
+			var arr:Array;
 			
 			str = xml.@interval;
 			if (str != null)

@@ -1,6 +1,5 @@
 package fairygui
 {
-	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.media.Sound;
 	
@@ -33,7 +32,6 @@ package fairygui
 		public var uvRect:Rectangle;
 		
 		//movieclip
-		public var pivot:Point;
 		public var interval:Number;
 		public var repeatDelay:Number;
 		public var swing:Boolean;
