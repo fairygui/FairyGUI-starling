@@ -1,12 +1,10 @@
 package fairygui
 {
-	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.media.Sound;
 	
 	import fairygui.display.Frame;
 	import fairygui.text.BitmapFont;
-	import fairygui.utils.PixelHitTest;
 	
 	import starling.textures.Texture;
 
@@ -34,7 +32,6 @@ package fairygui
 		public var uvRect:Rectangle;
 		
 		//movieclip
-		public var pivot:Point;
 		public var interval:Number;
 		public var repeatDelay:Number;
 		public var swing:Boolean;
