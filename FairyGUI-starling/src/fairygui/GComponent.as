@@ -1007,6 +1007,14 @@ package fairygui
 			
 			setSize(_sourceWidth, _sourceHeight);
 			
+			str = xml.@pivot;
+			if(str)
+			{
+				arr = str.split(",");
+				str = xml.@anchor;
+				setPivot(parseFloat(arr[0]), parseFloat(arr[1]), str=="true");				
+			}
+			
 			str = xml.@opaque;
 			this.opaque = str!="false";
 			str = xml.@hitTest;

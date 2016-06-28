@@ -42,8 +42,6 @@ package fairygui
 		private var _y:Number;
 		private var _width:Number;
 		private var _height:Number;
-		private var _pivotX:Number;
-		private var _pivotY:Number;
 		private var _alpha:Number;
 		private var _rotation:int;
 		private var _visible:Boolean;
@@ -54,6 +52,9 @@ package fairygui
 		private var _scaleY:Number;
 		private var _skewX:Number;
 		private var _skewY:Number;
+		private var _pivotX:Number;
+		private var _pivotY:Number;
+		private var _pivotAsAnchor:Boolean;
 		private var _pivotOffsetX:Number;
 		private var _pivotOffsetY:Number;
 		private var _sortingOrder:int;
@@ -249,14 +250,23 @@ package fairygui
 				handleSizeChanged();
 				if(_pivotX!=0 || _pivotY!=0)
 				{
-					if(!ignorePivot)
-						this.setXY(this.x-_pivotX*dWidth, this.y-_pivotY*dHeight);
 					if(_sizeImplType==0)
 					{
 						_displayObject.pivotX = _pivotX * _width;
 						_displayObject.pivotY = _pivotY * _height;
 					}
-					updatePivotOffset();
+					if(!_pivotAsAnchor)
+					{
+						if(!ignorePivot)
+							this.setXY(this.x-_pivotX*dWidth, this.y-_pivotY*dHeight);
+
+						updatePivotOffset();
+					}
+					else
+					{
+						updatePivotOffset();
+						handlePositionChanged();
+					}
 				}				
 				
 				if(_gearSize.controller)
@@ -395,12 +405,14 @@ package fairygui
 			setPivot(_pivotX, value);
 		}
 		
-		final public function setPivot(xv:Number, yv:Number):void
+		final public function setPivot(xv:Number, yv:Number, asAnchor:Boolean=false):void
 		{
-			if(_pivotX!=xv || _pivotY!=yv)
+			if(_pivotX!=xv || _pivotY!=yv || _pivotAsAnchor!=asAnchor)
 			{
 				_pivotX = xv;
 				_pivotY = yv;
+				_pivotAsAnchor = asAnchor;
+				
 				if(_displayObject!=null)
 				{				
 					if(_sizeImplType==0)
@@ -1065,8 +1077,16 @@ package fairygui
 		{
 			if(_displayObject)
 			{
-				_displayObject.x = int(_x)+_pivotOffsetX;
-				_displayObject.y = int(_y+_yOffset)+_pivotOffsetY;
+				if(_pivotAsAnchor)
+				{
+					_displayObject.x = int(_x-_pivotX*_width)+_pivotOffsetX;
+					_displayObject.y = int(_y-_pivotY*_height+_yOffset)+_pivotOffsetY;
+				}
+				else
+				{
+					_displayObject.x = int(_x)+_pivotOffsetX;
+					_displayObject.y = int(_y+_yOffset)+_pivotOffsetY;
+				}
 			}
 		}
 		
@@ -1145,7 +1165,7 @@ package fairygui
 				arr = str.split(",");
 				_initWidth = int(arr[0]);
 				_initHeight = int(arr[1]);
-				setSize(_initWidth,_initHeight);
+				setSize(_initWidth,_initHeight,true);
 			}
 			
 			str = xml.@scale;
@@ -1192,8 +1212,11 @@ package fairygui
 					else
 						n2 = 0;
 				}
-				this.setPivot(n1, n2);
+				str = xml.@anchor;
+				this.setPivot(n1, n2, str=="true");
 			}
+			else //有可能组件设计有轴心，但组件使用时取消了，所以这里要设置一下
+				this.setPivot(0,0,false);
 			
 			this.touchable = xml.@touchable!="false";
 			this.visible = xml.@visible!="false";

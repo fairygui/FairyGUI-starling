@@ -15,6 +15,8 @@ package fairygui
 	import fairygui.utils.CharSize;
 	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
+	
+	import starling.utils.rad2deg;
 
 	public class GTextField extends GObject implements IColorGear
 	{
@@ -35,8 +37,9 @@ package fairygui
 		protected var _bold:Boolean;
 		protected var _italic:Boolean;
 		protected var _singleLine:Boolean;
-		protected var _stroke:Boolean;
+		protected var _stroke:int;
 		protected var _strokeColor:uint;
+		protected var _shadowOffset:Point;
 		protected var _displayAsPassword:Boolean;
 		protected var _textFilters:Array;
 		
@@ -272,28 +275,18 @@ package fairygui
 			}
 		}
 		
-		final public function get stroke():Boolean
+		final public function get stroke():int
 		{
 			return _stroke;
 		}
 		
-		public function set stroke(value:Boolean):void
+		public function set stroke(value:int):void
 		{
 			if(_stroke!=value)
 			{
 				_stroke = value;
-				if(_stroke)
-					_textFilters = createStrokeFilters(_strokeColor);
-				else
-					_textFilters = null;
-				render();
+				updateTextFilters();
 			}
-		}
-		
-		private static function createStrokeFilters(color:uint):Array
-		{
-			return [new DropShadowFilter(1, 45, color, 1, 1, 1, 5, 1),
-				new DropShadowFilter(1, 222, color, 1, 1, 1, 5, 1)];
 		}
 		
 		final public function get strokeColor():uint
@@ -306,10 +299,45 @@ package fairygui
 			if(_strokeColor!=value)
 			{
 				_strokeColor = value;
-				if(_stroke)
-					_textFilters = createStrokeFilters(_strokeColor);
-				render();
+				updateTextFilters();
 			}
+		}
+		
+		final public function get shadowOffset():Point
+		{
+			return _shadowOffset;
+		}
+		
+		public function set shadowOffset(value:Point):void
+		{
+			_shadowOffset = value;
+			updateTextFilters();
+		}
+		
+		private function updateTextFilters():void
+		{
+			if(_stroke && _shadowOffset!=null)
+				_textFilters =  [
+					new DropShadowFilter(_stroke, 45, _strokeColor, 1, 1, 1, 5, 1),
+					new DropShadowFilter(_stroke, 222, _strokeColor, 1, 1, 1, 5, 1),
+					new DropShadowFilter(Math.sqrt(Math.pow(_shadowOffset.x, 2)+Math.pow(_shadowOffset.y,2)), 
+						rad2deg(Math.atan2(_shadowOffset.y, _shadowOffset.x)), _strokeColor, 1, 1, 2)
+				];
+			else if(_stroke)
+				_textFilters =  [
+					new DropShadowFilter(_stroke, 45, _strokeColor, 1, 1, 1, 5, 1),
+					new DropShadowFilter(_stroke, 222, _strokeColor, 1, 1, 1, 5, 1)
+				];
+			else if(_shadowOffset!=null)
+				_textFilters =  [
+					new DropShadowFilter(Math.sqrt(Math.pow(_shadowOffset.x, 2)+Math.pow(_shadowOffset.y,2)), 
+						rad2deg(Math.atan2(_shadowOffset.y, _shadowOffset.x)), _strokeColor, 1, 1, 2)
+				];
+			else
+				_textFilters = null;
+			
+			if(!this._underConstruct)
+				render();
 		}
 		
 		public function set ubbEnabled(value:Boolean):void
@@ -882,6 +910,7 @@ package fairygui
 			super.setup_beforeAdd(xml);
 
 			var str:String;
+			var arr:Array;
 			_displayAsPassword = xml.@password=="true";
 			str = xml.@font;
 			if(str)
@@ -931,9 +960,27 @@ package fairygui
 			if(str)
 			{
 				_strokeColor = ToolSet.convertFromHtmlColor(str);
-				_stroke = true;
-				_textFilters = createStrokeFilters(_strokeColor);
+				str = xml.@strokeSize;
+				if(str)
+					_stroke = parseInt(str);
+				else
+					_stroke = 1;
 			}
+			
+			str = xml.@shadowColor;
+			if(str)
+			{
+				if(!_stroke)
+					_strokeColor = ToolSet.convertFromHtmlColor(str);
+				str = xml.@shadowOffset;
+				if(str)
+				{
+					arr = str.split(",");
+					_shadowOffset = new Point(parseFloat(arr[0]), parseFloat(arr[1]));
+				}
+			}
+			
+			updateTextFilters();
 		}
 		
 		override public function setup_afterAdd(xml:XML):void

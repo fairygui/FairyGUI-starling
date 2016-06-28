@@ -61,7 +61,7 @@ package fairygui.text
 			if(_textField.height!=value)
 			{
 				_textField.width = value;
-				setRequiresRedraw();
+				setRequiresRebuild();
 			}
 		}
 		
@@ -70,7 +70,7 @@ package fairygui.text
 			if(_textField.height!=value) 
 			{
 				_textField.height = value;
-				setRequiresRedraw();
+				setRequiresRebuild();
 				adjustNodes();
 			}
 		}
@@ -127,7 +127,7 @@ package fairygui.text
 					_defaultTextFormat.kerning = false;
 			}
 			_textField.defaultTextFormat = val;
-			setRequiresRedraw();
+			setRequiresRebuild();
 		}
 		
 		public function get defaultTextFormat():TextFormat
@@ -143,7 +143,7 @@ package fairygui.text
 		public function set ALinkFormat(val:TextFormat):void
 		{
 			_ALinkFormat = val;
-			setRequiresRedraw();
+			setRequiresRebuild();
 		}
 
 		public function set multiline(val:Boolean):void
@@ -151,7 +151,7 @@ package fairygui.text
 			if(_textField.multiline != val)
 			{
 				_textField.multiline = val;
-				setRequiresRedraw();
+				setRequiresRebuild();
 			}
 		}
 		
@@ -165,7 +165,7 @@ package fairygui.text
 			if(_textField.wordWrap != val)
 			{
 				_textField.wordWrap = val;
-				setRequiresRedraw();
+				setRequiresRebuild();
 			}
 		}
 		
@@ -190,7 +190,7 @@ package fairygui.text
 			if(_textField.border != val)
 			{
 				_textField.border = val;
-				setRequiresRedraw();
+				setRequiresRebuild();
 			}
 		}
 		
@@ -404,7 +404,7 @@ package fairygui.text
 					addImage(startPos, e);
 			}
 
-			setRequiresRedraw();
+			setRequiresRebuild();
 			if(_textField.parent!=null)
 				Starling.current.nativeStage.removeChild(_textField);
 		}
@@ -467,7 +467,7 @@ package fairygui.text
 					}
 				}
 			}
-			setRequiresRedraw();
+			setRequiresRebuild();
 			
 			if(_textField.parent!=null)
 				Starling.current.nativeStage.removeChild(_textField);
@@ -527,7 +527,7 @@ package fairygui.text
 				_textField.defaultTextFormat = _defaultTextFormat;
 
 			_canvas.clear();
-			setRequiresRedraw();
+			setRequiresRebuild();
 		}
 		
 		private function fixTextSize():void 
@@ -832,9 +832,9 @@ package fairygui.text
 			}
 		}
 		
-		override public function setRequiresRedraw():void
+		public function setRequiresRebuild():void
 		{
-			super.setRequiresRedraw();
+			setRequiresRedraw();
 			_needRebuild = true;
 		}
 		
@@ -843,7 +843,7 @@ package fairygui.text
 			if(_needRebuild)
 			{
 				_needRebuild = false;
-				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, setRequiresRedraw);
+				_canvas.renderText(_textField, _textField.width, _textField.textHeight+10, setRequiresRebuild);
 			}
 			
 			super.render(painter);

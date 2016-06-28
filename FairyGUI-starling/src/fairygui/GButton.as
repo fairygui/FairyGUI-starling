@@ -311,7 +311,7 @@ package fairygui
 					for(var i:int=0;i<cnt;i++)
 					{
 						var obj:GObject = this.getChildAt(i);
-						if(obj is IColorGear)
+						if((obj is IColorGear) && !(obj is GTextField))
 							IColorGear(obj).color = color;
 					}
 				}
@@ -320,7 +320,7 @@ package fairygui
 					for(i=0;i<cnt;i++)
 					{
 						obj = this.getChildAt(i);
-						if(obj is IColorGear)
+						if((obj is IColorGear) && !(obj is GTextField))
 							IColorGear(obj).color = 0xFFFFFF;
 					}
 				}

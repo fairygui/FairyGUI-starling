@@ -5,7 +5,6 @@ package fairygui
 	import flash.display.LoaderInfo;
 	import flash.display3D.Context3DTextureFormat;
 	import flash.events.Event;
-	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.media.Sound;
 	import flash.utils.ByteArray;

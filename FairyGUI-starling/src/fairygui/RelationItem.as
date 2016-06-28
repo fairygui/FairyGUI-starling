@@ -378,10 +378,7 @@ package fairygui
 				case RelationType.TopExt_Top:
 					break;
 				case RelationType.TopExt_Bottom:
-					if(_owner._underConstruct && _owner==_target.parent)
-						v = _owner.sourceHeight - (targetY + _target._initHeight);
-					else
-						v = _owner._rawHeight - (targetY + _targetHeight);
+					v = _owner.y - (targetY + _targetHeight);
 					if (info.percent)
 						v = v / _targetHeight * _target._rawHeight;
 					tmp = _owner.y;
@@ -391,7 +388,10 @@ package fairygui
 				case RelationType.BottomExt_Top:
 					break;
 				case RelationType.BottomExt_Bottom:
-					v = _owner._rawHeight - (targetY + _targetHeight);
+					if(_owner._underConstruct && _owner==_target.parent)
+						v = _owner.sourceHeight - (targetY + _target._initHeight);
+					else
+						v = _owner._rawHeight - (targetY + _targetHeight);
 					if (_owner != _target.parent)
 						v += _owner.y;
 					if (info.percent)
