@@ -13,9 +13,9 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.CharSize;
-	import fairygui.utils.GTimers;
 	import fairygui.utils.ToolSet;
 	
+	import starling.core.Starling;
 	import starling.utils.rad2deg;
 
 	public class GTextField extends GObject implements IColorGear
@@ -86,8 +86,7 @@ package fairygui
 		override protected function createDisplayObject():void
 		{ 
 			_canvas = new UITextField(this);
-			setDisplayObject(_canvas); 
-			_canvas.renderCallback = onRender;
+			setDisplayObject(_canvas);
 		}
 		
 		override public function dispose():void
@@ -466,9 +465,9 @@ package fairygui
 			if(!_requireRender)
 			{
 				_requireRender = true;
-				_canvas.setRequiresRedraw();
+				Starling.current.juggler.delayCall(onRender, 0);
 			}
-			
+
 			if(!_sizeDirty && (_widthAutoSize || _heightAutoSize))
 			{
 				_sizeDirty = true;
@@ -556,7 +555,6 @@ package fairygui
 			_updatingSize = true;
 			this.setSize(w,h);
 			_updatingSize = false;
-			
 			doAlign();
 			
 			_canvas.renderText(renderTextField, _textWidth, _textHeight+_fontAdjustment+3, render);
@@ -589,7 +587,7 @@ package fairygui
 			
 			if(_bitmapFont.mainTexture==null) {
 				_requireRender = true;
-				GTimers.inst.callLater(function():void { _canvas.setRequiresRedraw(); });
+				Starling.current.juggler.delayCall(onRender, 0);
 				return;
 			}
 			

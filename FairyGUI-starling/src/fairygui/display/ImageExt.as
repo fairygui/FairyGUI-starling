@@ -205,12 +205,10 @@ package fairygui.display
 			_needRebuild = false;
 			
 			var texture:Texture = this.texture;
-			
 			if(texture==null)
 			{
 				this.vertexData.clear();
 				this.indexData.clear();
-				this.setRequiresRedraw();
 				return;
 			}
 
@@ -220,6 +218,7 @@ package fairygui.display
 			vertRect.copyFrom(_bounds);
 			
 			VertexHelper.beginFill();
+			var i:int, j:int;
 			
 			if (_fillMethod != FillType.FillMethod_None)
 			{
@@ -239,9 +238,9 @@ package fairygui.display
 				
 				VertexHelper.alloc(hc*vc*4);
 
-				for (var i:int = 0; i < hc; i++)
+				for (i= 0; i < hc; i++)
 				{
-					for (var j:int = 0; j < vc; j++)
+					for (j = 0; j < vc; j++)
 					{
 						VertexHelper.addQuad(i * texture.width, j * texture.height, 
 							i==hc-1?remainWidth:texture.width, j==vc-1?remainHeight:texture.height);
@@ -334,7 +333,7 @@ package fairygui.display
 				VertexHelper.fillUV2(uvRect);
 			}
 
-			VertexHelper.flush(this.vertexData, this.indexData);
+			VertexHelper.updateAll(this.vertexData, this.indexData);
 			vertexData.colorize("color", _color);
 		}
 	}

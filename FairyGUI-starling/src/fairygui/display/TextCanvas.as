@@ -7,14 +7,11 @@ package fairygui.display
 	import fairygui.text.BitmapFont;
 	
 	import starling.events.Event;
-	import starling.rendering.Painter;
 	import starling.textures.Texture;
 	import starling.utils.MathUtil;
 	
 	public class TextCanvas extends MeshExt
 	{
-		public var renderCallback:Function;
-		
 		//to save memory. If you dont like this, change to false
 		public static var freeTextureOnRemoved:Boolean = true;
 		
@@ -39,7 +36,6 @@ package fairygui.display
 		override public function dispose():void
 		{
 			freeTexture();
-			renderCallback = null;
 			_restoreFunction = null;
 			
 			super.dispose();
@@ -99,7 +95,7 @@ package fairygui.display
 				VertexHelper.beginFill();
 				VertexHelper.addQuad(0, 0, bw, bh);
 				VertexHelper.fillUV4(texture);
-				VertexHelper.flush(this.vertexData, this.indexData);
+				VertexHelper.updateAll(this.vertexData, this.indexData);
 				vertexData.colorize("color", 0xFFFFFF);
 				setRequiresRedraw();
 			}			
@@ -109,7 +105,7 @@ package fairygui.display
 		{
 			_ownsTexture = false;
 			this.style.texture = font.mainTexture;
-			VertexHelper.flush(this.vertexData, this.indexData);
+			VertexHelper.updateAll(this.vertexData, this.indexData);
 			vertexData.colorize("color", color);
 			setRequiresRedraw();
 		}
@@ -129,14 +125,6 @@ package fairygui.display
 			
 			this.vertexData.numVertices = 0;
 			this.indexData.numIndices = 0;
-		}		
-		
-		override public function render(painter:Painter):void
-		{
-			if(renderCallback!=null)
-				renderCallback();
-			
-			super.render(painter);
 		}
 		
 		private function __addedToStage(evt:Event):void

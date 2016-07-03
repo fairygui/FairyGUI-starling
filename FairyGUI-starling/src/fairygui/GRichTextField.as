@@ -30,11 +30,6 @@ package fairygui
 			_textField.ALinkFormat = val;
 		}
 
-		override protected function render():void
-		{
-			renderNow();
-		}
-		
 		override protected function renderNow():void
 		{
 			if(_heightAutoSize)

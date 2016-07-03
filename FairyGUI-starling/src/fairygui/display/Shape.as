@@ -96,7 +96,7 @@ package fairygui.display
 				{
 					VertexHelper.beginFill();
 					VertexHelper.addQuad(0, 0, _bounds.width, _bounds.height);
-					VertexHelper.flush(vertexData, indexData);
+					VertexHelper.updateAll(vertexData, indexData);
 					vertexData.colorize("color", _fillColor, _fillAlpha);
 				}
 				else
@@ -114,7 +114,7 @@ package fairygui.display
 					//middle
 					VertexHelper.addQuad(_lineSize, _lineSize, _bounds.width-_lineSize*2, _bounds.height -_lineSize*2);
 					
-					VertexHelper.flush(vertexData, indexData);
+					VertexHelper.updateAll(vertexData, indexData);
 					vertexData.colorize("color", _lineColor, _lineAlpha, 0, 16);
 					vertexData.colorize("color", _fillColor, _fillAlpha, 16, 4);
 				}

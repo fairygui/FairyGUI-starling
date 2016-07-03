@@ -274,7 +274,7 @@ package fairygui.display
 					VertexHelper.beginFill();
 					VertexHelper.addQuad(_frameRect.x, _frameRect.y, this.texture.width, this.texture.height);
 					VertexHelper.fillUV4(this.texture);
-					VertexHelper.flush(vertexData, indexData);
+					VertexHelper.updateAll(vertexData, indexData);
 					vertexData.colorize("color", _color);
 					setRequiresRedraw();
 				}

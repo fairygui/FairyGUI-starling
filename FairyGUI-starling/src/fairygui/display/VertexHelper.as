@@ -14,7 +14,7 @@ package fairygui.display
 	{
 		public static var vertBuffer:Vector.<Point> = new Vector.<Point>();
 		public static var uvBuffer:Vector.<Point> = new Vector.<Point>();
-		public static var quadCount:int;
+		public static var vertCount:int;
 		
 		private static var helperPoint:Point = new Point();
 		private static var helperRect1:Rectangle = new Rectangle();
@@ -29,7 +29,7 @@ package fairygui.display
 		
 		public static function beginFill():void
 		{
-			quadCount = 0;
+			vertCount = 0;
 
 			if(vertBuffer.length==0)
 				alloc(50);
@@ -52,60 +52,67 @@ package fairygui.display
 			}
 		}
 		
-		public static function flush(vertexData:VertexData, indexData:IndexData):void
+		public static function updateVertexData(vertexData:VertexData):void
 		{
-			if(quadCount==0)
+			if(vertCount==0)
 			{
 				vertexData.clear();
+				return;
+			}
+			
+			vertexData.numVertices = vertCount;
+			for(var i:int=0;i<vertCount;i++)
+			{
+				vertexData.setPoint(i, "position", vertBuffer[i].x, vertBuffer[i].y);
+				vertexData.setPoint(i, "texCoords", uvBuffer[i].x, uvBuffer[i].y);
+			}
+		}
+		
+		public static function updateIndexData(indexData:IndexData):void
+		{
+			if(vertCount==0)
+			{
 				indexData.clear();
 				return;
 			}
 
-			vertexData.numVertices = quadCount*4;
 			indexData.numIndices = 0;
-			
-			var k:int = 0;
-			for(var i:int=0;i<quadCount;i++)
+			for(var i:int=0;i<vertCount;i+=4)
 			{
-				for(var j:int=0;j<4;j++)
-				{
-					vertexData.setPoint(k, "position", vertBuffer[k].x, vertBuffer[k].y);
-					vertexData.setPoint(k, "texCoords", uvBuffer[k].x, uvBuffer[k].y);
-					k++;
-				}
-				
-				indexData.addQuad(k-4, k-3, k-2, k-1);
+				indexData.addQuad(i, i+1, i+2, i+3);
 			}
+		}
+		
+		public static function updateAll(vertexData:VertexData, indexData:IndexData):void 
+		{
+			updateVertexData(vertexData);
+			updateIndexData(indexData);
 		}
 		
 		public static function addQuad(x:Number, y:Number, width:Number, height:Number):void
 		{
-			var vertIndex:int = quadCount*4;
-			vertBuffer[vertIndex].x = x;
-			vertBuffer[vertIndex].y = y;
-			vertBuffer[vertIndex+1].x = x+width;
-			vertBuffer[vertIndex+1].y = y;
-			vertBuffer[vertIndex+2].x = x;
-			vertBuffer[vertIndex+2].y = y+height;
-			vertBuffer[vertIndex+3].x = x+width;
-			vertBuffer[vertIndex+3].y = y+height;
-			
-			quadCount++;
+			vertBuffer[vertCount].x = x;
+			vertBuffer[vertCount].y = y;
+			vertBuffer[vertCount+1].x = x+width;
+			vertBuffer[vertCount+1].y = y;
+			vertBuffer[vertCount+2].x = x;
+			vertBuffer[vertCount+2].y = y+height;
+			vertBuffer[vertCount+3].x = x+width;
+			vertBuffer[vertCount+3].y = y+height;
+			vertCount+=4;
 		}
 		
 		public static function addQuad2(vertRect:Rectangle):void
 		{
-			var vertIndex:int = quadCount*4;
-			vertBuffer[vertIndex].x = vertRect.x;
-			vertBuffer[vertIndex].y = vertRect.y;
-			vertBuffer[vertIndex+1].x = vertRect.right;
-			vertBuffer[vertIndex+1].y = vertRect.y;
-			vertBuffer[vertIndex+2].x = vertRect.x;
-			vertBuffer[vertIndex+2].y = vertRect.bottom;
-			vertBuffer[vertIndex+3].x = vertRect.right;
-			vertBuffer[vertIndex+3].y = vertRect.bottom;
-
-			quadCount++;
+			vertBuffer[vertCount].x = vertRect.x;
+			vertBuffer[vertCount].y = vertRect.y;
+			vertBuffer[vertCount+1].x = vertRect.right;
+			vertBuffer[vertCount+1].y = vertRect.y;
+			vertBuffer[vertCount+2].x = vertRect.x;
+			vertBuffer[vertCount+2].y = vertRect.bottom;
+			vertBuffer[vertCount+3].x = vertRect.right;
+			vertBuffer[vertCount+3].y = vertRect.bottom;
+			vertCount+=4;
 		}
 		
 		public static function getTextureUV(texture:Texture, rect:Rectangle = null):Rectangle
@@ -141,7 +148,7 @@ package fairygui.display
 		
 		public static function fillUV(x:Number, y:Number, width:Number, height:Number):void
 		{
-			var vertIndex:int = (quadCount-1)*4;
+			var vertIndex:int = vertCount-4;
 			uvBuffer[vertIndex].x = x;
 			uvBuffer[vertIndex].y = y;
 			uvBuffer[vertIndex+1].x = x+width;
@@ -154,7 +161,7 @@ package fairygui.display
 		
 		public static function fillUV2(uvRect:Rectangle):void
 		{
-			var vertIndex:int = (quadCount-1)*4;
+			var vertIndex:int = vertCount-4;
 			uvBuffer[vertIndex].x = uvRect.x;
 			uvBuffer[vertIndex].y = uvRect.y;
 			uvBuffer[vertIndex+1].x = uvRect.right;
@@ -167,7 +174,7 @@ package fairygui.display
 		
 		public static function fillUV3(uvRect:Rectangle, ratioX:Number, ratioY:Number):void
 		{
-			var vertIndex:int = (quadCount-1)*4;
+			var vertIndex:int = vertCount-4;
 			uvBuffer[vertIndex].x = uvRect.x;
 			uvBuffer[vertIndex].y = uvRect.y;
 			uvBuffer[vertIndex+1].x = uvRect.x + uvRect.width*ratioX;
@@ -187,7 +194,7 @@ package fairygui.display
 			var width:Number = helperPoint.x-x;
 			var height:Number = helperPoint.y-y;
 			
-			var vertIndex:int = (quadCount-1)*4;
+			var vertIndex:int = vertCount-4;
 			uvBuffer[vertIndex].x = x;
 			uvBuffer[vertIndex].y = y;
 			uvBuffer[vertIndex+1].x = x + width;
