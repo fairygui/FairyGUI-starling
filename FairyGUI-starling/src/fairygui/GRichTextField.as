@@ -32,6 +32,9 @@ package fairygui
 
 		override protected function renderNow():void
 		{
+			_requireRender = false;
+			_sizeDirty = false;
+			
 			if(_heightAutoSize)
 				_textField.autoSize = TextFieldAutoSize.LEFT;
 			else
