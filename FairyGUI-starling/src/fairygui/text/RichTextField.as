@@ -13,6 +13,7 @@ package fairygui.text
 	import fairygui.display.TextCanvas;
 	import fairygui.event.TextEvent;
 	import fairygui.utils.CharSize;
+	import fairygui.utils.FontUtils;
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
@@ -126,6 +127,7 @@ package fairygui.text
 				if(_defaultTextFormat.kerning==null)
 					_defaultTextFormat.kerning = false;
 			}
+			_textField.embedFonts = FontUtils.isEmbeddedFont(_defaultTextFormat);
 			_textField.defaultTextFormat = val;
 			setRequiresRebuild();
 		}

@@ -13,6 +13,7 @@ package fairygui
 	import fairygui.text.BMGlyph;
 	import fairygui.text.BitmapFont;
 	import fairygui.utils.CharSize;
+	import fairygui.utils.FontUtils;
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
@@ -492,6 +493,7 @@ package fairygui
 				return;
 			}
 			
+			renderTextField.embedFonts = FontUtils.isEmbeddedFont(_textFormat);
 			renderTextField.defaultTextFormat = _textFormat;
 			renderTextField.selectable = false;
 			if(_widthAutoSize)

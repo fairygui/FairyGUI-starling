@@ -7,6 +7,7 @@ package fairygui
 	import flash.text.TextFieldType;
 	import flash.text.TextFormat;
 	
+	import fairygui.utils.FontUtils;
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
@@ -165,6 +166,7 @@ package fairygui
 			textFormat.leading = int(_textFormat.leading)*GRoot.contentScaleFactor;
 			textFormat.letterSpacing = int(_textFormat.letterSpacing)*GRoot.contentScaleFactor;
 			textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
+			_nativeTextField.embedFonts = FontUtils.isEmbeddedFont(textFormat);
 			_nativeTextField.defaultTextFormat = textFormat;
 			_nativeTextField.displayAsPassword = _displayAsPassword;
 			_nativeTextField.wordWrap = !_singleLine;
