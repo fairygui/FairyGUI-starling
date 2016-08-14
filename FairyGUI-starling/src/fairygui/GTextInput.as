@@ -131,6 +131,12 @@ package fairygui
 			super.setup_beforeAdd(xml);
 			
 			_promptText = xml.@prompt;
+			var str:String = xml.@maxLength;
+			if(str)
+				_nativeTextField.maxChars = parseInt(str);
+			str = xml.@restrict;
+			if(str)
+				_nativeTextField.restrict = str;
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
