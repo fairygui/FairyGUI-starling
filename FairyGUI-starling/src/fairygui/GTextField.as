@@ -862,7 +862,7 @@ package fairygui
 				}//text loop
 			}//line loop
 
-			_canvas.renderBitmapText(_bitmapFont, _bitmapFont.ttf?_color:0xFFFFFF);
+			_canvas.renderBitmapText(_bitmapFont, _color);
 		}
 		
 		override protected function handleSizeChanged():void

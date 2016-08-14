@@ -106,7 +106,7 @@ package fairygui.display
 			_ownsTexture = false;
 			this.style.texture = font.mainTexture;
 			VertexHelper.updateAll(this.vertexData, this.indexData);
-			vertexData.colorize("color", color);
+			vertexData.colorize("color", font.colored?color:0xFFFFFF);
 			setRequiresRedraw();
 		}
 		

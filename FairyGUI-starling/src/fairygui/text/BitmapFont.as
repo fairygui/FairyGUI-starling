@@ -8,6 +8,7 @@ package fairygui.text
 		public var size:int;
 		public var ttf:Boolean;
 		public var resizable:Boolean;
+		public var colored:Boolean;
 		public var mainTexture:Texture;
 		public var glyphs:Object;
 		

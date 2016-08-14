@@ -840,6 +840,7 @@ package fairygui
 			var ttf:Boolean = false;
 			var size:int = 0;
 			var resizable:Boolean = false;
+			var colored:Boolean = false;
 			var xadvance:int = 0;
 			var atlasOffsetX:int, atlasOffsetY:int;
 			var atlasWidth:int, atlasHeight:int;
@@ -936,7 +937,10 @@ package fairygui
 				else if(str=="info")
 				{
 					ttf = kv.face!=null;
+					colored = ttf;
 					resizable = kv.resizable=="true";
+					if(kv.colored!=undefined)
+						colored = kv.colored=="true";
 					size = kv.size;
 					if(ttf)
 					{
@@ -976,6 +980,7 @@ package fairygui
 			font.ttf = ttf;
 			font.size = size;
 			font.resizable = resizable;
+			font.colored = colored;
 			item.bitmapFont = font;
 		}
 	}
