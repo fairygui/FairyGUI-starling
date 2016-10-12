@@ -19,9 +19,6 @@ package fairygui
 
 	public class GLoader extends GObject implements IColorGear, IAnimationGear
 	{
-		private var _gearAnimation:GearAnimation;
-		private var _gearColor:GearColor;
-		
 		private var _url:String;
 		private var _align:int;
 		private var _verticalAlign:int;
@@ -59,9 +56,6 @@ package fairygui
 			_verticalAlign = VertAlignType.Top;
 			_showErrorSign = true;
 			_color = 0xFFFFFF;
-			
-			_gearAnimation = new GearAnimation(this);
-			_gearColor = new GearColor(this);
 		}
 		
 		override protected function createDisplayObject():void
@@ -72,15 +66,6 @@ package fairygui
 			
 			_image = new ImageExt();
 			_container.addChild(_image);
-		}
-		
-		override public function handleControllerChanged(c:Controller):void
-		{
-			super.handleControllerChanged(c);
-			if(_gearAnimation.controller==c)
-				_gearAnimation.apply();
-			if(_gearColor.controller==c)
-				_gearColor.apply();
 		}
 		
 		public override function dispose():void
@@ -118,6 +103,17 @@ package fairygui
 			
 			_url = value;
 			loadContent();
+			updateGear(7);
+		}
+		
+		override public function get icon():String
+		{
+			return _url;
+		}
+		
+		override public function set icon(value:String):void
+		{
+			this.url = value;
 		}
 		
 		public function get align():int
@@ -188,9 +184,7 @@ package fairygui
 				_playing = value;
 				if(_movieClip!=null)
 					_movieClip.playing = value;
-
-				if (_gearAnimation.controller != null)
-					_gearAnimation.updateState();
+				updateGear(5);
 			}
 		}
 		
@@ -206,9 +200,7 @@ package fairygui
 				_frame = value;
 				if(_movieClip!=null)
 					_movieClip.currentFrame = value;
-				
-				if (_gearAnimation.controller != null)
-					_gearAnimation.updateState();
+				updateGear(5);
 			}
 		}
 		
@@ -222,8 +214,7 @@ package fairygui
 			if(_color != value)
 			{
 				_color = value;
-				if (_gearColor.controller != null)
-					_gearColor.updateState();
+				updateGear(4);
 				applyColor();
 			}
 		}
@@ -627,19 +618,6 @@ package fairygui
 			
 			if(_url)
 				loadContent();
-		}
-		
-		override public function setup_afterAdd(xml:XML):void
-		{
-			super.setup_afterAdd(xml);
-			
-			var cxml:XML = xml.gearAni[0];
-			if(cxml)
-				_gearAnimation.setup(cxml);
-			cxml = xml.gearAni[0];
-			cxml = xml.gearColor[0];
-			if(cxml)
-				_gearColor.setup(cxml);
 		}
 	}
 }

@@ -21,6 +21,7 @@ package fairygui
 		private var _nativeTextField:TextField;
 		private var _editable:Boolean;
 		private var _promptText:String;
+		private var _password:Boolean;
 		
 		public function GTextInput()
 		{
@@ -99,6 +100,30 @@ package fairygui
 			renderNow();
 		}
 		
+		public function get restrict():String
+		{
+			return _nativeTextField.restrict;
+		}
+		
+		public function set restrict(value:String):void
+		{
+			_nativeTextField.restrict = value;
+		}
+		
+		public function get password():Boolean
+		{
+			return _password;
+		}
+		
+		public function set password(val:Boolean):void
+		{
+			if(_password != val)
+			{
+				_password = val;
+				render();
+			}
+		}
+		
 		override protected function handleSizeChanged():void
 		{
 			super.handleSizeChanged();
@@ -112,7 +137,7 @@ package fairygui
 			{
 				renderTextField.htmlText = ToolSet.parseUBB(ToolSet.encodeHTML(_promptText));
 			}
-			else if(_displayAsPassword)
+			else if(_password)
 			{
 				var str:String = "";
 				var cnt:int = _text.length;
@@ -137,6 +162,7 @@ package fairygui
 			str = xml.@restrict;
 			if(str)
 				_nativeTextField.restrict = str;
+			_password = xml.@password=="true";
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
@@ -174,7 +200,7 @@ package fairygui
 			textFormat.size = int(_textFormat.size)*GRoot.contentScaleFactor;
 			_nativeTextField.embedFonts = FontUtils.isEmbeddedFont(textFormat);
 			_nativeTextField.defaultTextFormat = textFormat;
-			_nativeTextField.displayAsPassword = _displayAsPassword;
+			_nativeTextField.displayAsPassword = _password;
 			_nativeTextField.wordWrap = !_singleLine;
 			_nativeTextField.multiline = !_singleLine;
 			_nativeTextField.text = _text;

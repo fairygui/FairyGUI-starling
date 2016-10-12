@@ -8,13 +8,10 @@ package fairygui
 
 	public class GImage extends GObject implements IColorGear
 	{
-		protected var _gearColor:GearColor;
-		
 		private var _content:ImageExt;
 		
 		public function GImage()
 		{
-			_gearColor = new GearColor(this);
 		}
 		
 		public function get color():uint
@@ -27,8 +24,7 @@ package fairygui
 			if(_content.color != value)
 			{
 				_content.color = value;
-				if (_gearColor.controller != null)
-					_gearColor.updateState();
+				updateGear(4);
 			}
 		}
 		
@@ -86,18 +82,6 @@ package fairygui
 		{ 
 			_content = new UIImage(this);
 			setDisplayObject(_content);
-		}
-		
-		final public function get gearColor():GearColor
-		{
-			return _gearColor;
-		}
-		
-		override public function handleControllerChanged(c:Controller):void
-		{
-			super.handleControllerChanged(c);
-			if(_gearColor.controller==c)
-				_gearColor.apply();
 		}
 		
 		override public function dispose():void
@@ -170,16 +154,6 @@ package fairygui
 				if(str)
 					_content.fillAmount = parseInt(str) / 100;
 			}
-		}
-		
-		override public function setup_afterAdd(xml:XML):void
-		{
-			super.setup_afterAdd(xml);
-			
-			var cxml:XML = xml.gearAni[0];
-			cxml = xml.gearColor[0];
-			if(cxml)
-				_gearColor.setup(cxml);
 		}
 	}
 }

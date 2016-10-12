@@ -58,21 +58,18 @@ package fairygui
 			_useHandCursor = UIConfig.buttonUseHandCursor;
 		}
 		
-		final public function get icon():String
+		override public function get icon():String
 		{
 			return _icon;
 		}
 
-		public function set icon(value:String):void
+		override public function set icon(value:String):void
 		{
 			_icon = value;
 			value = (_selected && _selectedIcon)?_selectedIcon:_icon;
-			if(_iconObject is GLoader)
-				GLoader(_iconObject).url = value;
-			else if(_iconObject is GLabel)
-				GLabel(_iconObject).icon = value;
-			else if(_iconObject is GButton)
-				GButton(_iconObject).icon = value;
+			if(_iconObject!=null)
+				_iconObject.icon = value;
+			updateGear(7);
 		}
 		
 		final public function get selectedIcon():String
@@ -102,6 +99,7 @@ package fairygui
 			_title = value;
 			if(_titleObject)
 				_titleObject.text = (_selected && _selectedTitle)?_selectedTitle:_title;
+			updateGear(6);
 		}
 		
 		final override public function get text():String
@@ -182,12 +180,8 @@ package fairygui
 				if(_selectedIcon)
 				{
 					var str:String = _selected?_selectedIcon:_icon;
-					if(_iconObject is GLoader)
-						GLoader(_iconObject).url = str;
-					else if(_iconObject is GLabel)
-						GLabel(_iconObject).icon = str;
-					else if(_iconObject is GButton)
-						GButton(_iconObject).icon = str;
+					if(_iconObject!=null)
+						_iconObject.icon = str;
 				}
 				if(_relatedController
 					&& _parent

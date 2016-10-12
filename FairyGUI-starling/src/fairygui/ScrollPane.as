@@ -77,6 +77,9 @@ package fairygui
 		private static var sHelperPoint:Point = new Point();
 		private static var sHelperRect:Rectangle = new Rectangle();
 		
+		public static const PULL_DOWN_RELEASE:String = "pullDownRelease";
+		public static const PULL_UP_RELEASE:String = "pullUpRelease";
+		
 		public function ScrollPane(owner:GComponent, 
 								   scrollType:int,
 								   scrollBarMargin:Margin,
@@ -1197,9 +1200,15 @@ package fairygui
 			var endY:Number = 0;
 			var page:int;
 			var delta:Number;
+			var fireRelease:int = 0;
 			
 			if(_scrollType==ScrollType.Both || _scrollType==ScrollType.Horizontal)
 			{
+				if (_maskContentHolder.x > UIConfig.touchDragSensitivity)
+					fireRelease = 1;
+				else if (_maskContentHolder.x < Math.min(_maskWidth - _contentWidth) - UIConfig.touchDragSensitivity)
+					fireRelease = 2;
+				
 				change1.x = ThrowTween.calculateChange(xVelocity, duration);
 				change2.x = 0;
 				endX = _maskContentHolder.x + change1.x;
@@ -1241,6 +1250,11 @@ package fairygui
 			
 			if(_scrollType==ScrollType.Both || _scrollType==ScrollType.Vertical)
 			{
+				if (_maskContentHolder.y > UIConfig.touchDragSensitivity)
+					fireRelease = 1;
+				else if (_maskContentHolder.y < Math.min(_maskHeight - _contentHeight, 0) - UIConfig.touchDragSensitivity)
+					fireRelease = 2;
+				
 				change1.y = ThrowTween.calculateChange(yVelocity, duration);
 				change2.y = 0;
 				endY = _maskContentHolder.y + change1.y;
@@ -1325,6 +1339,11 @@ package fairygui
 			TweenLite.to(_throwTween, duration, { value:1, 
 				onUpdate:__tweenUpdate2, onComplete:__tweenComplete2, 
 				ease:_easeTypeFunc } );
+			
+			if (fireRelease == 1)
+				dispatchEventWith(PULL_DOWN_RELEASE);
+			else if (fireRelease == 2)
+				dispatchEventWith(PULL_UP_RELEASE);
 		}
 		
 		private function __mouseWheel(evt:MouseEvent):void
