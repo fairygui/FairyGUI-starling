@@ -764,7 +764,7 @@ package fairygui
 				return;
 			
 			VertexHelper.beginFill();
-			VertexHelper.alloc(charCount);
+			VertexHelper.alloc(charCount*4);
 			
 			var charX:int = GUTTER_X;
 			var lineIndent:int;
@@ -835,10 +835,10 @@ package fairygui
 			}
 		}
 		
-		override protected function handleGrayChanged():void
+		override protected function handleGrayedChanged():void
 		{
 			if(_bitmapFont!=null)
-				super.handleGrayChanged();
+				super.handleGrayedChanged();
 			
 			updateTextFormat();
 		}

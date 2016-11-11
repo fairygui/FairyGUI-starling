@@ -335,6 +335,7 @@ package fairygui
 				_image.texture = pi.texture;
 				_image.scale9Grid = pi.scale9Grid;
 				_image.scaleByTile = pi.scaleByTile;
+				_image.tileGridIndice = pi.tileGridIndice;
 				_image.textureSmoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
 				_image.color = _color;
 				_contentSourceWidth = pi.width;
@@ -492,16 +493,20 @@ package fairygui
 			else
 			{
 				var sx:Number = 1, sy:Number = 1;
-				if(_fill==LoaderFillType.Scale || _fill==LoaderFillType.ScaleFree)
+				if(_fill!=LoaderFillType.None)
 				{
 					sx = this.width/_contentSourceWidth;
 					sy = this.height/_contentSourceHeight;
 					
 					if(sx!=1 || sy!=1)
 					{
-						if(_fill==LoaderFillType.Scale)
+						if (_fill == LoaderFillType.ScaleMatchHeight)
+							sx = sy;
+						else if (_fill == LoaderFillType.ScaleMatchWidth)
+							sy = sx;
+						else if (_fill == LoaderFillType.Scale)
 						{
-							if(sx>sy)
+							if (sx > sy)
 								sx = sy;
 							else
 								sy = sx;
@@ -509,7 +514,7 @@ package fairygui
 						_contentWidth = _contentSourceWidth * sx;
 						_contentHeight = _contentSourceHeight * sy;
 					}
-				}	
+				}
 				
 				if(_activeObject is ImageExt)
 				{

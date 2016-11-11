@@ -27,6 +27,7 @@ package fairygui
 		//image
 		public var scale9Grid:Rectangle;
 		public var scaleByTile:Boolean;
+		public var tileGridIndice:int;
 		public var smoothing:Boolean;
 		public var texture:Texture;
 		public var uvRect:Rectangle;
@@ -39,6 +40,7 @@ package fairygui
 		
 		//componenet
 		public var componentData:XML;
+		public var displayList:Vector.<DisplayListItem>;
 		
 		//sound
 		public var sound:Sound;

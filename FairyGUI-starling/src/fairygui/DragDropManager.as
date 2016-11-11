@@ -5,6 +5,8 @@ package fairygui
 	import fairygui.event.DragEvent;
 	import fairygui.event.DropEvent;
 	
+	import starling.core.Starling;
+	
 	public class DragDropManager
 	{
 		private var _agent:GLoader;
@@ -24,6 +26,7 @@ package fairygui
 			_agent.draggable = true;
 			_agent.touchable = false;//important
 			_agent.setSize(100,100);
+			_agent.setPivot(0.5, 0.5, true);
 			_agent.sortingOrder = int.MAX_VALUE;
 			_agent.addEventListener(DragEvent.DRAG_END, __dragEnd);
 		}
@@ -46,7 +49,7 @@ package fairygui
 			_sourceData = sourceData;
 			_agent.url = icon;
 			GRoot.inst.addChild(_agent);
-			var pt:Point = source.localToRoot();
+			var pt:Point = GRoot.inst.globalToLocal(Starling.current.nativeStage.mouseX, Starling.current.nativeStage.mouseY);
 			_agent.setXY(pt.x, pt.y);
 			_agent.startDrag(touchPointId);
 		}

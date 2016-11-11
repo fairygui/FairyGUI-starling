@@ -82,7 +82,7 @@ package fairygui
 		public function setup(xml:XML):void
 		{
 			_controller = _owner.parent.getController(xml.@controller);
-			if(_controller==null)
+			if(!_controller)
 				return;
 			
 			init();
@@ -119,10 +119,7 @@ package fairygui
 				if(str)
 				{
 					var arr:Array = str.split(",");
-					for each(str in arr)
-					{
-						GearDisplay(this).pages.push(str);
-					}
+					GearDisplay(this).pages = arr;
 				}
 			}
 			else

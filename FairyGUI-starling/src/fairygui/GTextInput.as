@@ -180,7 +180,10 @@ package fairygui
 			
 			var touch:Touch = evt.getTouch(displayObject);
 			if(touch && touch.phase==TouchPhase.BEGAN)
+			{
 				startInput();
+				evt.stopPropagation();
+			}
 		}
 		
 		public function startInput():void

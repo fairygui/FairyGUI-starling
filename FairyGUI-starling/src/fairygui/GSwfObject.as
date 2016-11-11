@@ -51,12 +51,10 @@ package fairygui
 			}
 		}
 		
-		override public function constructFromResource(pkgItem:PackageItem):void
+		override public function constructFromResource():void
 		{
-			_packageItem = pkgItem;
-			
-			_sourceWidth = _packageItem.width;
-			_sourceHeight = _packageItem.height;
+			_sourceWidth = packageItem.width;
+			_sourceHeight = packageItem.height;
 			_initWidth = _sourceWidth;
 			_initHeight = _sourceHeight;
 			

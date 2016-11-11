@@ -62,6 +62,20 @@ package fairygui.display
 			setSize(width, height);
 		}
 		
+		public function get fillColor():uint
+		{
+			return _fillColor;
+		}
+		
+		public function set fillColor(value:uint):void 
+		{
+			if(_fillColor != value)
+			{
+				_fillColor = value;
+				setRequiresRebuild();
+			}
+		}
+		
 		public function clear():void
 		{
 			if(_type!=0)

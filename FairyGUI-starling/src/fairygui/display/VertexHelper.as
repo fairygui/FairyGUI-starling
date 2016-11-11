@@ -32,12 +32,12 @@ package fairygui.display
 			vertCount = 0;
 
 			if(vertBuffer.length==0)
-				alloc(50);
+				alloc(200);
 		}
 		
 		public static function alloc(capacity:int):void
 		{
-			var req:int = capacity*4;
+			var req:int = capacity;
 			var cnt:int = vertBuffer.length;
 			if(cnt<req)
 			{
@@ -50,6 +50,11 @@ package fairygui.display
 					uvBuffer[i] = new Point();
 				}
 			}
+		}
+		
+		public static function allocMore(space:int):void
+		{
+			alloc(vertCount + space);
 		}
 		
 		public static function updateVertexData(vertexData:VertexData):void

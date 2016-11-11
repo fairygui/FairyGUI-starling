@@ -9,13 +9,23 @@ package fairygui
 	import starling.display.Sprite;
 	import starling.utils.deg2rad;
 	
-	public class GGraph extends GObject
+	public class GGraph extends GObject implements IColorGear
 	{
 		private var _shape:UIShape;
 
 		public function GGraph()
 		{
 
+		}
+		
+		public function get color():uint
+		{
+			return this.shape.fillColor;
+		}
+		
+		public function set color(value:uint):void 
+		{
+			this.shape.fillColor = value;
 		}
 		
 		public function drawRect(lineSize:int, lineColor:int, lineAlpha:Number,

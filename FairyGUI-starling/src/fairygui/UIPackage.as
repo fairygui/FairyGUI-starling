@@ -92,7 +92,7 @@ package fairygui
 			delete _packageInstByName[pkg.name];
 		}
 		
-		public static function createObject(pkgName:String, resName:String, userClass:Class=null):GObject
+		public static function createObject(pkgName:String, resName:String, userClass:Object=null):GObject
 		{
 			var pkg:UIPackage = getByName(pkgName);
 			if(pkg)
@@ -101,11 +101,11 @@ package fairygui
 				return null;
 		}
 		
-		public static function createObjectFromURL(url:String, userClass:Class=null):GObject
+		public static function createObjectFromURL(url:String, userClass:Object=null):GObject
 		{
 			var pi:PackageItem = getItemByURL(url);
 			if(pi)
-				return pi.owner.createObject2(pi, userClass);
+				return pi.owner.internalCreateObject(pi, userClass);
 			else
 				return null;	
 		}
@@ -278,6 +278,10 @@ package fairygui
 							pi.scale9Grid.y = arr[1];
 							pi.scale9Grid.width = arr[2];
 							pi.scale9Grid.height = arr[3];
+							
+							str = cxml.@gridTile;
+							if(str)
+								pi.tileGridIndice = parseInt(str);
 						}
 						else if(str=="tile")
 						{
@@ -381,33 +385,39 @@ package fairygui
 				_packageInstById[_customId] = this;
 		}
 		
-		public function createObject(resName:String, userClass:Class=null):GObject
+		public function createObject(resName:String, userClass:Object=null):GObject
 		{
 			var pi:PackageItem = _itemsByName[resName];
 			if(pi)
-				return createObject2(pi, userClass);
+				return internalCreateObject(pi, userClass);
 			else
 				return null;
 		}
 		
-		internal function createObject2(pi:PackageItem, userClass:Class=null):GObject
+		private function internalCreateObject(item:PackageItem, userClass:Object):GObject
 		{
-			var g:GObject;
-			if(pi.type==PackageItemType.Component)
+			var g:GObject = null;
+			if (item.type == PackageItemType.Component)
 			{
 				if(userClass!=null)
-					g = new userClass();
+				{
+					if(userClass is Class)
+						g = new userClass();
+					else
+						g = GObject(userClass);
+				}
 				else
-					g = UIObjectFactory.newObject(pi);
+					g = UIObjectFactory.newObject(item);
 			}
 			else
-				g = UIObjectFactory.newObject(pi);
+				g = UIObjectFactory.newObject(item);
 			
-			if(g==null)
+			if (g == null)
 				return null;
 			
 			_constructing++;
-			g.constructFromResource(pi);
+			g.packageItem = item;
+			g.constructFromResource();
 			_constructing--;
 			return g;
 		}
@@ -450,9 +460,57 @@ package fairygui
 				}
 				
 				item.componentData = xml;
+				
+				loadComponentChildren(item);
 			}
 			
 			return item.componentData;
+		}
+		
+		private function loadComponentChildren(item:PackageItem):void
+		{
+			var listNode:XML = item.componentData.displayList[0];
+			if (listNode != null)
+			{
+				var col:XMLList = listNode.elements();
+				var dcnt:int = col.length();
+				item.displayList = new Vector.<DisplayListItem>(dcnt);
+				var di:DisplayListItem;
+				for (var i:int = 0; i < dcnt; i++)
+				{
+					var cxml:XML = col[i];
+					var tagName:String = cxml.name().localName;
+					
+					var src:String = cxml.@src;
+					if (src)
+					{
+						var pkgId:String = cxml.@pkg;
+						var pkg:UIPackage;
+						if (pkgId && pkgId != item.owner.id)
+							pkg = UIPackage.getById(pkgId);
+						else
+							pkg = item.owner;
+						
+						var pi:PackageItem = pkg != null ? pkg.getItemById(src) : null;
+						if (pi != null)
+							di = new DisplayListItem(pi, null);
+						else
+							di = new DisplayListItem(null, tagName);
+					}
+					else
+					{
+						if (tagName == "text" && cxml.@input=="true")
+							di = new DisplayListItem(null, "inputtext");
+						else
+							di = new DisplayListItem(null, tagName);
+					}
+					
+					di.desc = cxml;
+					item.displayList[i] = di;
+				}
+			}
+			else
+				item.displayList =new Vector.<DisplayListItem>(0);
 		}
 		
 		public function getPixelHitTestData(itemId:String):PixelHitTestData
@@ -800,7 +858,16 @@ package fairygui
 				frame.addDelay = parseInt(str);
 				item.frames[i] = frame;
 				
-				var sprite:AtlasSprite = _sprites[item.id + "_" + i];
+				if (frame.rect.width == 0)
+					continue;
+				
+				str = frameNode.@sprite;
+				if (str)
+					str = item.id + "_" + str;
+				else				
+					str = item.id + "_" + i;
+				
+				var sprite:AtlasSprite = _sprites[str];
 				if(sprite!=null)
 				{
 					if(atlasItem==null)
@@ -842,6 +909,7 @@ package fairygui
 			var resizable:Boolean = false;
 			var colored:Boolean = false;
 			var xadvance:int = 0;
+			var lineHeight:int = 0;
 			var atlasOffsetX:int, atlasOffsetY:int;
 			var atlasWidth:int, atlasHeight:int;
 			var mainTexture:Texture;
@@ -871,18 +939,7 @@ package fairygui
 					bg.width = kv.width;
 					bg.height = kv.height;
 					bg.advance = kv.xadvance;
-					if(kv.chnl!=undefined)
-					{
-						bg.channel = kv.chnl;
-						if (bg.channel == 15)
-							bg.channel = 4;
-						else if (bg.channel == 1)
-							bg.channel = 3;
-						else if (bg.channel == 2)
-							bg.channel = 2;
-						else
-							bg.channel = 1;
-					}
+					//todo: kv.chnl未支持 
 					
 					if(!ttf)
 					{
@@ -916,7 +973,7 @@ package fairygui
 					}
 					
 					if(ttf)
-						bg.lineHeight = size;
+						bg.lineHeight = lineHeight;
 					else
 					{
 						if(bg.advance==0)
@@ -928,7 +985,7 @@ package fairygui
 						}
 						
 						bg.lineHeight = bg.offsetY < 0 ? bg.height : (bg.offsetY + bg.height);
-						if(bg.lineHeight < size)
+						if(size>0 && bg.lineHeight<size)
 							bg.lineHeight = size;
 					}
 					
@@ -938,6 +995,7 @@ package fairygui
 				{
 					ttf = kv.face!=null;
 					colored = ttf;
+					size = kv.size;
 					resizable = kv.resizable=="true";
 					if(kv.colored!=undefined)
 						colored = kv.colored=="true";
@@ -967,8 +1025,11 @@ package fairygui
 				}
 				else if(str=="common")
 				{
+					lineHeight = kv.lineHeight;
 					if(size==0)
-						size = kv.lineHeight;
+						size = lineHeight;
+					else if(lineHeight==0)
+						lineHeight = size;
 					xadvance = kv.xadvance;
 				}
 			}

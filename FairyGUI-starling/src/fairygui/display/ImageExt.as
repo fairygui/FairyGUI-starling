@@ -21,6 +21,7 @@ package fairygui.display
 		
 		private var _scaleByTile:Boolean;
 		private var _scale9Grid:Rectangle;
+		private var _tileGridIndice:int;
 		
 		public function ImageExt()
 		{			
@@ -35,7 +36,7 @@ package fairygui.display
 			_fillAmount = 100;
 			_fillClockwise = true;
 		}
-		
+
 		override public function get color():uint
 		{
 			return _color;
@@ -158,6 +159,20 @@ package fairygui.display
 			}
 		}
 		
+		public function get tileGridIndice():int
+		{
+			return _tileGridIndice;
+		}
+		
+		public function set tileGridIndice(value:int):void
+		{
+			if(_tileGridIndice != value)
+			{
+				_tileGridIndice = value;
+				setRequiresRebuild();
+			}
+		}
+		
 		public function get textureScaleX():Number
 		{
 			return _textureScaleX;
@@ -200,6 +215,8 @@ package fairygui.display
 		
 		private static var vertRect:Rectangle = new Rectangle();
 		private static var uvRect:Rectangle = new Rectangle();
+		private static var tileIndice:Array = [ -1, 0, -1, 2, 4, 3, -1, 1, -1 ];
+		
 		private function rebuild():void
 		{
 			_needRebuild = false;
@@ -231,30 +248,7 @@ package fairygui.display
 			}
 			else if (_scaleByTile)
 			{
-				var hc:int = Math.ceil(_textureScaleX);
-				var vc:int = Math.ceil(_textureScaleY);
-				var remainWidth:Number = _bounds.width - (hc - 1) * texture.width;
-				var remainHeight:Number = _bounds.height - (vc - 1) * texture.height;
-				
-				VertexHelper.alloc(hc*vc*4);
-
-				for (i= 0; i < hc; i++)
-				{
-					for (j = 0; j < vc; j++)
-					{
-						VertexHelper.addQuad(i * texture.width, j * texture.height, 
-							i==hc-1?remainWidth:texture.width, j==vc-1?remainHeight:texture.height);
-
-						if(i==hc-1 || j==vc-1)
-						{
-							VertexHelper.fillUV3(uvRect,
-								i==hc-1?remainWidth/texture.width:1,
-								j==vc-1?remainHeight/texture.height:1);
-						}
-						else
-							VertexHelper.fillUV2(uvRect);
-					}
-				}
+				doTile(texture.width, texture.height, vertRect, uvRect);
 			}
 			else if(_scale9Grid!=null)
 			{				
@@ -285,46 +279,55 @@ package fairygui.display
 				rows = [ 0, gridRect.top, gridRect.bottom, texture.height ];
 				cols = [ 0, gridRect.left, gridRect.right, texture.width ];
 				
-				if (_bounds.height >= (texture.height - gridRect.height))
-					dRows = [ 0, gridRect.top, _bounds.height - (texture.height - gridRect.bottom), _bounds.height ];
+				if (vertRect.height >= (texture.height - gridRect.height))
+					dRows = [ 0, gridRect.top, vertRect.height - (texture.height - gridRect.bottom), vertRect.height ];
 				else
 				{
 					var tmp:Number = gridRect.top / (texture.height - gridRect.bottom);
-					tmp = Math.round(_bounds.height * tmp / (1 + tmp));
-					dRows = [ 0, tmp, tmp, _bounds.height ];
+					tmp = Math.round(vertRect.height * tmp / (1 + tmp));
+					dRows = [ 0, tmp, tmp, vertRect.height ];
 				}
 				
-				if (_bounds.width >= (texture.width - gridRect.width))
-					dCols = [ 0, gridRect.left, _bounds.width - (texture.width - gridRect.right), _bounds.width ];
+				if (vertRect.width >= (texture.width - gridRect.width))
+					dCols = [ 0, gridRect.left, vertRect.width - (texture.width - gridRect.right), vertRect.width ];
 				else
 				{
 					tmp = gridRect.left / (texture.width - gridRect.right);
-					tmp = Math.round(_bounds.width * tmp / (1 + tmp));
-					dCols = [ 0, tmp, tmp, _bounds.width ];
+					tmp = Math.round(vertRect.width * tmp / (1 + tmp));
+					dCols = [ 0, tmp, tmp, vertRect.width ];
 				}
 
 				var cx:int, cy:int;
-				var left:Number, right:Number, top:Number, bottom:Number;
+				var tilePart:int;
+				var r1:Number = uvRect.width / texture.width;
+				var r2:Number = uvRect.height / texture.height;
+				var offsetX:Number = uvRect.x, offsetY:Number = uvRect.y;
 				for (i = 0; i < 9; i++)
 				{
 					cx = i%3;
 					cy = i/3;
 					
-					left = dCols[cx];
-					top = dRows[cy];
-					right = dCols[cx+1];
-					bottom = dRows[cy+1];
-					
-					if(right==left || bottom==top)
+					vertRect.setTo(dCols[cx], dRows[cy], dCols[cx+1]-dCols[cx], dRows[cy+1]-dRows[cy]);
+					if(vertRect.isEmpty())
 						continue;
 					
-					VertexHelper.addQuad(left, top, right-left, bottom-top);
+					uvRect.setTo(cols[cx], rows[cy], cols[cx+1]-cols[cx], rows[cy+1]-rows[cy]);
+					uvRect.x *= r1;
+					uvRect.y *= r2;
+					uvRect.width *= r1;
+					uvRect.height *= r2;
+					uvRect.offset(offsetX, offsetY);
 					
-					left = uvRect.x + cols[cx] / texture.width * uvRect.width;
-					top = uvRect.y + rows[cy] / texture.height * uvRect.height;
-					right = uvRect.x + cols[cx+1] / texture.width * uvRect.width;
-					bottom = uvRect.y + rows[cy+1] / texture.height * uvRect.height;
-					VertexHelper.fillUV(left, top, right-left, bottom-top);
+					tilePart = tileIndice[i];
+					if(i!=-1 && (tileGridIndice & (1<<tilePart))!=0)
+					{
+						doTile(cols[cx+1]-cols[cx], cols[cy+1]-cols[cy], vertRect, uvRect);
+					}
+					else
+					{
+						VertexHelper.addQuad2(vertRect);
+						VertexHelper.fillUV2(uvRect);
+					}
 				}
 			}
 			else
@@ -335,6 +338,37 @@ package fairygui.display
 
 			VertexHelper.updateAll(this.vertexData, this.indexData);
 			vertexData.colorize("color", _color);
+		}
+		
+		private static function doTile(textureWidth:int, textureHeight:int, 
+									   drawRect:Rectangle, uvRect:Rectangle):void
+		{
+			var hc:int = Math.ceil(drawRect.width/textureWidth);
+			var vc:int = Math.ceil(drawRect.height/textureHeight);
+			var remainWidth:Number = drawRect.width - (hc - 1) * textureWidth;
+			var remainHeight:Number = drawRect.height - (vc - 1) * textureHeight;
+			
+			VertexHelper.allocMore(hc*vc*4);
+			
+			var i:int;
+			var j:int;
+			for (i= 0; i < hc; i++)
+			{
+				for (j = 0; j < vc; j++)
+				{
+					VertexHelper.addQuad(drawRect.x+i * textureWidth, drawRect.y+j * textureHeight, 
+						i==hc-1?remainWidth:textureWidth, j==vc-1?remainHeight:textureHeight);
+					
+					if(i==hc-1 || j==vc-1)
+					{
+						VertexHelper.fillUV3(uvRect,
+							i==hc-1?remainWidth/textureWidth:1,
+							j==vc-1?remainHeight/textureHeight:1);
+					}
+					else
+						VertexHelper.fillUV2(uvRect);
+				}
+			}
 		}
 	}
 }

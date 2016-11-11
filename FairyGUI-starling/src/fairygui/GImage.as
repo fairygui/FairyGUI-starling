@@ -86,26 +86,24 @@ package fairygui
 		
 		override public function dispose():void
 		{
-			if(!_packageItem.loaded)
-				_packageItem.owner.removeItemCallback(_packageItem, __imageLoaded);
+			if(!packageItem.loaded)
+				packageItem.owner.removeItemCallback(packageItem, __imageLoaded);
 			super.dispose();
 		}
 		
-		override public function constructFromResource(pkgItem:PackageItem):void
+		override public function constructFromResource():void
 		{
-			_packageItem = pkgItem;
-			
-			_sourceWidth = _packageItem.width;
-			_sourceHeight = _packageItem.height;
+			_sourceWidth = packageItem.width;
+			_sourceHeight = packageItem.height;
 			_initWidth = _sourceWidth;
 			_initHeight = _sourceHeight;
 			
 			setSize(_sourceWidth, _sourceHeight);
 			
-			if(_packageItem.loaded)
-				__imageLoaded(_packageItem);
+			if(packageItem.loaded)
+				__imageLoaded(packageItem);
 			else
-				_packageItem.owner.addItemCallback(_packageItem, __imageLoaded);
+				packageItem.owner.addItemCallback(packageItem, __imageLoaded);
 		}
 
 		private function __imageLoaded(pi:PackageItem):void
@@ -115,6 +113,7 @@ package fairygui
 				_content.texture = pi.texture;
 				_content.scale9Grid = pi.scale9Grid;
 				_content.scaleByTile = pi.scaleByTile;
+				_content.tileGridIndice = pi.tileGridIndice;
 				_content.textureSmoothing = pi.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
 			}
 			

@@ -9,32 +9,30 @@ package fairygui.display
 		public var repeatedCount:int; //重复次数
 		
 		private var _curFrame:int; //当前帧
-		private var _lastTime:Number;
 		private var _curFrameDelay:int; //当前帧延迟
 		private var _lastUpdateSeq:uint;
 		
 		public function PlayState()
 		{
-			_lastTime = GTimers.time;
 		}
 		
-		public function update(mc:MovieClip):void
+		public function update(mc:MovieClip, passedTime:Number):void
 		{
 			if (_lastUpdateSeq == GTimers.workCount)//PlayState may be shared, only update once per frame
 				return;
 			
 			_lastUpdateSeq = GTimers.workCount;
-			var tt:Number = GTimers.time;
-			var elapsed:Number = tt - _lastTime;
-			_lastTime = tt;
 			
 			reachEnding = false;
-			_curFrameDelay += elapsed;
+			_curFrameDelay += passedTime*1000;
 			var interval:int = mc.interval + mc.frames[_curFrame].addDelay + ((_curFrame == 0 && repeatedCount > 0) ? mc.repeatDelay : 0);
 			if (_curFrameDelay < interval)
 				return;
 			
-			_curFrameDelay = 0;			
+			_curFrameDelay -= interval;
+			if(_curFrameDelay>mc.interval)
+				_curFrameDelay = mc.interval;
+			
 			if (mc.swing)
 			{
 				if(reversed)

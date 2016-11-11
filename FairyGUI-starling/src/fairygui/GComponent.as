@@ -30,6 +30,7 @@ package fairygui
 		internal var _rootContainer:UISprite;
 		internal var _container:Sprite;
 		internal var _scrollPane:ScrollPane;
+		internal var _alignOffset:Point;
 		
 		private var _childrenRenderOrder:int;
 		private var _apexIndex:int;
@@ -42,6 +43,7 @@ package fairygui
 			_controllers = new Vector.<Controller>();
 			_transitions = new Vector.<Transition>();
 			_margin = new Margin();
+			_alignOffset = new Point();
 		}
 		
 		override protected function createDisplayObject():void
@@ -53,8 +55,17 @@ package fairygui
 		
 		public override function dispose():void
 		{
+			var i:int;
+			
+			var transCnt:int = _transitions.length;
+			for (i = 0; i < transCnt; ++i)
+			{
+				var trans:Transition = _transitions[i];
+				trans.dispose();
+			}
+			
 			var numChildren:int = _children.length; 
-			for (var i:int=numChildren-1; i>=0; --i)
+			for (i=numChildren-1; i>=0; --i)
 			{
 				var obj:GObject = _children[i];
 				obj.parent = null; //avoid removeFromParent call
@@ -275,14 +286,36 @@ package fairygui
 			_setChildIndex(child, oldIndex, index);
 		}
 		
-		private function _setChildIndex(child:GObject, oldIndex:int, index:int):void
+		public function setChildIndexBefore(child:GObject, index:int):int
+		{
+			var oldIndex:int = _children.indexOf(child);
+			if (oldIndex == -1) 
+				throw new ArgumentError("Not a child of this container");
+			
+			if(child.sortingOrder!=0) //no effect
+				return oldIndex;
+			
+			var cnt:int = _children.length;
+			if(_sortingChildCount>0)
+			{
+				if (index > (cnt - _sortingChildCount - 1))
+					index = cnt - _sortingChildCount - 1;
+			}
+			
+			if (oldIndex < index)
+				return _setChildIndex(child, oldIndex, index - 1);
+			else
+				return _setChildIndex(child, oldIndex, index);
+		}
+		
+		private function _setChildIndex(child:GObject, oldIndex:int, index:int):int
 		{
 			var cnt:int = _children.length;
 			if(index>cnt)
 				index = cnt;
 			
 			if(oldIndex==index)
-				return;
+				return index;
 			
 			_children.splice(oldIndex, 1);
 			_children.splice(index, 0, child);
@@ -324,6 +357,8 @@ package fairygui
 				
 				setBoundsChangedFlag();
 			}
+			
+			return index;
 		}
 		
 		public function swapChildren(child1:GObject, child2:GObject):void
@@ -347,6 +382,22 @@ package fairygui
 		final public function get numChildren():int 
 		{ 
 			return _children.length; 
+		}
+		
+		public function isAncestorOf(child:GObject):Boolean
+		{
+			if (child == null)
+				return false;
+			
+			var p:GComponent = child.parent;
+			while(p)
+			{
+				if(p == this)
+					return true;
+				
+				p = p.parent;
+			}
+			return false;
 		}
 
 		public function addController(controller:Controller):void
@@ -519,9 +570,10 @@ package fairygui
 		
 		internal function applyController(c:Controller):void
 		{
-			var child:GObject;
-			for each(child in _children)
+			for each(var child:GObject in _children)
+			{
 				child.handleControllerChanged(c);
+			}
 		}
 		
 		internal function applyAllControllers():void
@@ -628,10 +680,10 @@ package fairygui
 		public function set margin(value:Margin):void
 		{
 			_margin.copy(value);
-			if(_clipMask!=null)
+			if(_clipMask)
 			{
-				_container.x = _margin.left;
-				_container.y = _margin.top;
+				_container.x = _margin.left + _alignOffset.x;
+				_container.y = _margin.top + _alignOffset.y;
 			}
 			handleSizeChanged();
 		}
@@ -674,7 +726,7 @@ package fairygui
 		public function set mask(value:DisplayObject):void
 		{
 			_container.mask = value;
-			if(value==null && _clipMask!=null)
+			if(!value && _clipMask)
 				_container.mask = _clipMask;
 		}
 		
@@ -716,20 +768,24 @@ package fairygui
 									   vtScrollBarRes:String,
 									   hzScrollBarRes:String):void
 		{
-			_container = new Sprite();
-			_rootContainer.addChild(_container);
+			if (_rootContainer == _container)
+			{
+				_container = new Sprite();
+				_rootContainer.addChild(_container);
+			}
 			_scrollPane = new ScrollPane(this, scroll, scrollBarMargin, scrollBarDisplay, flags,
 				vtScrollBarRes, hzScrollBarRes);
-			
-			setBoundsChangedFlag();
 		}
 		
 		protected function setupOverflow(overflow:int):void
 		{
 			if(overflow==OverflowType.Hidden)
 			{
-				_container = new Sprite();
-				_rootContainer.addChild(_container);
+				if (_rootContainer == _container)
+				{
+					_container = new Sprite();
+					_rootContainer.addChild(_container);
+				}
 				_clipMask = new Quad(1,1);
 				_container.mask = _clipMask;
 				updateMask();
@@ -738,19 +794,20 @@ package fairygui
 			}
 			else if(_margin.left!=0 || _margin.top!=0)
 			{
-				_container = new Sprite();
-				_rootContainer.addChild(_container);
+				if (_rootContainer == _container)
+				{
+					_container = new Sprite();
+					_rootContainer.addChild(_container);
+				}
 				_container.x = _margin.left;
 				_container.y = _margin.top;
 			}
-			
-			setBoundsChangedFlag();
 		}
 		
 		override protected function handleSizeChanged():void
 		{
 			if(_scrollPane)
-				_scrollPane.setSize(this.width, this.height);
+				_scrollPane.OnOwnerSizeChanged();
 			else if(_clipMask!=null)
 				updateMask();
 			
@@ -758,7 +815,7 @@ package fairygui
 				updateHitArea();
 		}
 		
-		override protected function handleGrayChanged():void
+		override protected function handleGrayedChanged():void
 		{
 			var c:Controller = getController("grayed");
 			if(c!=null)
@@ -985,14 +1042,15 @@ package fairygui
 			}
 		}
 		
-		override public function constructFromResource(pkgItem:PackageItem):void
+		override public function constructFromResource():void
 		{
-			_packageItem = pkgItem;
-			constructFromXML(_packageItem.owner.getComponentData(_packageItem));
+			constructFromResource2(null, 0);
 		}
 		
-		protected function constructFromXML(xml:XML):void
+		internal function constructFromResource2(objectPool:Vector.<GObject>, poolIndex:int):void
 		{
+			var xml:XML = packageItem.owner.getComponentData(packageItem);
+			
 			var str:String;
 			var arr:Array;
 			
@@ -1021,7 +1079,7 @@ package fairygui
 			if(str)
 			{
 				arr = str.split(",");
-				var hitTestData:PixelHitTestData = _packageItem.owner.getPixelHitTestData(arr[0]);
+				var hitTestData:PixelHitTestData = packageItem.owner.getPixelHitTestData(arr[0]);
 				if (hitTestData != null)
 					this._rootContainer.hitArea = new PixelHitTest(hitTestData, parseInt(arr[1]), parseInt(arr[2]));
 			}
@@ -1087,18 +1145,31 @@ package fairygui
 				controller.setup(cxml);
 			}
 
-			col = xml.displayList.elements();
-			var u:GObject;
-			for each(cxml in col)
+			var child:GObject;			
+			var displayList:Vector.<DisplayListItem> = packageItem.displayList;
+			var childCount:int = displayList.length;
+			var i:int;
+			for (i = 0; i < childCount; i++)
 			{
-				u = constructChild(cxml);
-				if(!u)
-					continue;
-
-				u._underConstruct = true;
-				u._constructingData = cxml;
-				u.setup_beforeAdd(cxml);
-				addChild(u);
+				var di:DisplayListItem = displayList[i];
+				
+				if (objectPool != null)
+				{
+					child = objectPool[poolIndex + i];
+				}
+				else if (di.packageItem)
+				{
+					child = UIObjectFactory.newObject(di.packageItem);
+					child.packageItem = di.packageItem;
+					child.constructFromResource();
+				}
+				else
+					child = UIObjectFactory.newObject2(di.type);
+				
+				child._underConstruct = true;
+				child.setup_beforeAdd(di.desc);
+				child.parent = this;
+				_children.push(child);
 			}
 			
 			str = xml.@mask;
@@ -1107,19 +1178,14 @@ package fairygui
 			
 			this.relations.setup(xml);
 			
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
-			{
-				u = _children[i];
-				u.relations.setup(u._constructingData);
-			}
+			for (i = 0; i < childCount; i++)
+				_children[i].relations.setup(displayList[i].desc);
 			
-			for(i=0;i<cnt;i++)
+			for (i = 0; i < childCount; i++)
 			{
-				u = _children[i];
-				u.setup_afterAdd(u._constructingData);
-				u._underConstruct = false;
-				u._constructingData = null;
+				child = _children[i];
+				child.setup_afterAdd(displayList[i].desc);
+				child._underConstruct = false;
 			}
 			
 			col = xml.transition;
@@ -1143,6 +1209,14 @@ package fairygui
 			_underConstruct = false;
 			
 			buildNativeDisplayList();
+			setBoundsChangedFlag();
+			
+			constructFromXML(xml);
+		}
+		
+		protected function constructFromXML(xml:XML):void
+		{
+			
 		}
 		
 		private function __addedToStage(evt:Event):void
@@ -1167,37 +1241,9 @@ package fairygui
 				for (var i:int = 0; i < cnt; ++i)
 				{
 					var trans:Transition = _transitions[i];
-					trans.stop(false, true);
+					trans.stop(false, false);
 				}
 			}
-		}
-		
-		private function constructChild(xml:XML):GObject
-		{
-			var pkgId:String = xml.@pkg;
-			var thisPkg:UIPackage = _packageItem.owner;
-			var pkg:UIPackage;
-			if(pkgId && pkgId!=thisPkg.id)
-				pkg = UIPackage.getById(pkgId);
-			else
-				pkg = thisPkg;
-			
-			if(pkg)
-			{
-				var src:String = xml.@src;
-				if(src)
-				{
-					var pi:PackageItem = pkg.getItemById(src);
-					if(pi)
-						return pkg.createObject2(pi);
-				}
-			}
-
-			var str:String = xml.name().localName;
-			if(str=="text" && xml.@input=="true")
-				return new GTextInput();
-			else
-				return UIObjectFactory.newObject2(str);
 		}
 	}	
 }

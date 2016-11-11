@@ -170,7 +170,7 @@ package fairygui.display
 		{
 			if (_playing && _frameCount != 0 && _status != 3)
 			{
-				_playState.update(this);
+				_playState.update(this, passedTime);
 				if (_currentFrame != _playState.currentFrame)
 				{
 					if (_status == 1)
