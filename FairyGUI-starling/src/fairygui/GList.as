@@ -802,7 +802,7 @@ package fairygui
 			}
 		}
 		
-		override public function GetSnappingPosition(xValue:Number, yValue:Number, resultPoint:Point=null):Point
+		override public function getSnappingPosition(xValue:Number, yValue:Number, resultPoint:Point=null):Point
 		{
 			if (_virtual)
 			{
@@ -844,7 +844,7 @@ package fairygui
 				return resultPoint;
 			}
 			else
-				return super.GetSnappingPosition(xValue, yValue, resultPoint);
+				return super.getSnappingPosition(xValue, yValue, resultPoint);
 		}
 		
 		public function scrollToView(index:int, ani:Boolean=false, setFirst:Boolean=false):void
