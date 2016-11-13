@@ -70,7 +70,6 @@ package fairygui
 		private var _xOffset:Number, _yOffset:Number;
 		
 		private var _needRefresh:Boolean;
-		private var _isMouseMoved:Boolean;
 		private var _holdAreaPoint:Point;
 		private var _isHoldAreaDone:Boolean;
 		private var _aniFlag:int;
@@ -79,6 +78,7 @@ package fairygui
 		private var _hzScrollBar:GScrollBar;
 		private var _vtScrollBar:GScrollBar;
 		
+		public var isDragged:Boolean;
 		public static var draggingPane:ScrollPane;
 		private static var _gestureFlag:int = 0;
 		
@@ -581,7 +581,7 @@ package fairygui
 				draggingPane = null;
 			
 			_gestureFlag = 0;
-			_isMouseMoved = false;
+			isDragged = false;
 		}
 		
 		internal function onOwnerSizeChanged():void
@@ -670,7 +670,7 @@ package fairygui
 			_contentWidth += deltaWidth;
 			_contentHeight += deltaHeight;
 			
-			if (_isMouseMoved)
+			if (isDragged)
 			{
 				if (deltaPosX != 0)
 					_container.x -= deltaPosX;
@@ -950,7 +950,7 @@ package fairygui
 			var contentXLoc:int = int(_xPos);
 			var contentYLoc:int = int(_yPos);
 			
-			if(_aniFlag==1 && !_isMouseMoved)
+			if(_aniFlag==1 && !isDragged)
 			{
 				var toX:Number = _container.x;
 				var toY:Number = _container.y;
@@ -979,9 +979,7 @@ package fairygui
 					if(_tweener!=null)
 						_tweener.kill();
 					
-					_maskContainer.touchable = false;
-					_tweening = 1;
-					
+					_tweening = 1;					
 					_tweener = TweenLite.to(_container, 0.5, { x:toX, y:toY,
 						onUpdate:__tweenUpdate, onComplete:__tweenComplete, 
 						ease:_easeTypeFunc } );
@@ -993,7 +991,7 @@ package fairygui
 					killTween();
 				
 				//如果在拖动的过程中Refresh，这里要进行处理，保证拖动继续正常进行
-				if (_isMouseMoved)
+				if (isDragged)
 				{
 					_xOffset += _container.x - (-contentXLoc);
 					_yOffset += _container.y - (-contentYLoc);
@@ -1003,7 +1001,7 @@ package fairygui
 				_container.x = -contentXLoc;
 				
 				//如果在拖动的过程中Refresh，这里要进行处理，保证手指离开是滚动正常进行
-				if (_isMouseMoved)
+				if (isDragged)
 				{
 					_y1 = _y2 = _container.y;
 					_x1 = _x2 = _container.x;
@@ -1045,7 +1043,6 @@ package fairygui
 					if(_scrollBarDisplayAuto)
 						showScrollBar(false);
 				}
-				_maskContainer.touchable = true;
 			}
 			else
 			{
@@ -1070,7 +1067,10 @@ package fairygui
 				return;
 			
 			if(_tweener!=null)
+			{
 				killTween();
+				_owner.cancelChildrenClickEvent();
+			}
 			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
@@ -1086,7 +1086,7 @@ package fairygui
 			_holdAreaPoint.x = sHelperPoint.x;
 			_holdAreaPoint.y = sHelperPoint.y;
 			_isHoldAreaDone = false;
-			_isMouseMoved = false;
+			isDragged = false;
 			
 			_owner.addEventListener(GTouchEvent.DRAG, __mouseMove);
 		}
@@ -1237,10 +1237,9 @@ package fairygui
 				}
 			}
 			
-			draggingPane = this;			
-			_maskContainer.touchable = false;
+			draggingPane = this;
 			_isHoldAreaDone = true;
-			_isMouseMoved = true;
+			isDragged = true;
 			
 			syncPos();
 			syncScrollBar();
@@ -1250,12 +1249,6 @@ package fairygui
 		
 		private function __mouseUp(e:Event):void
 		{
-			if(!_touchEffect)
-			{
-				_isMouseMoved = false;
-				return;
-			}
-			
 			_owner.removeEventListener(GTouchEvent.DRAG, __mouseMove);
 			
 			if (draggingPane == this)
@@ -1263,13 +1256,13 @@ package fairygui
 			
 			_gestureFlag = 0;
 			
-			if (!_isMouseMoved || !_touchEffect || _inertiaDisabled)
+			if (!isDragged || !_touchEffect || _inertiaDisabled)
 			{
-				_isMouseMoved = false;
+				isDragged = false;
 				return;
 			}
 			
-			_isMouseMoved = false;
+			isDragged = false;
 			var time:Number = (getTimer() - _time2) / 1000;
 			if(time==0)
 				time = 0.001;

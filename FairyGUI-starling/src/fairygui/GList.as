@@ -584,6 +584,9 @@ package fairygui
 
 		private function __clickItem(evt:GTouchEvent):void
 		{
+			if (this._scrollPane != null && this._scrollPane.isDragged)
+				return;
+			
 			var item:GObject = GObject(evt.currentTarget);
 			setSelectionOnEvent(item);
 			
