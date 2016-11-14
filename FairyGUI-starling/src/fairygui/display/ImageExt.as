@@ -348,7 +348,7 @@ package fairygui.display
 			var remainWidth:Number = drawRect.width - (hc - 1) * textureWidth;
 			var remainHeight:Number = drawRect.height - (vc - 1) * textureHeight;
 			
-			VertexHelper.allocMore(hc*vc*4);
+			VertexHelper.allocMore(hc*vc*4+36);
 			
 			var i:int;
 			var j:int;
