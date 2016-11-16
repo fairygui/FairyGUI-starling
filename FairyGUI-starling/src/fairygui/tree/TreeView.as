@@ -290,8 +290,14 @@ package fairygui.tree
 			for(var i:int=0;i<cnt;i++)
 			{
 				var node:TreeNode = folderNode.getChildAt(i);
-				if(node.cell && node.cell.parent!=null)
-					_list.removeChild(node.cell);
+				if(node.cell)
+				{
+					if(node.cell.parent != null)
+						list.removeChild(node.cell);
+					list.itemPool.returnObject(node.cell);
+					node.cell.data = null;
+					node.setCell(null);
+				}
 				if(node.isFolder && node.expanded)
 					hideFolderNode(node);
 			}
