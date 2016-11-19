@@ -391,7 +391,6 @@ package fairygui
 			{
 				_bitmapFont = UIPackage.getBitmapFontByURL(_font);
 				_fontAdjustment = 0;
-				_minHeight = int.MAX_VALUE;
 			}
 			else
 			{
@@ -403,7 +402,6 @@ package fairygui
 					_textFormat.font = UIConfig.defaultFont;
 			
 				var v:int = CharSize.getHeight(int(_textFormat.size), _textFormat.font, _bold);
-				_minHeight = v+4-_fontAdjustment;
 				
 				//像微软雅黑这样的字体，默认的渲染顶部会产生很大的空间，这里加一个调整值，消除这些多余的空间
 				v = v-int(_textFormat.size);
@@ -511,11 +509,6 @@ package fairygui
 			{
 				h = this.height;
 				var h2:int = Math.ceil(h);
-				if(h2>0 && h2<_minHeight)
-				{
-					h2 = _minHeight;
-					h = h2;
-				}
 				if(_textHeight>h2)
 					_textHeight = h2;
 				renderTextField.height = _textHeight+_fontAdjustment+3;
