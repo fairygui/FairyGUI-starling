@@ -276,6 +276,26 @@ package fairygui
 			_image.fillClockwise = value;
 		}
 		
+		public function get texture():Texture
+		{
+			return _image.texture;
+		}
+
+		public function set texture(value:Texture):void
+		{
+			this.url = null;
+			
+			_image.texture = value;
+			if (value != null) {
+				_contentSourceWidth = value.width;
+				_contentSourceHeight = value.height;
+			}
+			else 
+				_contentSourceWidth = _contentHeight = 0;
+			
+			updateLayout();
+		}
+		
 		protected function loadContent():void
 		{
 			clearContent();

@@ -82,7 +82,14 @@ package fairygui.display
 						texture.root.uploadBitmapData(bmd);
 					else
 					{
-						texture.dispose();
+						try
+						{
+							texture.dispose();
+						}
+						catch(err:Error)
+						{
+							
+						}
 						texture = Texture.fromBitmapData(bmd, false, false, 1, sDefaultTextureFormat);
 						this.style.texture = texture;
 					}

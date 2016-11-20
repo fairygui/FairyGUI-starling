@@ -4,6 +4,7 @@ package fairygui
 	import fairygui.display.UIImage;
 	import fairygui.utils.ToolSet;
 	
+	import starling.textures.Texture;
 	import starling.textures.TextureSmoothing;
 
 	public class GImage extends GObject implements IColorGear
@@ -76,6 +77,28 @@ package fairygui
 		public function set fillClockwise(value:Boolean):void
 		{
 			_content.fillClockwise = value;
+		}
+		
+		public function get texture():Texture {
+			return _content.texture;
+		}
+		
+		public function set texture(value:Texture):void {
+			if (value != null)
+			{
+				this._sourceWidth = value.width;
+				this._sourceHeight = value.height;
+			}
+			else
+			{
+				this._sourceWidth = 0;
+				this._sourceHeight = 0;
+			}
+			this._initWidth =  this._sourceWidth;
+			this._initHeight = this._sourceHeight;
+			this._content.scale9Grid = null;
+			this._content.scaleByTile = false;
+			this._content.texture = value;
 		}
 		
 		override protected function createDisplayObject():void
