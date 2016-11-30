@@ -791,12 +791,14 @@ package fairygui
 						if(fontScale==1)
 						{			
 							sHelperPoint.x += glyph.offsetX;
+							sHelperPoint.y += glyph.offsetY;
 							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, glyph.width, glyph.height);
 							VertexHelper.fillUV2(glyph.uvRect);
 						}
 						else
 						{
-							sHelperPoint.x += Math.ceil(glyph.offsetX*fontScale);				
+							sHelperPoint.x += Math.ceil(glyph.offsetX*fontScale);
+							sHelperPoint.y += Math.ceil(glyph.offsetY*fontScale);		
 							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
 							VertexHelper.fillUV2(glyph.uvRect);
 						}
