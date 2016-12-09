@@ -1250,7 +1250,11 @@ package fairygui
 			
 			draggingPane = this;
 			_isHoldAreaDone = true;
-			isDragged = true;
+			if(!isDragged)
+			{
+				isDragged = true;
+				_owner.cancelChildrenClickEvent();
+			}
 			
 			syncPos();
 			syncScrollBar();
