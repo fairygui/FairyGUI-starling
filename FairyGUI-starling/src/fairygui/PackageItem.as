@@ -41,6 +41,7 @@ package fairygui
 		//componenet
 		public var componentData:XML;
 		public var displayList:Vector.<DisplayListItem>;
+		public var extensionType:Object;
 		
 		//sound
 		public var sound:Sound;
