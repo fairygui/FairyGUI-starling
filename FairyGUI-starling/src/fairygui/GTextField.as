@@ -19,7 +19,7 @@ package fairygui
 	import starling.core.Starling;
 	import starling.utils.rad2deg;
 
-	public class GTextField extends GObject implements IColorGear
+	public class GTextField extends GObject implements ITextColorGear
 	{
 		protected var _ubbEnabled:Boolean;
 		protected var _autoSize:int;
@@ -294,6 +294,7 @@ package fairygui
 			{
 				_strokeColor = value;
 				updateTextFilters();
+				updateGear(4);
 			}
 		}
 		
