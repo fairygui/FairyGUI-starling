@@ -1434,7 +1434,7 @@ package fairygui
 			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
-			_maskContainer.globalToLocal(sHelperPoint, sHelperPoint);
+			_container.globalToLocal(sHelperPoint, sHelperPoint);
 			
 			if(!_container.hitTest(sHelperPoint))
 				return;
