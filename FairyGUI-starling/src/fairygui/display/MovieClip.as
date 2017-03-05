@@ -4,13 +4,11 @@ package fairygui.display
 	
 	import fairygui.utils.GTimers;
 	
-	import starling.animation.IAnimatable;
-	import starling.core.Starling;
 	import starling.events.Event;
 	import starling.rendering.Painter;
 	import starling.textures.TextureSmoothing;
 	
-	public class MovieClip extends MeshExt implements IAnimatable
+	public class MovieClip extends MeshExt
 	{
 		public var interval:int;
 		public var swing:Boolean;
@@ -92,15 +90,9 @@ package fairygui.display
 				_currentFrame = _frameCount - 1;
 			
 			if(_frameCount>0)
-			{
 				setFrame(_frames[_currentFrame]);
-				startPlay();
-			}
 			else
-			{
 				setFrame(null);
-				stopPlay();
-			}
 			_playState.rewind();
 		}
 		
@@ -145,6 +137,11 @@ package fairygui.display
 		public function set playing(value:Boolean):void
 		{
 			_playing = value;
+			
+			if (_playing && this.stage!=null)
+				GTimers.inst.add(1,0,update);
+			else
+				GTimers.inst.remove(update);
 		}
 		
 		//从start帧开始，播放到end帧（-1表示结尾），重复times次（0表示无限循环），循环结束后，停止在endAt帧（-1表示参数end）
@@ -166,11 +163,11 @@ package fairygui.display
 			this.currentFrame = start;
 		}
 		
-		public function advanceTime(passedTime:Number):void
+		private function update():void
 		{
 			if (_playing && _frameCount != 0 && _status != 3)
 			{
-				_playState.update(this, passedTime);
+				_playState.update(this);
 				if (_currentFrame != _playState.currentFrame)
 				{
 					if (_status == 1)
@@ -244,23 +241,13 @@ package fairygui.display
 		
 		private function __addedToStage(evt:Event):void
 		{
-			startPlay();
+			if (_playing)
+				GTimers.inst.add(1,0,update);
 		}
 		
 		private function __removeFromStage(evt:Event):void
 		{
-			stopPlay();
-		}
-		
-		private function startPlay():void
-		{
-			if(this.stage)
-				Starling.current.juggler.add(this);
-		}
-		
-		private function stopPlay():void
-		{
-			Starling.current.juggler.remove(this);
+			GTimers.inst.remove(update);
 		}
 		
 		override public function render(painter:Painter):void

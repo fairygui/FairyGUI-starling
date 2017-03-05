@@ -16,15 +16,20 @@ package fairygui.display
 		{
 		}
 		
-		public function update(mc:MovieClip, passedTime:Number):void
+		public function update(mc:MovieClip):void
 		{
-			if (_lastUpdateSeq == GTimers.workCount)//PlayState may be shared, only update once per frame
-				return;
-			
-			_lastUpdateSeq = GTimers.workCount;
+			var elapsed:Number;
+			var frameId:uint = GTimers.workCount;
+			if (frameId - _lastUpdateSeq != 1) 
+				//1、如果>1，表示不是连续帧了，说明刚启动（或者停止过），这里不能用流逝的时间了，不然会跳过很多帧
+				//2、如果==0，表示在本帧已经处理过了，这通常是因为一个PlayState用于多个MovieClip共享，目的是多个MovieClip同步播放
+				elapsed = 0;
+			else
+				elapsed = GTimers.deltaTime;
+			_lastUpdateSeq = frameId;
 			
 			reachEnding = false;
-			_curFrameDelay += passedTime*1000;
+			_curFrameDelay += elapsed;
 			var interval:int = mc.interval + mc.frames[_curFrame].addDelay + ((_curFrame == 0 && repeatedCount > 0) ? mc.repeatDelay : 0);
 			if (_curFrameDelay < interval)
 				return;
