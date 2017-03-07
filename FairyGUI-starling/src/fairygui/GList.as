@@ -1476,7 +1476,8 @@ package fairygui
 					{
 						url = itemProvider(curIndex % _numItems);
 						if (url == null)
-							url = defaultItem;
+							url = _defaultItem;						
+						url = UIPackage.normalizeURL(url);
 					}
 					
 					if (ii.obj != null && ii.obj.resourceURL != url)
@@ -1637,7 +1638,8 @@ package fairygui
 					{
 						url = itemProvider(curIndex % _numItems);
 						if (url == null)
-							url = defaultItem;
+							url = _defaultItem;
+						url = UIPackage.normalizeURL(url);
 					}
 					
 					if (ii.obj != null && ii.obj.resourceURL != url)
@@ -1778,6 +1780,7 @@ package fairygui
 			var i:int;
 			var ii:ItemInfo, ii2:ItemInfo;
 			var col:int;
+			var url:String = _defaultItem;
 			
 			itemInfoVer++;
 			
@@ -1843,7 +1846,15 @@ package fairygui
 					
 					if (ii.obj == null)
 					{
-						ii.obj = _pool.getObject(defaultItem);
+						if (itemProvider != null)
+						{
+							url = itemProvider(i % _numItems);
+							if (url == null)
+								url = _defaultItem;
+							url = UIPackage.normalizeURL(url);
+						}
+						
+						ii.obj = _pool.getObject(url);
 						this.addChildAt(ii.obj, insertIndex);
 					}
 					else
