@@ -285,6 +285,7 @@ package fairygui
 		{
 			this.url = null;
 			
+			_activeObject = _image;
 			_image.texture = value;
 			if (value != null) {
 				_contentSourceWidth = value.width;

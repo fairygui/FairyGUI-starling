@@ -402,12 +402,8 @@ package fairygui
 				else
 					_textFormat.font = UIConfig.defaultFont;
 			
-				var v:int = CharSize.getHeight(int(_textFormat.size), _textFormat.font, _bold);
-				
-				//像微软雅黑这样的字体，默认的渲染顶部会产生很大的空间，这里加一个调整值，消除这些多余的空间
-				v = v-int(_textFormat.size);
-				if(v>3)
-					_fontAdjustment = Math.ceil(v/2);
+				var charSize:Object = CharSize.getSize(int(_textFormat.size), _textFormat.font, _bold);
+				_fontAdjustment = charSize.yIndent;
 			}
 			
 			if(this.grayed)
@@ -476,7 +472,8 @@ package fairygui
 			renderTextField.height = Math.max(this.height, int(_textFormat.size));
 			renderTextField.multiline = !_singleLine;
 			renderTextField.antiAliasType = AntiAliasType.ADVANCED;
-			renderTextField.filters = _textFilters;
+			if(renderTextField.filters!=_textFilters)
+				renderTextField.filters = _textFilters;
 			
 			updateTextFieldText();
 			
