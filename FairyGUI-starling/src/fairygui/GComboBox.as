@@ -35,7 +35,7 @@ package fairygui
 			_selectedIndex = -1;
 			_items = [];
 			_values = [];
-			_popupDownward = true;
+			_popupDownward = null;
 		}
 		
 		final override public function get text():String
@@ -343,8 +343,8 @@ package fairygui
 				{
 					if(str=="up")
 						_popupDownward = false;
-					else if(str=="auto")
-						_popupDownward = null;
+					else if(str=="down")
+						_popupDownward = true;
 				}
 			}				
 		}
