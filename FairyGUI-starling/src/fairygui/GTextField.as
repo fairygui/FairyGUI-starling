@@ -847,13 +847,18 @@ package fairygui
 					dh = this.height-int(_textFormat.size);
 				else
 					dh = this.height-_textHeight;
-				if(dh<0)
-					dh = 0;
-				if(_verticalAlign==VertAlignType.Middle)
-					_yOffset = int(dh/2)-_fontAdjustment;
+				if(dh>_fontAdjustment)
+				{
+					if(_verticalAlign==VertAlignType.Middle)
+						_yOffset = int((dh-_fontAdjustment)/2);
+					else
+						_yOffset = int(dh);
+				}
 				else
-					_yOffset = int(dh)-_fontAdjustment;
+					_yOffset = 0;
 			}
+			
+			_yOffset -=_fontAdjustment;
 			displayObject.y = this.y+_yOffset;
 		}
 		
