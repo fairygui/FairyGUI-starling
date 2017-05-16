@@ -319,7 +319,7 @@ package fairygui.display
 					uvRect.offset(offsetX, offsetY);
 					
 					tilePart = tileIndice[i];
-					if(i!=-1 && (tileGridIndice & (1<<tilePart))!=0)
+					if(tilePart!=-1 && (_tileGridIndice & (1<<tilePart))!=0)
 					{
 						doTile(cols[cx+1]-cols[cx], cols[cy+1]-cols[cy], vertRect, uvRect);
 					}

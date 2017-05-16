@@ -862,7 +862,8 @@ package fairygui
 						cf = new ColorMatrixFilter();	
 						item.filterCreated = true;
 					}
-					
+					else
+						cf.reset();
 					cf.adjustBrightness(value.f1);
 					cf.adjustContrast(value.f2);
 					cf.adjustSaturation(value.f3);
