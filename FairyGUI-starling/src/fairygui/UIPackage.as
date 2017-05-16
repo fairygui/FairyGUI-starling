@@ -845,10 +845,7 @@ package fairygui
 				if(bmd.transparent)
 					pi.texture = Texture.fromBitmapData(bmd, false);
 				else
-				{
-					var format:String = "BGR_PACKED" in Context3DTextureFormat ? "bgrPacked565" : "bgra";
-					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, format);
-				}
+					pi.texture = Texture.fromBitmapData(bmd, false, false, 1, Context3DTextureFormat.BGR_PACKED);
 				pi.texture.root.onRestore = function():void
 				{
 					loadAtlas(pi);

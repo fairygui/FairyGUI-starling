@@ -1577,7 +1577,7 @@ package fairygui
 			this.dispatchEvent(devt);
 		}
 		
-		internal function cancelChildrenClickEvent():void
+		public function cancelClick():void
 		{
 			var cnt:int = GComponent(this).numChildren;
 			for(var i:int=0;i<cnt;i++)
@@ -1585,7 +1585,7 @@ package fairygui
 				var child:GObject = GComponent(this).getChildAt(i);
 				child._buttonStatus = 2;
 				if(child is GComponent)
-					child.cancelChildrenClickEvent();
+					child.cancelClick();
 			}
 		}
 		//-------------------------------------------------------------------

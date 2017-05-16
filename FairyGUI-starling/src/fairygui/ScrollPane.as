@@ -1080,7 +1080,7 @@ package fairygui
 			if(_tweener!=null)
 			{
 				killTween();
-				_owner.cancelChildrenClickEvent();
+				_owner.cancelClick();
 			}
 			
 			sHelperPoint.x = evt.stageX;
@@ -1253,7 +1253,7 @@ package fairygui
 			if(!isDragged)
 			{
 				isDragged = true;
-				_owner.cancelChildrenClickEvent();
+				_owner.cancelClick();
 			}
 			
 			syncPos();
