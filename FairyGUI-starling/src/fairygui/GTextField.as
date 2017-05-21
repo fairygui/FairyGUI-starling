@@ -17,6 +17,7 @@ package fairygui
 	import fairygui.utils.ToolSet;
 	
 	import starling.core.Starling;
+	import starling.filters.ColorMatrixFilter;
 	import starling.utils.rad2deg;
 
 	public class GTextField extends GObject implements ITextColorGear
@@ -392,6 +393,23 @@ package fairygui
 			{
 				_bitmapFont = UIPackage.getBitmapFontByURL(_font);
 				_fontAdjustment = 0;
+				
+				if(_canvas)
+				{
+					if(this.grayed)
+					{
+						if(_canvas.filter==null)
+							_canvas.filter = new ColorMatrixFilter(ToolSet.GRAY_FILTERS_MATRIX);
+					}
+					else
+					{
+						if(_canvas.filter!=null)
+						{
+							_canvas.filter.dispose();
+							_canvas.filter = null;
+						}
+					}
+				}
 			}
 			else
 			{
@@ -404,12 +422,19 @@ package fairygui
 			
 				var charSize:Object = CharSize.getSize(int(_textFormat.size), _textFormat.font, _bold);
 				_fontAdjustment = charSize.yIndent;
+				
+				if(_canvas && _canvas.filter!=null)
+				{
+					_canvas.filter.dispose();
+					_canvas.filter = null;
+				}
+				
+				if(this.grayed)
+					_textFormat.color = 0xAAAAAA;
+				else
+					_textFormat.color = _color;
 			}
-			
-			if(this.grayed)
-				_textFormat.color = 0xAAAAAA;
-			else
-				_textFormat.color = _color;
+
 			_textFormat.align = AlignType.toString(_align);
 			_textFormat.leading = _leading-_fontAdjustment;
 			if(_textFormat.leading<0)
@@ -830,9 +855,6 @@ package fairygui
 		
 		override protected function handleGrayedChanged():void
 		{
-			if(_bitmapFont!=null)
-				super.handleGrayedChanged();
-			
 			updateTextFormat();
 		}
 		
@@ -936,7 +958,8 @@ package fairygui
 				}
 			}
 			
-			updateTextFilters();
+			if(_stroke || _shadowOffset!=null)
+				updateTextFilters();
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
@@ -946,7 +969,7 @@ package fairygui
 			updateTextFormat();
 			var str:String =  xml.@text;
 			if(str)
-				this.text = str; 		
+				this.text = str;
 			_sizeDirty = false;
 		}
 	}
