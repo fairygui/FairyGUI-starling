@@ -847,11 +847,21 @@ package fairygui
 		private function __updateBounds():void
 		{
 			if(_boundsChanged)
+			{
+				for each(var child:GObject in _children)
+				{
+					child.ensureSizeCorrect();
+				}
 				updateBounds();
+			}
 		}
 		
 		public function ensureBoundsCorrect():void
 		{
+			for each(var child:GObject in _children)
+			{
+				child.ensureSizeCorrect();
+			}
 			if(_boundsChanged)
 				updateBounds();
 		}
@@ -864,11 +874,6 @@ package fairygui
 				ax = int.MAX_VALUE, ay = int.MAX_VALUE;
 				var ar:int = int.MIN_VALUE, ab:int = int.MIN_VALUE;
 				var tmp:int;
-	
-				for each(child in _children)
-				{
-					child.ensureSizeCorrect();
-				}
 				
 				for each(var child:GObject in _children)
 				{
