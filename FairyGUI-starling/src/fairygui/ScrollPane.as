@@ -29,6 +29,7 @@ package fairygui
 		private var _owner:GComponent;
 		private var _container:Sprite;
 		private var _maskContainer:Sprite;
+		private var _alignContainer:Sprite;
 		
 		private var _viewWidth:Number;
 		private var _viewHeight:Number;
@@ -604,11 +605,26 @@ package fairygui
 			else
 				mx = Math.floor(_owner.margin.left);
 			my = Math.floor(_owner.margin.top);
-			mx += _owner._alignOffset.x;
-			my += _owner._alignOffset.y;
 			
 			_maskContainer.x = mx;
 			_maskContainer.y = my;
+			
+			if(_owner._alignOffset.x!=0 || _owner._alignOffset.y!=0)
+			{
+				if(_alignContainer==null)
+				{
+					_alignContainer = new Sprite();
+					_maskContainer.addChild(_alignContainer);
+					_alignContainer.addChild(_container);
+				}
+				
+				_alignContainer.x = _owner._alignOffset.x;
+				_alignContainer.y = _owner._alignOffset.y;
+			}
+			else if(_alignContainer)
+			{
+				_alignContainer.x = _alignContainer.y = 0;
+			}
 		}
 		
 		private function setSize(aWidth:Number, aHeight:Number):void 
