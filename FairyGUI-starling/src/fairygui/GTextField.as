@@ -588,9 +588,9 @@ package fairygui
 			for (var offset:int = 0; offset < textLength; ++offset)
 			{
 				var ch:String = _text.charAt(offset);
-				var cc:int = ch.charCodeAt(offset);
+				var cc:int = ch.charCodeAt(0);
 				
-				if (ch == "\n")
+				if (cc == 10) //\n
 				{
 					lineBuffer += ch;
 					line = LineInfo.borrow();
@@ -598,7 +598,7 @@ package fairygui
 					if (lineTextHeight == 0)
 					{
 						if (lastLineHeight == 0)
-							lastLineHeight = Math.ceil(_fontSize*fontScale);
+							lastLineHeight = _fontSize;
 						if (lineHeight == 0)
 							lineHeight = lastLineHeight;
 						lineTextHeight = lineHeight;
@@ -623,23 +623,23 @@ package fairygui
 					continue;
 				}
 				
-				if (cc > 256 || cc <= 32)
-				{
-					if (wordChars > 0)
-						wordEnd = lineWidth;
-					wordChars = 0;
-				}
-				else
+				if (cc>=65 && cc<=90 || cc>=97 && cc<=122) //a-z,A-Z
 				{
 					if (wordChars == 0)
 						wordStart = lineWidth;
 					wordChars++;
 				}
-				
-				if(ch==" ")
+				else
 				{
-					glyphWidth = Math.ceil(_fontSize*fontScale/2);
-					glyphHeight = Math.ceil(_fontSize*fontScale);
+					if (wordChars > 0)
+						wordEnd = lineWidth;
+					wordChars = 0;
+				}
+				
+				if(cc==32) //space
+				{
+					glyphWidth = Math.ceil(_fontSize/2);
+					glyphHeight = _fontSize;
 				}
 				else
 				{
@@ -649,11 +649,6 @@ package fairygui
 						glyphWidth = Math.ceil(glyph.advance*fontScale);
 						glyphHeight = Math.ceil(glyph.lineHeight*fontScale);
 						charCount++;
-					}
-					else if(ch==" ")
-					{
-						glyphWidth = Math.ceil(_bitmapFont.size*fontScale/2);
-						glyphHeight = Math.ceil(_bitmapFont.size*fontScale);
 					}
 					else
 					{
@@ -691,7 +686,7 @@ package fairygui
 						var len:int = lineBuffer.length - wordChars;
 						line.text = ToolSet.trimRight(lineBuffer.substr(0, len));
 						line.width = wordEnd;
-						lineBuffer = lineBuffer.substr(len+1);	
+						lineBuffer = lineBuffer.substr(len);	
 						lineWidth -= wordStart;
 					}
 					else
@@ -715,8 +710,7 @@ package fairygui
 				}
 			}
 			
-			if (lineBuffer.length > 0
-				|| _lines.length>0 && ToolSet.endsWith(_lines[_lines.length - 1].text, "\n"))
+			if (lineBuffer.length > 0)
 			{
 				line = LineInfo.borrow();
 				line.width = lineWidth;
@@ -803,6 +797,16 @@ package fairygui
 				for (var j:int = 0; j < textLength; j++)
 				{
 					ch = line.text.charAt(j);
+					cc = ch.charCodeAt(0);
+					
+					if(cc==10)
+						continue;
+					
+					if(cc==32)
+					{
+						charX += _letterSpacing + Math.ceil(_fontSize/2);
+						continue;
+					}
 					
 					glyph = _bitmapFont.glyphs[ch];
 					if (glyph != null)
@@ -821,16 +825,12 @@ package fairygui
 						else
 						{
 							sHelperPoint.x += Math.ceil(glyph.offsetX*fontScale);
-							sHelperPoint.y += Math.ceil(glyph.offsetY*fontScale);		
+							sHelperPoint.y += Math.ceil(glyph.offsetY*fontScale);
 							VertexHelper.addQuad(sHelperPoint.x, sHelperPoint.y, Math.ceil(glyph.width*fontScale), Math.ceil(glyph.height*fontScale));
 							VertexHelper.fillUV2(glyph.uvRect);
 						}
 						
 						charX += letterSpacing + Math.ceil(glyph.advance*fontScale);
-					}
-					else if(ch==" ")
-					{
-						charX += letterSpacing + Math.ceil(_bitmapFont.size*fontScale/2);
 					}
 					else
 					{
