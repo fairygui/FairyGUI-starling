@@ -9,6 +9,7 @@ package fairygui.display
 		public var rect:Rectangle;
 		public var addDelay:int;
 		public var texture:Texture;
+		public var sprite:String;
 		
 		public function Frame()
 		{

@@ -869,9 +869,12 @@ package fairygui
 				for(var i:int=0;i<cnt;i++)
 				{
 					var frame:Frame = pi.frames[i];
-					sprite = _sprites[pi.id + "_" + i];
-					if(sprite!=null)
-						frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+					if(frame.sprite!=null)
+					{
+						sprite = _sprites[frame.sprite];
+						if(sprite!=null)
+							frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+					}
 				}
 				pi.completeLoading();
 			}
@@ -930,6 +933,8 @@ package fairygui
 						atlasItem = _itemsById[sprite.atlas];
 					if (atlasItem != null && atlasItem.loaded)
 						frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+					else
+						frame.sprite = str;
 				}
 			}
 			
