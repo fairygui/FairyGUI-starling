@@ -3,7 +3,6 @@ package fairygui.tree
 	import fairygui.GButton;
 	import fairygui.GList;
 	import fairygui.GObject;
-	import fairygui.ListSelectionMode;
 	import fairygui.event.ItemEvent;
 	
 	import starling.events.Event;
@@ -18,7 +17,7 @@ package fairygui.tree
 		public function TreeView(list:GList)
 		{
 			_list = list;
-			_list.selectionMode = ListSelectionMode.Multiple;
+			_list.removeChildrenToPool();
 			_list.addEventListener(ItemEvent.CLICK, __clickItem);
 			
 			_root = new TreeNode(true);
@@ -327,6 +326,8 @@ package fairygui.tree
 		
 		private function __clickExpandButton(evt:Event):void
 		{
+			evt.stopPropagation();
+			
 			var expandButton:GButton = GButton(evt.currentTarget);
 			var node:TreeNode = TreeNode(expandButton.parent.data);
 			var posY:Number = _list.scrollPane.posY;

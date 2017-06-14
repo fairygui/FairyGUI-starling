@@ -817,19 +817,16 @@ package fairygui
 			if(_autoResizeItem)
 				adjustItemsSize();
 			
-			if(_layout==ListLayoutType.FlowHorizontal || _layout==ListLayoutType.FlowVertical)
-			{
-				setBoundsChangedFlag();
-				if (_virtual)
-					setVirtualListChangedFlag(true);
-			}
+			setBoundsChangedFlag();
+			if (_virtual)
+				setVirtualListChangedFlag(true);
 		}
 		
 		public function adjustItemsSize():void
 		{
 			if(_layout==ListLayoutType.SingleColumn)
 			{
-				var cnt:int = _children.length;				
+				var cnt:int = _children.length;
 				var cw:int = this.viewWidth;
 				for(var i:int=0;i<cnt;i++)
 				{
