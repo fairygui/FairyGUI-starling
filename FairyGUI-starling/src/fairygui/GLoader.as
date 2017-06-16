@@ -590,7 +590,7 @@ package fairygui
 		
 		override protected function handleSizeChanged():void
 		{
-			if(!_updatingLayout)
+			if(!_updatingLayout && _activeObject!=null)
 				updateLayout();
 			
 			_container.hitArea.setTo(0,0,this.width,this.height);
