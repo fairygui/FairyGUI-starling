@@ -437,8 +437,6 @@ package fairygui
 
 			_textFormat.align = AlignType.toString(_align);
 			_textFormat.leading = _leading-_fontAdjustment;
-			if(_textFormat.leading<0)
-				_textFormat.leading = 0;
 			_textFormat.letterSpacing = _letterSpacing;
 			_textFormat.bold = _bold;
 			_textFormat.underline = _underline;
@@ -523,19 +521,15 @@ package fairygui
 				w = this.width;
 
 			if(_heightAutoSize)
-			{
 				h = _textHeight;
-				if(!_widthAutoSize)
-					renderTextField.height = _textHeight+_fontAdjustment+3;
-			}
 			else
-			{
-				h = this.height;
-				var h2:int = Math.ceil(h);
-				if(_textHeight>h2)
-					_textHeight = h2;
-				renderTextField.height = _textHeight+_fontAdjustment+3;
-			}
+				h = _height;
+			if(maxHeight>0 && h>maxHeight)
+				h = maxHeight;
+			if(_textHeight>h)
+				_textHeight = h;
+			
+			renderTextField.height = _textHeight+_fontAdjustment+3;
 
 			_updatingSize = true;
 			this.setSize(w,h);
@@ -743,24 +737,16 @@ package fairygui
 			
 			var w:int, h:int;
 			if(_widthAutoSize)
-			{
-				if(_textWidth==0)
-					w = 0;
-				else
-					w = _textWidth;
-			}
+				w = _textWidth;
 			else
 				w = this.width;
 			
 			if(_heightAutoSize)
-			{
-				if(_textHeight==0)
-					h = 0;
-				else
-					h = _textHeight;
-			}
+				h = _textHeight;
 			else
-				h = this.height;;
+				h = this.height;
+			if(maxHeight>0 && h>maxHeight)
+				h = maxHeight;
 			
 			_updatingSize = true;
 			this.setSize(w,h);

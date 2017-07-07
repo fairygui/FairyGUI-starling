@@ -173,6 +173,7 @@ package fairygui
 					_sortingChildCount--;
 				
 				_children.splice(index, 1);
+				child.group = null;
 				if(child.inContainer)
 				{
 					_container.removeChild(child.displayObject);
@@ -1062,12 +1063,22 @@ package fairygui
 			
 			str = xml.@size;
 			arr = str.split(",");
-			_sourceWidth = int(arr[0]);
-			_sourceHeight = int(arr[1]);
-			_initWidth = _sourceWidth;
-			_initHeight = _sourceHeight;
+			sourceWidth = int(arr[0]);
+			sourceHeight = int(arr[1]);
+			initWidth = sourceWidth;
+			initHeight = sourceHeight;
 			
-			setSize(_sourceWidth, _sourceHeight);
+			setSize(sourceWidth, sourceHeight);
+			
+			str = xml.@restrictSize;
+			if(str)
+			{
+				arr = str.split(",");
+				minWidth = parseInt(arr[0]);
+				maxWidth = parseInt(arr[1]);
+				minHeight = parseInt(arr[2]);
+				maxHeight= parseInt(arr[3]);
+			}
 			
 			str = xml.@pivot;
 			if(str)

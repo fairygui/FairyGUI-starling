@@ -86,16 +86,16 @@ package fairygui
 		public function set texture(value:Texture):void {
 			if (value != null)
 			{
-				this._sourceWidth = value.width;
-				this._sourceHeight = value.height;
+				this.sourceWidth = value.width;
+				this.sourceHeight = value.height;
 			}
 			else
 			{
-				this._sourceWidth = 0;
-				this._sourceHeight = 0;
+				this.sourceWidth = 0;
+				this.sourceHeight = 0;
 			}
-			this._initWidth =  this._sourceWidth;
-			this._initHeight = this._sourceHeight;
+			this.initWidth =  this.sourceWidth;
+			this.initHeight = this.sourceHeight;
 			this._content.scale9Grid = null;
 			this._content.scaleByTile = false;
 			this._content.texture = value;
@@ -116,12 +116,12 @@ package fairygui
 		
 		override public function constructFromResource():void
 		{
-			_sourceWidth = packageItem.width;
-			_sourceHeight = packageItem.height;
-			_initWidth = _sourceWidth;
-			_initHeight = _sourceHeight;
+			sourceWidth = packageItem.width;
+			sourceHeight = packageItem.height;
+			initWidth = sourceWidth;
+			initHeight = sourceHeight;
 			
-			setSize(_sourceWidth, _sourceHeight);
+			setSize(sourceWidth, sourceHeight);
 			
 			if(packageItem.loaded)
 				__imageLoaded(packageItem);
