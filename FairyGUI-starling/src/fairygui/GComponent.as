@@ -250,7 +250,7 @@ package fairygui
 			return null;
 		}
 		
-		internal function getChildById(id:String):GObject
+		public function getChildById(id:String):GObject
 		{
 			var cnt:int = _children.length;
 			for (var i:int=0; i<cnt; ++i)
@@ -574,6 +574,7 @@ package fairygui
 			{
 				child.handleControllerChanged(c);
 			}
+			c.runActions();
 		}
 		
 		internal function applyAllControllers():void
