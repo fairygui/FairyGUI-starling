@@ -435,6 +435,8 @@ package fairygui
 				_downEffect = str=="dark"?1:(str=="scale"?2:0);
 				str = xml.@downEffectValue;
 				_downEffectValue = parseFloat(str);
+				if(_downEffect==2)
+					this.setPivot(0.5, 0.5);
 			}
 			
 			_buttonController = getController("button");
@@ -463,9 +465,6 @@ package fairygui
 		override public function setup_afterAdd(xml:XML):void
 		{
 			super.setup_afterAdd(xml);
-			
-			if(_downEffect==2)
-				this.setPivot(0.5, 0.5);
 			
 			xml = xml.Button[0];
 			if(xml)
