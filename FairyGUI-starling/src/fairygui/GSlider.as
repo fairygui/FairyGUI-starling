@@ -11,7 +11,8 @@ package fairygui
 		private var _max:int;
 		private var _value:int;
 		private var _titleType:int;
-
+		private var _reverse:Boolean;
+		
 		private var _titleObject:GTextField;
 		private var _aniObject:GObject;
 		private var _barObjectH:GObject;
@@ -23,17 +24,24 @@ package fairygui
 		private var _gripObject:GObject;
 		private var _clickPos:Point;
 		private var _clickPercent:Number;
+		private var _barStartX:int;
+		private var _barStartY:int;
+		
+		public var changeOnClick:Boolean = true;
+		
+		/**是否可拖动开关**/
+		public var canDrag:Boolean = true;
 		
 		public function GSlider()
 		{
 			super();
-
+			
 			_titleType = ProgressTitleType.Percent;
 			_value = 50;
 			_max = 100;
 			_clickPos = new Point();
 		}
-
+		
 		final public function get titleType():int
 		{
 			return _titleType;
@@ -102,10 +110,28 @@ package fairygui
 				}
 			}
 			
-			if(_barObjectH)
-				_barObjectH.width = (this.width-_barMaxWidthDelta)*percent;
-			if(_barObjectV)
-				_barObjectV.height = (this.height-_barMaxHeightDelta)*percent;
+			var fullWidth:int = this.width-this._barMaxWidthDelta;
+			var fullHeight:int = this.height-this._barMaxHeightDelta;
+			if(!_reverse)
+			{
+				if(_barObjectH)
+					_barObjectH.width = fullWidth*percent;
+				if(_barObjectV)
+					_barObjectV.height = fullHeight*percent;
+			}
+			else
+			{
+				if(_barObjectH)
+				{
+					_barObjectH.width = Math.round(fullWidth*percent);
+					_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width); 
+				}
+				if(_barObjectV)
+				{
+					_barObjectV.height = Math.round(fullHeight*percent);
+					_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
+				}
+			}
 			
 			if(_aniObject is GMovieClip)
 				GMovieClip(_aniObject).frame = Math.round(percent*100);
@@ -124,6 +150,8 @@ package fairygui
 			if(str)
 				_titleType = ProgressTitleType.parse(str);
 			
+			_reverse = xml.@reverse=="true";
+			
 			_titleObject = getChild("title") as GTextField;
 			_barObjectH = getChild("bar");
 			_barObjectV = getChild("bar_v");
@@ -134,18 +162,21 @@ package fairygui
 			{
 				_barMaxWidth = _barObjectH.width;
 				_barMaxWidthDelta = this.width - _barMaxWidth;
+				_barStartX = _barObjectH.x;
 			}
 			if(_barObjectV)
 			{
 				_barMaxHeight = _barObjectV.height;
 				_barMaxHeightDelta = this.height - _barMaxHeight;
+				_barStartY = _barObjectV.y;
 			}
 			if(_gripObject)
 			{
 				_gripObject.addEventListener(GTouchEvent.BEGIN, __gripMouseDown);
 				_gripObject.addEventListener(GTouchEvent.DRAG, __gripMouseMove);
-				_gripObject.addEventListener(GTouchEvent.END, __gripMouseUp);
 			}
+			
+			addEventListener(GTouchEvent.BEGIN, __barMouseDown);
 		}
 		
 		override protected function handleSizeChanged():void
@@ -176,6 +207,10 @@ package fairygui
 		
 		private function __gripMouseDown(evt:GTouchEvent):void
 		{
+			this.canDrag=true;
+			
+			evt.stopPropagation();
+			
 			this.globalToLocal(evt.stageX, evt.stageY, _clickPos);
 			_clickPercent = _value/_max;
 		}
@@ -183,9 +218,18 @@ package fairygui
 		private var sHelperPoint:Point = new Point();
 		private function __gripMouseMove(evt:GTouchEvent):void
 		{
+			if(!this.canDrag){
+				return;
+			}
+			
 			var pt:Point = this.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
 			var deltaX:int = pt.x-_clickPos.x;
 			var deltaY:int = pt.y-_clickPos.y;
+			if(_reverse)
+			{
+				deltaX = -deltaX;
+				deltaY = -deltaY;
+			}
 			
 			var percent:Number;
 			if(_barObjectH)
@@ -205,9 +249,32 @@ package fairygui
 			updateWidthPercent(percent);
 		}
 		
-		private function __gripMouseUp(evt:GTouchEvent):void
+		private function __barMouseDown(evt:GTouchEvent):void
 		{
+			if(!changeOnClick)
+				return;
+			
+			var pt:Point = _gripObject.globalToLocal(evt.stageX, evt.stageY, sHelperPoint);
 			var percent:Number = _value/_max;
+			var delta:Number;
+			if(_barObjectH)
+				delta = (pt.x-_gripObject.width/2)/_barMaxWidth;
+			if(_barObjectV)
+				delta = (pt.y-_gripObject.height/2)/_barMaxHeight;
+			if(_reverse)
+				percent -= delta;
+			else
+				percent += delta;
+			if(percent>1)
+				percent = 1;
+			else if(percent<0)
+				percent = 0;
+			var newValue:int = Math.round(_max*percent);
+			if(newValue!=_value)
+			{
+				_value = newValue;
+				dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGED));
+			}
 			updateWidthPercent(percent);
 		}
 	}
