@@ -478,14 +478,19 @@ package fairygui
 		
 		public function set touchable(value:Boolean):void
 		{
-			_touchable = value;
-			if((this is GImage) || (this is GMovieClip) 
-				|| (this is GTextField) && !(this is GTextInput) && !(this is GRichTextField))
-				//Touch is not supported by GImage/GMovieClip/GTextField
-				return;
-			
-			if(_displayObject!=null)
-				_displayObject.touchable = _touchable;
+			if(_touchable!=value)
+			{
+				_touchable = value;
+				updateGear(3);
+				
+				if((this is GImage) || (this is GMovieClip) 
+					|| (this is GTextField) && !(this is GTextInput) && !(this is GRichTextField))
+					//Touch is not supported by GImage/GMovieClip/GTextField
+					return;
+				
+				if(_displayObject!=null)
+					_displayObject.touchable = _touchable;
+			}
 		}
 		
 		final public function get grayed():Boolean
