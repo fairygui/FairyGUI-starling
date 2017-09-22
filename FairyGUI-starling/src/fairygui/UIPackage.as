@@ -332,6 +332,11 @@ package fairygui
 						break;
 					}
 						
+					case PackageItemType.MovieClip:
+						str = cxml.@smoothing;
+						pi.smoothing = str!="false";
+						break;
+						
 					case PackageItemType.Component:
 						UIObjectFactory.resolvePackageItemExtension(pi);
 						break;

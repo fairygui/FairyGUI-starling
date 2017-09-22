@@ -15,7 +15,6 @@ package fairygui.display
 		public var repeatDelay:int;
 
 		private var _frameRect:Rectangle;
-		private var _smoothing:String;
 		private var _color:uint;
 		
 		private var _playing:Boolean;
@@ -38,8 +37,8 @@ package fairygui.display
 			
 			_playState = new PlayState();
 			_playing = true;
-			_smoothing = TextureSmoothing.BILINEAR;
 			_color = 0xFFFFFF;
+			this.textureSmoothing = TextureSmoothing.BILINEAR;
 
 			setPlaySettings();
 			
