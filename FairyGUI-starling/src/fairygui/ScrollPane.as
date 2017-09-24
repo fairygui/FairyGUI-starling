@@ -1160,7 +1160,10 @@ package fairygui
 			{
 				killTween();
 				_owner.cancelClick();
+				isDragged = true;
 			}
+			else
+				isDragged = false;
 			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
@@ -1176,7 +1179,7 @@ package fairygui
 			_holdAreaPoint.x = sHelperPoint.x;
 			_holdAreaPoint.y = sHelperPoint.y;
 			_isHoldAreaDone = false;
-			isDragged = false;
+			
 			
 			_owner.addEventListener(GTouchEvent.DRAG, __mouseMove);
 		}

@@ -339,33 +339,75 @@ package fairygui
 		}
 		
 		public function get selectedIndex():int
-		{
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
+		{			
+			var i:int;
+			if (_virtual)
 			{
-				var obj:GButton = _children[i].asButton;
-				if (obj != null && obj.selected)
-					return childIndexToItemIndex(i);
+				for (i = 0; i < _realNumItems; i++)
+				{
+					var ii:ItemInfo = _virtualItems[i];
+					if ((ii.obj is GButton) && GButton(ii.obj).selected
+						|| ii.obj == null && ii.selected)
+					{
+						if (_loop)
+							return i % _numItems;
+						else
+							return i;
+					}
+				}
 			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null && obj.selected)
+						return i;
+				}
+			}
+			
 			return -1;
 		}
 		
 		public function set selectedIndex(value:int):void
 		{
 			clearSelection();
-			if (value >= 0 && value < this.numItems)
+			if (value >= 0 && value < _numItems)
 				addSelection(value);
 		}
 		
 		public function getSelection():Vector.<int>
 		{
 			var ret:Vector.<int> = new Vector.<int>();
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
+			var i:int;
+			if (_virtual)
 			{
-				var obj:GButton = _children[i].asButton;
-				if (obj != null && obj.selected)
-					ret.push(childIndexToItemIndex(i));
+				for (i = 0; i < _realNumItems; i++)
+				{
+					var ii:ItemInfo = _virtualItems[i];
+					if ((ii.obj is GButton) && GButton(ii.obj).selected
+						|| ii.obj == null && ii.selected)
+					{
+						if (_loop)
+						{
+							i = i % _numItems;
+							if (ret.indexOf(i)!=-1)
+								continue;
+						}
+						ret.push(i);
+					}
+				}
+			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null && obj.selected)
+						ret.push(i);
+				}
 			}
 			return ret;
 		}
@@ -383,11 +425,18 @@ package fairygui
 			if (scrollItToView)
 				scrollToView(index);
 			
-			index = itemIndexToChildIndex(index);
-			if (index<0 || index >= _children.length)
-				return;
+			_lastSelectedIndex = index;
+			var obj:GButton = null;
+			if (_virtual)
+			{
+				var ii:ItemInfo = _virtualItems[index];
+				if (ii.obj != null)
+					obj = ii.obj.asButton;
+				ii.selected = true;
+			}
+			else
+				obj = getChildAt(index).asButton;
 			
-			var obj:GButton = getChildAt(index).asButton;
 			if (obj != null && !obj.selected)
 			{
 				obj.selected = true;
@@ -400,39 +449,104 @@ package fairygui
 			if(_selectionMode==ListSelectionMode.None)
 				return;
 			
-			index = itemIndexToChildIndex(index);
-			if (index < 0 || index >= _children.length)
-				return;
+			var obj:GButton = null;
+			if (_virtual)
+			{
+				var ii:ItemInfo = _virtualItems[index];
+				if (ii.obj != null)
+					obj = ii.obj.asButton;
+				ii.selected = false;
+			}
+			else
+				obj = getChildAt(index).asButton;
 			
-			var obj:GButton = getChildAt(index).asButton;
-			if(obj!=null && obj.selected)
+			if (obj != null)
 				obj.selected = false;
 		}
 		
 		public function clearSelection():void
 		{
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
+			var i:int;
+			if (_virtual)
 			{
-				var obj:GButton = _children[i].asButton;
-				if(obj!=null)
-					obj.selected = false;
+				for (i = 0; i < _realNumItems; i++)
+				{
+					var ii:ItemInfo = _virtualItems[i];
+					if (ii.obj is GButton)
+						GButton(ii.obj).selected = false;
+					ii.selected = false;
+				}
+			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null)
+						obj.selected = false;
+				}
 			}
 		}
+		
+		private function clearSelectionExcept(g:GObject):void
+		{
+			var i:int;
+			if (_virtual)
+			{
+				for (i = 0; i < _realNumItems; i++)
+				{
+					var ii:ItemInfo = _virtualItems[i];
+					if (ii.obj != g)
+					{
+						if ((ii.obj is GButton))
+							GButton(ii.obj).selected = false;
+						ii.selected = false;
+					}
+				}
+			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null && obj != g)
+						obj.selected = false;
+				}
+			}
+		}	
 		
 		public function selectAll():void
 		{
 			checkVirtualList();
 			
-			var cnt:int = _children.length;
 			var last:int = -1;
-			for(var i:int=0;i<cnt;i++)
+			var i:int;
+			if (_virtual)
 			{
-				var obj:GButton = _children[i].asButton;
-				if(obj!=null)
+				for (i = 0; i < _realNumItems; i++)
 				{
-					obj.selected = true;
-					last = i;
+					var ii:ItemInfo = _virtualItems[i];
+					if ((ii.obj is GButton) && !GButton(ii.obj).selected)
+					{
+						GButton(ii.obj).selected = true;
+						last = i;
+					}
+					ii.selected = true;
+				}
+			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null && !obj.selected)
+					{
+						obj.selected = true;
+						last = i;
+					}
 				}
 			}
 			
@@ -442,29 +556,41 @@ package fairygui
 		
 		public function selectNone():void
 		{
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
-			{
-				var obj:GButton = _children[i].asButton;
-				if(obj!=null)
-					obj.selected = false;
-			}
+			clearSelection();
 		}
 		
 		public function selectReverse():void
 		{
 			checkVirtualList();
 			
-			var cnt:int = _children.length;
 			var last:int = -1;
-			for(var i:int=0;i<cnt;i++)
+			var i:int;
+			if (_virtual)
 			{
-				var obj:GButton = _children[i].asButton;
-				if(obj!=null)
+				for (i = 0; i < _realNumItems; i++)
 				{
-					obj.selected = !obj.selected;
-					if(obj.selected)
-						last = i;
+					var ii:ItemInfo = _virtualItems[i];
+					if (ii.obj is GButton)
+					{
+						GButton(ii.obj).selected = !GButton(ii.obj).selected;
+						if (GButton(ii.obj).selected)
+							last = i;
+					}
+					ii.selected = !ii.selected;
+				}
+			}
+			else
+			{
+				var cnt:int = _children.length;
+				for (i = 0; i < cnt; i++)
+				{
+					var obj:GButton = _children[i].asButton;
+					if (obj != null)
+					{
+						obj.selected = !obj.selected;
+						if (obj.selected)
+							last = i;
+					}
 				}
 			}
 			
@@ -673,7 +799,7 @@ package fairygui
 			
 			var dontChangeLastIndex:Boolean = false;
 			var button:GButton = GButton(item);
-			var index:int = getChildIndex(item);
+			var index:int = childIndexToItemIndex(getChildIndex(item));
 			
 			if(_selectionMode==ListSelectionMode.Single)
 			{
@@ -694,12 +820,26 @@ package fairygui
 						{
 							var min:int = Math.min(_lastSelectedIndex, index);
 							var max:int = Math.max(_lastSelectedIndex, index);
-							max = Math.min(max, _children.length-1);
-							for(var i:int=min;i<=max;i++)
+							max = Math.min(max, _numItems-1);
+							var i:int;
+							if (_virtual)
 							{
-								var obj:GButton = getChildAt(i).asButton;
-								if(obj!=null && !obj.selected)
-									obj.selected = true;
+								for (i = min; i <= max; i++)
+								{
+									var ii:ItemInfo = _virtualItems[i];
+									if (ii.obj is GButton)
+										GButton(ii.obj).selected = true;
+									ii.selected = true;
+								}
+							}
+							else
+							{
+								for(i=min;i<=max;i++)
+								{
+									var obj:GButton = getChildAt(i).asButton;
+									if(obj!=null)
+										obj.selected = true;
+								}
 							}
 							
 							dontChangeLastIndex = true;
@@ -731,17 +871,6 @@ package fairygui
 			
 			if(button.selected)
 				updateSelectionController(index);
-		}
-		
-		private function clearSelectionExcept(obj:GObject):void
-		{
-			var cnt:int = _children.length;
-			for(var i:int=0;i<cnt;i++)
-			{
-				var button:GButton = _children[i].asButton;
-				if(button!=null && button!=obj && button.selected)
-					button.selected = false;
-			}
 		}
 		
 		public function resizeToFit(itemCount:int=int.MAX_VALUE, minSize:int=0):void
@@ -1110,6 +1239,11 @@ package fairygui
 						
 						_virtualItems.push(ii);
 					}
+				}
+				else
+				{
+					for (i = _realNumItems; i < oldCount; i++)
+						_virtualItems[i].selected = false;
 				}
 				
 				if (this._virtualListChanged != 0)
@@ -1560,6 +1694,8 @@ package fairygui
 					
 					if (ii.obj != null && ii.obj.resourceURL != url)
 					{
+						if (ii.obj is GButton)
+							ii.selected = GButton(ii.obj).selected;
 						removeChildToPool(ii.obj);
 						ii.obj = null;
 					}
@@ -1575,6 +1711,8 @@ package fairygui
 							ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = GButton(ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1590,6 +1728,8 @@ package fairygui
 							ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = GButton(ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1612,7 +1752,7 @@ package fairygui
 							this.addChild(ii.obj);
 					}
 					if (ii.obj is GButton)
-						GButton(ii.obj).selected = false;
+						GButton(ii.obj).selected = ii.selected;
 					
 					needRender = true;
 				}
@@ -1658,6 +1798,8 @@ package fairygui
 				ii = _virtualItems[oldFirstIndex + i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = GButton(ii.obj).selected;
 					removeChildToPool(ii.obj);
 					ii.obj = null;
 				}
@@ -1726,6 +1868,8 @@ package fairygui
 					
 					if (ii.obj != null && ii.obj.resourceURL != url)
 					{
+						if (ii.obj is GButton)
+							ii.selected = GButton(ii.obj).selected;
 						removeChildToPool(ii.obj);
 						ii.obj = null;
 					}
@@ -1740,6 +1884,8 @@ package fairygui
 							ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = GButton(ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1755,6 +1901,8 @@ package fairygui
 							ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = GButton(ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1777,7 +1925,7 @@ package fairygui
 							this.addChild(ii.obj);
 					}
 					if (ii.obj is GButton)
-						GButton(ii.obj).selected = false;
+						GButton(ii.obj).selected = ii.selected;
 					
 					needRender = true;
 				}
@@ -1823,6 +1971,8 @@ package fairygui
 				ii = _virtualItems[oldFirstIndex + i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = GButton(ii.obj).selected;
 					removeChildToPool(ii.obj);
 					ii.obj = null;
 				}
@@ -1912,6 +2062,8 @@ package fairygui
 						ii2 = _virtualItems[reuseIndex];
 						if (ii2.obj != null && ii2.updateFlag != itemInfoVer)
 						{
+							if (ii2.obj is GButton)
+								ii2.selected = GButton(ii2.obj).selected;
 							ii.obj = ii2.obj;
 							ii2.obj = null;
 							break;
@@ -1942,7 +2094,7 @@ package fairygui
 					insertIndex++;
 					
 					if (ii.obj is GButton)
-						GButton(ii.obj).selected = false;
+						GButton(ii.obj).selected = ii.selected;
 					
 					needRender = true;
 				}
@@ -2010,6 +2162,8 @@ package fairygui
 				ii = _virtualItems[i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = GButton(ii.obj).selected;
 					removeChildToPool(ii.obj);
 					ii.obj = null;
 				}
@@ -2587,6 +2741,7 @@ class ItemInfo
 	public var height:Number = 0;
 	public var obj:GObject;
 	public var updateFlag:uint;
+	public var selected:Boolean;
 	
 	public function ItemInfo():void
 	{
