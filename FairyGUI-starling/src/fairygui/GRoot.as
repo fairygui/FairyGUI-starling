@@ -379,6 +379,7 @@ package fairygui
 				}
 				
 				_defaultTooltipWin = UIPackage.createObjectFromURL(resourceURL);
+				_defaultTooltipWin.touchable = false;
 			}
 			
 			_defaultTooltipWin.text = msg;

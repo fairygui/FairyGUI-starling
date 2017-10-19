@@ -144,7 +144,7 @@ package fairygui
 					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
 						GLoader(_barObjectH).fillAmount = percent;
 					else
-						_barObjectH.width = fullWidth*percent;
+						_barObjectH.width = Math.round(fullWidth*percent);
 				}
 				if(_barObjectV)
 				{
@@ -153,7 +153,7 @@ package fairygui
 					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
 						GLoader(_barObjectV).fillAmount = percent;
 					else
-						_barObjectV.height = fullHeight*percent;
+						_barObjectV.height = Math.round(fullHeight*percent);
 				}
 			}
 			else
@@ -166,7 +166,7 @@ package fairygui
 						GLoader(_barObjectH).fillAmount = (1-percent);
 					else
 					{
-						_barObjectH.width = fullWidth*percent;
+						_barObjectH.width = Math.round(fullWidth*percent);
 						_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
 					}
 					
@@ -179,7 +179,7 @@ package fairygui
 						GLoader(_barObjectV).fillAmount = (1-percent);
 					else
 					{
-						_barObjectV.height = fullHeight*percent;
+						_barObjectV.height = Math.round(fullHeight*percent);
 						_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
 					}
 				}
