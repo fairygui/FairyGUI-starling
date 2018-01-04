@@ -1384,6 +1384,10 @@ package fairygui
 						break;
 				}
 			}
+			
+			str = xml.@customData;
+			if (str)
+				this.data = str;
 		}
 		
 		private static var GearXMLKeys:Object = {
