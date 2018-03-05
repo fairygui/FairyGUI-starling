@@ -31,6 +31,11 @@ package fairygui
 			_previousIndex = -1;
 		}
 		
+		public function dispose():void
+		{
+			removeEventListeners();
+		}
+		
 		public function get name():String
 		{
 			return _name;

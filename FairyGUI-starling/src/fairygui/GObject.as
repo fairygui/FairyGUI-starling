@@ -990,6 +990,7 @@ package fairygui
 		public function dispose():void
 		{
 			removeFromParent();
+			removeEventListeners();
 			_relations.dispose();
 			if(_displayObject!=null)
 			{
