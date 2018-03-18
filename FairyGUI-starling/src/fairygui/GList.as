@@ -2707,6 +2707,9 @@ package fairygui
 					str = cxml.@name;
 					if(str)
 						obj.name = str;
+					str = cxml.@selectedIcon;
+					if(str && (obj is GButton))
+						GButton(obj).selectedIcon = str;
 				}
 			}
 		}

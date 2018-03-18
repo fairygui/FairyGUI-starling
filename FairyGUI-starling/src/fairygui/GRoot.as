@@ -287,6 +287,23 @@ package fairygui
 			}
 			_popupStack.push(popup);
 			
+			if (target != null)
+			{
+				var p:GObject = target;
+				while (p != null)
+				{
+					if (p.parent == this)
+					{
+						if (popup.sortingOrder < p.sortingOrder)
+						{
+							popup.sortingOrder = p.sortingOrder;
+						}
+						break;
+					}
+					p = p.parent;
+				}
+			}
+			
 			addChild(popup);
 			adjustModalLayer();
 			
