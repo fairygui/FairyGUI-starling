@@ -1543,9 +1543,9 @@ package fairygui
 			
 			sHelperPoint.x = evt.stageX;
 			sHelperPoint.y = evt.stageY;
-			_container.globalToLocal(sHelperPoint, sHelperPoint);
+			_owner._rootContainer.globalToLocal(sHelperPoint, sHelperPoint);
 			
-			if(!_container.hitTest(sHelperPoint))
+			if(!_owner._rootContainer.hitTest(sHelperPoint))
 				return;
 			
 			var delta:Number = evt.delta;
