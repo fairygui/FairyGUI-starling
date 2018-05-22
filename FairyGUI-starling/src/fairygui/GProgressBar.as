@@ -110,7 +110,7 @@ package fairygui
 		
 		public function update(newValue:int):void
 		{
-			var percent:Number = Math.min(newValue/_max,1);
+			var percent:Number = _max!=0?Math.min(newValue/_max,1):0;
 			if(_titleObject)
 			{
 				switch(_titleType)

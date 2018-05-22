@@ -204,6 +204,32 @@ package fairygui
 			}
 		}
 		
+		final public function get xMin():Number
+		{
+			return _pivotAsAnchor ? (_x - _width * _pivotX) : _x;
+		}
+		
+		final public function set xMin(value:Number):void
+		{
+			if (_pivotAsAnchor)
+				setXY(value + _width * _pivotX, _y);
+			else
+				setXY(value, _y);
+		}
+		
+		final public function get yMin():Number
+		{
+			return _pivotAsAnchor ? (_y - _height * _pivotY) : _y;
+		}
+		
+		final public function set yMin(value:Number):void
+		{
+			if (_pivotAsAnchor)
+				setXY(_x, value + _height * _pivotY);
+			else
+				setXY(_x, value);
+		}
+		
 		public function get pixelSnapping():Boolean
 		{
 			return _pixelSnapping;
@@ -314,7 +340,7 @@ package fairygui
 				
 				if(_parent)
 				{
-					_relations.onOwnerSizeChanged(dWidth, dHeight);
+					_relations.onOwnerSizeChanged(dWidth, dHeight, _pivotAsAnchor || !ignorePivot);
 					_parent.setBoundsChangedFlag();
 					if (_group != null)
 						_group.setBoundsChangedFlag(true);
@@ -449,6 +475,11 @@ package fairygui
 					handlePositionChanged();
 				}
 			}
+		}
+		
+		final public function get pivotAsAnchor():Boolean
+		{
+			return _pivotAsAnchor;
 		}
 		
 		private function updatePivotOffset():void
