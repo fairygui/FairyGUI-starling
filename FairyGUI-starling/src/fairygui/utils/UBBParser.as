@@ -96,14 +96,30 @@ package fairygui.utils
 		}
 
 		protected function getTagText(remove:Boolean=false):String {
-			var pos:int = _text.indexOf("[", _readPos);
-			if(pos==-1)
+			var pos1:int = _readPos;
+			var pos2:int
+			var result:String = "";
+			while ((pos2 = _text.indexOf("[", pos1)) != -1)
+			{
+				if (_text.charCodeAt(pos2 - 1) == 92 )//\
+				{
+					result += _text.substring(pos1, pos2 - 1);
+					result += "[";
+					pos1 = pos2 + 1;
+				}
+				else
+				{
+					result += _text.substring(pos1, pos2);
+					break;
+				}
+			}
+			if (pos2 == -1)
 				return null;
 			
-			var ret:String = _text.substring(_readPos, pos);
-			if(remove)
-				_readPos = pos;
-			return ret;
+			if (remove)
+				_readPos = pos2;
+			
+			return result;
 		}		
 		
 		public function parse(text:String):String {
