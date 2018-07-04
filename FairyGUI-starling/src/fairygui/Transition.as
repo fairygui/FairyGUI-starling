@@ -498,7 +498,11 @@ package fairygui
 						startTime = delay + item.time;
 					
 					if (startTime == 0)
+					{
 						applyValue(item, item.value);
+						if (item.hook != null)
+							item.hook();
+					}
 					else
 					{
 						_totalTasks++;
