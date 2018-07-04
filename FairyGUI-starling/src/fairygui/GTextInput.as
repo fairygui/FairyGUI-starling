@@ -163,6 +163,10 @@ package fairygui
 			if(str)
 				_nativeTextField.restrict = str;
 			_password = xml.@password=="true";
+			//添加 AIR SDK 29 软键盘类型支持
+			var type:int = xml.@keyboardType;
+			if(type)
+				_nativeTextField.softKeyboard = KeyboardType.parseType(type);
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
