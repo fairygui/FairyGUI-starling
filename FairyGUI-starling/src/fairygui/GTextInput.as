@@ -166,7 +166,39 @@ package fairygui
 			//添加 AIR SDK 29 软键盘类型支持
 			var type:int = xml.@keyboardType;
 			if(type)
-				_nativeTextField.softKeyboard = KeyboardType.parseType(type);
+			{
+				try
+				{
+					_nativeTextField["softKeyboard"] = parseKeyboardType(type);
+				}
+				catch(err:Error)
+				{
+					trace("keyboard type unsupported.");
+				}
+			}
+		}
+		
+		private function parseKeyboardType(value:int):String
+		{
+			switch(value)
+			{
+				case 0://默认键盘
+					return "default";
+				case 1://字母
+					return "contact";
+				case 2://数字和标点
+					return "decimalpad";
+				case 3://URL
+					return "url";
+				case 4://数字
+					return "number";
+				case 5://电话号码
+					return "phone";
+				case 6://邮件地址
+					return "email";
+				default:
+					return "default";
+			}			
 		}
 		
 		override public function setup_afterAdd(xml:XML):void
