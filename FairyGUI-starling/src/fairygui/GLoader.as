@@ -24,6 +24,7 @@ package fairygui
 		private var _verticalAlign:int;
 		private var _autoSize:Boolean;
 		private var _fill:int;
+		private var _shrinkOnly:Boolean;
 		private var _showErrorSign:Boolean;
 		private var _playing:Boolean;
 		private var _frame:int;
@@ -38,8 +39,9 @@ package fairygui
 		private var _container:UISprite;
 		private var _image:ImageExt;
 		private var _movieClip:MovieClip;
-		private var _activeObject:DisplayObject;
+		private var _content:DisplayObject;
 		private var _errorSign:GObject;
+		private var _content2:GComponent;
 		
 		private var _updatingLayout:Boolean;
 		
@@ -87,7 +89,9 @@ package fairygui
 			_image.dispose();
 			if (_movieClip != null)
 				_movieClip.dispose();
-
+			if(_content2!=null)
+				_content2.dispose();
+			
 			super.dispose();
 		}
 
@@ -157,6 +161,20 @@ package fairygui
 				updateLayout();
 			}
 		}		
+		
+		public function get shrinkOnly():Boolean
+		{
+			return _shrinkOnly;
+		}
+		
+		public function set shrinkOnly(value:Boolean):void
+		{
+			if(_shrinkOnly!=value)
+			{
+				_shrinkOnly = value;
+				updateLayout();
+			}
+		}
 		
 		public function get autoSize():Boolean
 		{
@@ -285,7 +303,7 @@ package fairygui
 		{
 			this.url = null;
 			
-			_activeObject = _image;
+			_content = _image;
 			_image.texture = value;
 			if (value != null) {
 				_contentSourceWidth = value.width;
@@ -295,6 +313,11 @@ package fairygui
 				_contentSourceWidth = _contentHeight = 0;
 			
 			updateLayout();
+		}
+		
+		public function get component():GComponent
+		{
+			return _content2;
 		}
 		
 		protected function loadContent():void
@@ -338,6 +361,25 @@ package fairygui
 						_contentItem.owner.addItemCallback(_contentItem, __movieClipLoaded);
 					}
 				}
+				else if(_contentItem.type==PackageItemType.Component)
+				{
+					var obj:GObject = UIPackage.createObjectFromURL(itemURL);
+					if(!obj)
+						setErrorState();
+					else if(!(obj is GComponent))
+					{
+						obj.dispose();
+						setErrorState();
+					}
+					else
+					{
+						_content2 = obj.asCom;
+						_container.addChild(_content2.displayObject);
+						_contentSourceWidth = _contentItem.width;
+						_contentSourceHeight = _contentItem.height;
+						updateLayout();
+					}
+				}
 				else
 					setErrorState();
 			}
@@ -355,7 +397,7 @@ package fairygui
 			}
 			else
 			{
-				_activeObject = _image;
+				_content = _image;
 				_image.texture = pi.texture;
 				_image.scale9Grid = pi.scale9Grid;
 				_image.scaleByTile = pi.scaleByTile;
@@ -377,7 +419,7 @@ package fairygui
 				_container.addChild(_movieClip);
 			}
 			
-			_activeObject = _movieClip;
+			_content = _movieClip;
 			_contentSourceWidth = pi.width;
 			_contentSourceHeight = pi.height;
 			_movieClip.interval = pi.interval;
@@ -407,7 +449,7 @@ package fairygui
 		
 		final protected function onExternalLoadSuccess(texture:Texture):void
 		{
-			_activeObject = _image;
+			_content = _image;
 			_image.texture = texture;
 			_image.scale9Grid = null;
 			_image.scaleByTile = false;
@@ -474,7 +516,7 @@ package fairygui
 		
 		private function updateLayout():void
 		{
-			if(_activeObject==null)
+			if(_content2==null && _content==null)
 			{
 				if(_autoSize)
 				{
@@ -485,36 +527,43 @@ package fairygui
 				return;
 			}
 			
-			_activeObject.x = 0;
-			_activeObject.y = 0;
 			_contentWidth = _contentSourceWidth;
 			_contentHeight = _contentSourceHeight;
 			
 			if(_autoSize)
 			{
-				_updatingLayout = true;
-				
-				if(_activeObject is ImageExt)
-				{
-					ImageExt(_activeObject).textureScaleX = 1;
-					ImageExt(_activeObject).textureScaleY = 1;
-				}
-				else
-				{
-					_activeObject.scaleX =  1;
-					_activeObject.scaleY =  1;
-				}
-				
+				_updatingLayout = true;				
 				if(_contentWidth==0)
 					_contentWidth = 50;
 				if(_contentHeight==0)
 					_contentHeight = 30;
 				this.setSize(_contentWidth, _contentHeight);
-				
 				_updatingLayout = false;
 				
 				if(_width==_contentWidth && _height==_contentHeight) //可能由于大小限制
+				{
+					if(_content2!=null)
+					{
+						_content2.setXY(0, 0);
+						_content2.setScale(1, 1);
+					}
+					else
+					{
+						_content.x = 0;
+						_content.y = 0;
+						if(_content is ImageExt)
+						{
+							ImageExt(_content).textureScaleX = 1;
+							ImageExt(_content).textureScaleY = 1;
+						}
+						else
+						{
+							_content.scaleX =  1;
+							_content.scaleY =  1;
+						}
+					}
 					return;
+				}
 			}
 
 			var sx:Number = 1, sy:Number = 1;
@@ -543,30 +592,50 @@ package fairygui
 						else
 							sx = sy;
 					}
+					
+					if (_shrinkOnly && sx >= 1 && sy >= 1)
+						sx = sy = 1;
+					
 					_contentWidth = _contentSourceWidth * sx;
 					_contentHeight = _contentSourceHeight * sy;
 				}
 			}
 			
-			if(_activeObject is ImageExt)
+			if(_content2!=null)
 			{
-				ImageExt(_activeObject).textureScaleX = sx;
-				ImageExt(_activeObject).textureScaleY = sy;
+				_content2.setScale(sx, sy);
+			}
+			else if(_content is ImageExt)
+			{
+				ImageExt(_content).textureScaleX = sx;
+				ImageExt(_content).textureScaleY = sy;
 			}
 			else
 			{
-				_activeObject.scaleX =  sx;
-				_activeObject.scaleY =  sy;
+				_content.scaleX =  sx;
+				_content.scaleY =  sy;
 			}
 			
+			var nx:Number, ny:Number;			
 			if(_align==AlignType.Center)
-				_activeObject.x = int((this.width-_contentWidth)/2);
+				nx = int((this.width-_contentWidth)/2);
 			else if(_align==AlignType.Right)
-				_activeObject.x = this.width-_contentWidth;
+				nx = this.width-_contentWidth;
+			else
+				nx = 0;
 			if(_verticalAlign==VertAlignType.Middle)
-				_activeObject.y = int((this.height-_contentHeight)/2);
+				ny = int((this.height-_contentHeight)/2);
 			else if(_verticalAlign==VertAlignType.Bottom)
-				_activeObject.y = this.height-_contentHeight;
+				ny = this.height-_contentHeight;
+			else
+				ny = 0;
+			if(_content2!=null)
+				_content2.setXY(nx, ny);
+			else
+			{
+				_content.x = nx;
+				_content.y = ny;
+			}
 		}
 		
 		private function clearContent():void 
@@ -590,15 +659,19 @@ package fairygui
 			_image.texture = null;
 			if(_movieClip!=null)
 				_movieClip.frames = null;
-
-			_activeObject = null;
+			if(_content2!=null)
+			{
+				_content2.dispose();
+				_content2 = null;
+			}
+			_content = null;
 			_contentItem = null;
 			_loading = 0;
 		}
 		
 		override protected function handleSizeChanged():void
 		{
-			if(!_updatingLayout && _activeObject!=null)
+			if(!_updatingLayout && _content!=null)
 				updateLayout();
 			
 			_container.hitArea.setTo(0,0,this.width,this.height);
@@ -625,6 +698,7 @@ package fairygui
 			if(str)
 				_fill = LoaderFillType.parse(str);
 			
+			_shrinkOnly = xml.@shrinkOnly=="true";
 			_autoSize = xml.@autoSize=="true";	
 			
 			str = xml.@errorSign;
