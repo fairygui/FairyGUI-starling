@@ -42,10 +42,13 @@ package fairygui
 			_textField.nativeTextField.filters = _textFilters;
 			_textField.defaultTextFormat = _textFormat;
 			_textField.multiline = !_singleLine;
+			var text2:String = _text;
+			if (_templateVars != null)
+				text2 = parseTemplate(text2);
 			if(_ubbEnabled)
-				_textField.text = ToolSet.parseUBB(_text);
+				_textField.text = ToolSet.parseUBB(text2);
 			else
-				_textField.text = _text;
+				_textField.text = text2;
 			
 			var renderSingleLine:Boolean = _textField.numLines<=1;
 			
