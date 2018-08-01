@@ -1,12 +1,13 @@
 package fairygui
 {	
-	import com.greensock.TweenLite;
-	import com.greensock.easing.Linear;
-
+	import fairygui.tween.EaseType;
+	import fairygui.tween.GTween;
+	import fairygui.tween.GTweener;
+	
 	public class GProgressBar extends GComponent
 	{
-		private var _max:int;
-		private var _value:int;
+		private var _max:Number;
+		private var _value:Number;
 		private var _titleType:int;
 		private var _reverse:Boolean;
 		
@@ -21,8 +22,7 @@ package fairygui
 		private var _barStartX:int;
 		private var _barStartY:int;
 		
-		private var _tweener:TweenLite;		
-		public var _tweenValue:int;
+		private var _tweening:Boolean;
 		
 		public function GProgressBar()
 		{
@@ -32,12 +32,12 @@ package fairygui
 			_value = 50;
 			_max = 100;
 		}
-
+		
 		final public function get titleType():int
 		{
 			return _titleType;
 		}
-
+		
 		final public function set titleType(value:int):void
 		{
 			if (_titleType != value)
@@ -46,13 +46,13 @@ package fairygui
 				update(_value);
 			}
 		}
-
-		final public function get max():int
+		
+		final public function get max():Number
 		{
 			return _max;
 		}
-
-		final public function set max(value:int):void
+		
+		final public function set max(value:Number):void
 		{
 			if(_max != value)
 			{
@@ -60,18 +60,18 @@ package fairygui
 				update(_value);
 			}
 		}
-
-		final public function get value():int
+		
+		final public function get value():Number
 		{
 			return _value;
 		}
 		
-		final public function set value(value:int):void
+		final public function set value(value:Number):void
 		{
-			if(_tweener)
+			if(_tweening)
 			{
-				_tweener.kill();
-				_tweener = null;
+				GTween.kill(this, true, this.update);
+				_tweening = false;
 			}
 			
 			if(_value != value)
@@ -81,31 +81,25 @@ package fairygui
 			}
 		}
 		
-		public function tweenValue(value:int, duration:Number):TweenLite
+		public function tweenValue(value:Number, duration:Number):GTweener
 		{
 			if(_value != value)
 			{
-				if(_tweener)
-					_tweener.kill();
+				if(_tweening)
+				{
+					GTween.kill(this, false, this.update);
+					_tweening = false;
+				}
 				
-				_tweenValue = _value;
+				var oldValule:Number = _value;
 				_value = value;
-				_tweener = TweenLite.to(this, duration,
-					{_tweenValue:value, onUpdate:onTweenUpdate, onComplete:onTweenComplete, ease: Linear.ease});
-				return _tweener;
+				
+				_tweening = true;
+				return GTween.to(oldValule, _value, duration).setTarget(this, this.update).setEase(EaseType.Linear)
+					.onComplete(function():void { _tweening = false; });
 			}
 			else
 				return null;
-		}
-		
-		private function onTweenUpdate():void
-		{
-			update(_tweenValue);
-		}
-		
-		private function onTweenComplete():void
-		{
-			_tweener = null;
 		}
 		
 		public function update(newValue:int):void
@@ -138,50 +132,22 @@ package fairygui
 			if(!_reverse)
 			{
 				if(_barObjectH)
-				{
-					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
-						GImage(_barObjectH).fillAmount = percent;
-					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
-						GLoader(_barObjectH).fillAmount = percent;
-					else
-						_barObjectH.width = Math.round(fullWidth*percent);
-				}
+					_barObjectH.width = Math.round(fullWidth*percent);
 				if(_barObjectV)
-				{
-					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
-						GImage(_barObjectV).fillAmount = percent;
-					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
-						GLoader(_barObjectV).fillAmount = percent;
-					else
-						_barObjectV.height = Math.round(fullHeight*percent);
-				}
+					_barObjectV.height = Math.round(fullHeight*percent);
 			}
 			else
 			{
 				if(_barObjectH)
 				{
-					if ((_barObjectH is GImage) && GImage(_barObjectH).fillMethod != FillType.FillMethod_None)
-						GImage(_barObjectH).fillAmount = (1-percent);
-					else if ((_barObjectH is GLoader) && GLoader(_barObjectH).fillMethod != FillType.FillMethod_None)
-						GLoader(_barObjectH).fillAmount = (1-percent);
-					else
-					{
-						_barObjectH.width = Math.round(fullWidth*percent);
-						_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
-					}
+					_barObjectH.width = Math.round(fullWidth*percent);
+					_barObjectH.x = _barStartX + (fullWidth-_barObjectH.width);
 					
 				}
 				if(_barObjectV)
 				{
-					if ((_barObjectV is GImage) && GImage(_barObjectV).fillMethod != FillType.FillMethod_None)
-						GImage(_barObjectV).fillAmount = (1-percent);
-					else if ((_barObjectV is GLoader) && GLoader(_barObjectV).fillMethod != FillType.FillMethod_None)
-						GLoader(_barObjectV).fillAmount = (1-percent);
-					else
-					{
-						_barObjectV.height = Math.round(fullHeight*percent);
-						_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
-					}
+					_barObjectV.height = Math.round(fullHeight*percent);
+					_barObjectV.y =  _barStartY + (fullHeight-_barObjectV.height);
 				}
 			}
 			if(_aniObject is GMovieClip)
@@ -200,7 +166,7 @@ package fairygui
 			str = xml.@titleType;
 			if(str)
 				_titleType = ProgressTitleType.parse(str);
-
+			
 			_reverse = xml.@reverse=="true";
 			
 			_titleObject = getChild("title") as GTextField;
@@ -242,15 +208,19 @@ package fairygui
 			if(xml)
 			{
 				_value = parseInt(xml.@value);
+				if(isNaN(_value))
+					_value = 0;
 				_max = parseInt(xml.@max);
+				if(isNaN(_max))
+					_max = 0;
 			}
 			update(_value);
 		}
 		
 		override public function dispose():void
 		{
-			if(_tweener)
-				_tweener.kill();
+			if(_tweening)
+				GTween.kill(this);
 			super.dispose();
 		}
 	}

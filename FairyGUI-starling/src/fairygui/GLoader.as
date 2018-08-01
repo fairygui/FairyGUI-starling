@@ -217,9 +217,29 @@ package fairygui
 			{
 				_frame = value;
 				if(_movieClip!=null)
-					_movieClip.currentFrame = value;
+					_movieClip.frame = value;
 				updateGear(5);
 			}
+		}
+		
+		final public function get timeScale():Number
+		{
+			if(_movieClip!=null)
+				return _movieClip.timeScale;
+			else
+				return 1;
+		}
+		
+		public function set timeScale(value:Number):void
+		{
+			if(_movieClip!=null)
+				_movieClip.timeScale = value;
+		}
+		
+		public function advance(timeInMiniseconds:int):void
+		{
+			if(_movieClip!=null)
+				_movieClip.advance(timeInMiniseconds);
 		}
 		
 		public function get color():uint
@@ -666,6 +686,7 @@ package fairygui
 				_movieClip.frames = null;
 			if(_content2!=null)
 			{
+				_container.removeChild(_content2.displayObject);
 				_content2.dispose();
 				_content2 = null;
 			}

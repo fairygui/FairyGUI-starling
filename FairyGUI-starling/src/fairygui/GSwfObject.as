@@ -51,6 +51,21 @@ package fairygui
 			}
 		}
 		
+		final public function get timeScale():Number
+		{
+			return 1;
+		}
+		
+		public function set timeScale(value:Number):void
+		{
+			//not supported.
+		}
+		
+		public function advance(timeInMiniseconds:int):void
+		{
+			//not supported.
+		}
+		
 		override public function constructFromResource():void
 		{
 			sourceWidth = packageItem.width;
