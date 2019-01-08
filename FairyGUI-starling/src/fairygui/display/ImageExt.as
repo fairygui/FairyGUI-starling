@@ -12,15 +12,13 @@ package fairygui.display
 	{		
 		private var _color:uint;
 		private var _flip:int;
-		private var _fillMethod:int;
+		protected var _fillMethod:int;
 		private var _fillOrigin:int;
 		private var _fillAmount:Number;
 		private var _fillClockwise:Boolean;
-		private var _textureScaleX:Number;
-		private var _textureScaleY:Number;
-		
-		private var _scaleByTile:Boolean;
-		private var _scale9Grid:Rectangle;
+
+		protected var _scaleByTile:Boolean;
+		protected var _scale9Grid:Rectangle;
 		private var _tileGridIndice:int;
 		
 		public function ImageExt()
@@ -31,8 +29,6 @@ package fairygui.display
 			this.touchable = false;
 			_color = 0xFFFFFF;
 
-			_textureScaleX = 1;
-			_textureScaleY = 1;
 			_fillAmount = 100;
 			_fillClockwise = true;
 		}
@@ -110,12 +106,15 @@ package fairygui.display
 			{
 				super.texture = value;
 				if(this.texture!=null)
-				{
 					vertexData.premultipliedAlpha = value.premultipliedAlpha;
-					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
+				
+				if(_bounds.width==0)
+				{
+					if(this.texture!=null)
+						setContentSize(this.texture.width, this.texture.height);
+					else
+						setContentSize(0,0);
 				}
-				else
-					setSize(0,0);
 				setRequiresRebuild();
 			}
 		}
@@ -172,38 +171,6 @@ package fairygui.display
 				setRequiresRebuild();
 			}
 		}
-		
-		public function get textureScaleX():Number
-		{
-			return _textureScaleX;
-		}
-		
-		public function set textureScaleX(value:Number):void
-		{
-			if(_textureScaleX != value)
-			{
-				_textureScaleX = value;
-				if(this.texture!=null)
-					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
-				setRequiresRebuild();
-			}
-		}
-		
-		public function get textureScaleY():Number
-		{
-			return _textureScaleY;
-		}
-		
-		public function set textureScaleY(value:Number):void
-		{
-			if(_textureScaleY != value)
-			{
-				_textureScaleY = value;
-				if(this.texture!=null)
-					setSize(this.texture.width * _textureScaleX, this.texture.height * _textureScaleY);
-				setRequiresRebuild();
-			}
-		}
 
 		override public function render(painter:Painter):void
 		{
@@ -240,11 +207,6 @@ package fairygui.display
 			if (_fillMethod != FillType.FillMethod_None)
 			{
 				VertexHelper.fillImage(_fillMethod, _fillAmount, _fillOrigin, _fillClockwise, vertRect, uvRect);
-			}
-			else if(_textureScaleX==1 && _textureScaleY==1)
-			{
-				VertexHelper.addQuad2(vertRect);
-				VertexHelper.fillUV2(uvRect);
 			}
 			else if (_scaleByTile)
 			{
@@ -332,6 +294,18 @@ package fairygui.display
 			}
 			else
 			{
+				var frame:Rectangle = this.texture.frame;
+				if(frame!=null)
+				{
+					var sx:Number = vertRect.width / frame.width;
+					var sy:Number = vertRect.height / frame.height;
+	
+					vertRect.x = -frame.x * sx;
+					vertRect.y = -frame.y * sx;
+					vertRect.width = this.texture.width * sx;
+					vertRect.height = this.texture.height * sy;
+				}
+				
 				VertexHelper.addQuad2(vertRect);
 				VertexHelper.fillUV2(uvRect);
 			}

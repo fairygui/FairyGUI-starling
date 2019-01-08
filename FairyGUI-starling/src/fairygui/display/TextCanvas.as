@@ -41,11 +41,6 @@ package fairygui.display
 			super.dispose();
 		}
 		
-		public function setCanvasSize(width:Number, height:Number):void
-		{
-			setSize(width, height);
-		}
-		
 		public function renderText(nativeTextField:TextField, textWidth:int, textHeight:int, restoreFunc:Function):void
 		{
 			var nw:int = nativeTextField.width;

@@ -1,28 +1,21 @@
 package fairygui.display
 {
-	import flash.geom.Rectangle;
-	
 	import fairygui.utils.GTimers;
 	
 	import starling.events.Event;
-	import starling.rendering.Painter;
 	import starling.textures.TextureSmoothing;
 	
-	public class MovieClip extends MeshExt
+	public class MovieClip extends ImageExt
 	{
 		public var interval:int;
 		public var swing:Boolean;
 		public var repeatDelay:int;
 		public var timeScale:Number;
 		
-		private var _frameRect:Rectangle;
-		private var _color:uint;
-		
 		private var _playing:Boolean;
 		private var _frameCount:int;
 		private var _frames:Vector.<Frame>;
 		private var _frame:int;
-		private var _boundsRect:Rectangle;
 		private var _start:int;
 		private var _end:int;
 		private var _times:int;
@@ -46,7 +39,6 @@ package fairygui.display
 			_frameElapsed = 0;
 			_repeatedCount = 0;
 			timeScale = 1;
-			_color = 0xFFFFFF;
 			
 			this.textureSmoothing = TextureSmoothing.BILINEAR;
 
@@ -55,18 +47,7 @@ package fairygui.display
 			this.addEventListener(Event.ADDED_TO_STAGE, __addedToStage);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, __removeFromStage);
 		}
-		
-		override public function get color():uint
-		{
-			return _color;
-		}
-		
-		override public function set color(value:uint):void
-		{
-			_color = value;
-			this.style.color = value;
-		}
-		
+
 		public function get frames():Vector.<Frame>
 		{
 			return _frames;
@@ -75,6 +56,10 @@ package fairygui.display
 		public function set frames(value:Vector.<Frame>):void
 		{
 			_frames = value;
+			_scale9Grid = null;
+			_scaleByTile = false;
+			_fillMethod = 0;
+			
 			if(_frames!=null)
 				_frameCount = _frames.length;
 			else
@@ -87,13 +72,12 @@ package fairygui.display
 			
 			if(_frame<0 || _frame>_frameCount - 1)
 				_frame = _frameCount - 1;
-			
-			drawFrame();
-			
+
 			_frameElapsed = 0;
 			_repeatedCount = 0;
 			_reversed = false;
 			
+			drawFrame();
 			checkTimer();
 		}
 		
@@ -101,18 +85,7 @@ package fairygui.display
 		{
 			return _frameCount;
 		}
-		
-		public function get boundsRect():Rectangle
-		{
-			return _boundsRect;
-		}
-		
-		public function set boundsRect(value:Rectangle):void
-		{
-			_boundsRect = value;
-			this.setSize(_boundsRect.right, _boundsRect.bottom);
-		}
-		
+
 		public function get frame():int
 		{
 			return _frame;
@@ -346,21 +319,10 @@ package fairygui.display
 			if (_frameCount>0 && _frame < _frames.length)
 			{
 				var frame:Frame = _frames[_frame];
-				if(this.texture != frame.texture)
-				{
-					this.style.texture = frame.texture;
-					_frameRect = frame.rect;
-					setRequiresRebuild();
-				}
+				this.texture = frame.texture;
 			}
 			else
-			{
-				if(this.texture!=null)
-				{
-					this.texture = null;
-					setRequiresRebuild();
-				}
-			}
+				this.texture = null;
 		}
 		
 		private function checkTimer():void
@@ -380,31 +342,6 @@ package fairygui.display
 		private function __removeFromStage(evt:Event):void
 		{
 			GTimers.inst.remove(update);
-		}
-		
-		override public function render(painter:Painter):void
-		{
-			if(_needRebuild)
-			{
-				_needRebuild = false;
-
-				if(this.texture!=null)
-				{
-					VertexHelper.beginFill();
-					VertexHelper.addQuad(_frameRect.x, _frameRect.y, this.texture.width, this.texture.height);
-					VertexHelper.fillUV4(this.texture);
-					VertexHelper.updateAll(vertexData, indexData);
-					vertexData.colorize("color", _color);
-					setRequiresRedraw();
-				}
-				else
-				{
-					vertexData.numVertices = 0;
-					indexData.numIndices = 0;
-				}
-			}
-			
-			super.render(painter);
 		}
 	}
 }

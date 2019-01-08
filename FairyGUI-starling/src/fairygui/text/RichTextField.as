@@ -383,9 +383,9 @@ package fairygui.text
 					else
 						e.realHeight = e.height;
 					e.textformat.font = _textField.embedFonts?_defaultTextFormat.font:CharSize.PLACEHOLDER_FONT;
-					e.textformat.size = CharSize.getFontSizeByHeight(e.height, e.textformat.font);
+					e.textformat.size = CharSize.getFontSizeByHeight(e.realHeight, e.textformat.font);
 					e.textformat.underline = false;
-					e.textformat.letterSpacing = e.width+4-CharSize.getHolderWidth(e.textformat.font, int(e.textformat.size));
+					e.textformat.letterSpacing = e.realWidth+4-CharSize.getHolderWidth(e.textformat.font, int(e.textformat.size));
 					_textField.setTextFormat(e.textformat, startPos+e.start, startPos+e.end+1);
 				}
 				else
@@ -703,7 +703,7 @@ package fairygui.text
 					node.displayObject.y = rect1.top+tm.ascent-element.realHeight;
 				else
 					node.displayObject.y = rect1.bottom-element.realHeight;
-				if(node.displayObject.x+node.displayObject.width<_textField.width-2) 
+				if(node.displayObject.x+element.realWidth<_textField.width-2) 
 				{
 					if(node.displayObject.parent==null)
 						addChildAt(node.displayObject, this.numChildren);

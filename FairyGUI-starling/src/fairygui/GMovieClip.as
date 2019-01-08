@@ -14,7 +14,6 @@ package fairygui
 		
 		public function GMovieClip()
 		{
-			_sizeImplType = 1;
 		}
 		
 		public function get color():uint
@@ -94,6 +93,11 @@ package fairygui
 		{
 			_movieClip.setPlaySettings(start, end, times, endAt, endCallback);	
 		}
+		
+		override protected function handleSizeChanged():void
+		{
+			_movieClip.setContentSize(this.width, this.height);
+		}
 
 		override public function constructFromResource():void
 		{
@@ -116,7 +120,6 @@ package fairygui
 			_movieClip.swing = packageItem.swing;
 			_movieClip.repeatDelay = packageItem.repeatDelay;
 			_movieClip.frames = packageItem.frames;
-			_movieClip.boundsRect = new Rectangle(0, 0, sourceWidth, sourceHeight);
 			_movieClip.textureSmoothing = packageItem.smoothing?TextureSmoothing.BILINEAR:TextureSmoothing.NONE;
 		}
 

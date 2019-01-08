@@ -14,7 +14,6 @@ package fairygui
 		public function GSwfObject()
 		{
 			_playing = true;
-			_sizeImplType = 1;
 		}
 		
 		override protected function createDisplayObject():void
@@ -64,6 +63,12 @@ package fairygui
 		public function advance(timeInMiniseconds:int):void
 		{
 			//not supported.
+		}
+		
+		override protected function handleSizeChanged():void
+		{
+			_container.width = this.width;
+			_container.height = this.height;
 		}
 		
 		override public function constructFromResource():void

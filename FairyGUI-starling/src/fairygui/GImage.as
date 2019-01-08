@@ -145,8 +145,7 @@ package fairygui
 		
 		override protected function handleSizeChanged():void
 		{
-			_content.textureScaleX = this.width/this.sourceWidth;
-			_content.textureScaleY = this.height/this.sourceHeight;
+			_content.setContentSize(this.width, this.height);
 		}
 		
 		override public function setup_beforeAdd(xml:XML):void

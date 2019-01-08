@@ -758,7 +758,7 @@ package fairygui
 			
 			doAlign();
 
-			_canvas.setCanvasSize(w, h);
+			_canvas.setContentSize(w, h);
 			
 			if(w==0 || h==0)
 				return;

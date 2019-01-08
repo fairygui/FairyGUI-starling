@@ -32,7 +32,7 @@ package fairygui.display
 			_bounds = new Rectangle();
 		}
 		
-		protected function setSize(aw:Number, ah:Number):void
+		public function setContentSize(aw:Number, ah:Number):void
 		{
 			if(_bounds.width!=aw || _bounds.height!=ah)
 			{

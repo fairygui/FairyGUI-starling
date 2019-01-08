@@ -5,6 +5,7 @@ package fairygui
 	import flash.display.LoaderInfo;
 	import flash.display3D.Context3DTextureFormat;
 	import flash.events.Event;
+	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.media.Sound;
 	import flash.utils.ByteArray;
@@ -786,7 +787,7 @@ package fairygui
 					sprite.rect.width/atlasItem.width, sprite.rect.height/atlasItem.height);
 				if(atlasItem.loaded)
 				{
-					pi.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+					pi.texture = Texture.fromTexture(atlasItem.texture, sprite.rect, null, sprite.rotated);
 				}
 				else
 				{
@@ -889,7 +890,8 @@ package fairygui
 					{
 						sprite = _sprites[frame.sprite];
 						if(sprite!=null)
-							frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+							frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect, 
+								new Rectangle(frame.offset.x, frame.offset.y, pi.width, pi.height), sprite.rotated);
 					}
 				}
 				pi.completeLoading();
@@ -918,6 +920,9 @@ package fairygui
 				item.repeatDelay = parseInt(str);
 			
 			var atlasItem:PackageItem;
+			var fx:Number;
+			var fy:Number;
+			var fw:Number;
 			
 			var frameCount:int = parseInt(xml.@frameCount);
 			item.frames = new Vector.<Frame>(frameCount);
@@ -928,12 +933,14 @@ package fairygui
 				var frameNode:XML = frameNodes[i];
 				str = frameNode.@rect;
 				arr = str.split(sep0);
-				frame.rect = new Rectangle(parseInt(arr[0]), parseInt(arr[1]), parseInt(arr[2]), parseInt(arr[3]));
+				fx = -parseInt(arr[0]);
+				fy = -parseInt(arr[1]);
+				fw = -parseInt(arr[2]);
 				str = frameNode.@addDelay;
 				frame.addDelay = parseInt(str);
 				item.frames[i] = frame;
 				
-				if (frame.rect.width == 0)
+				if (fw == 0)
 					continue;
 				
 				str = frameNode.@sprite;
@@ -948,9 +955,13 @@ package fairygui
 					if(atlasItem==null)
 						atlasItem = _itemsById[sprite.atlas];
 					if (atlasItem != null && atlasItem.loaded)
-						frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect);
+						frame.texture = Texture.fromTexture(atlasItem.texture, sprite.rect, 
+							new Rectangle(fx, fy, item.width, item.height), sprite.rotated);
 					else
+					{
 						frame.sprite = str;
+						frame.offset = new Point(fx, fy);
+					}
 				}
 			}
 			

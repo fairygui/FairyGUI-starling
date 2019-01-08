@@ -128,7 +128,7 @@ package fairygui
 		{
 			super.handleSizeChanged();
 			
-			_canvas.setCanvasSize(this.width, this.height+_fontAdjustment);
+			_canvas.setContentSize(this.width, this.height+_fontAdjustment);
 		}
 		
 		override protected function updateTextFieldText():void

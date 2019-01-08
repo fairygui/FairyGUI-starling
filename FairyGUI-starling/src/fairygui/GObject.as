@@ -81,8 +81,6 @@ package fairygui
 		private var _dragBounds:Rectangle;
 		
 		protected var _yOffset:int;
-		//Size的实现方式，有两种，0-GObject的w/h等于DisplayObject的w/h。1-GObject的sourceWidth/sourceHeight等于DisplayObject的w/h，剩余部分由scale实现
-		protected var _sizeImplType:int;
 		
 		internal var _parent:GComponent;
 		internal var _dispatcher:SimpleDispatcher;
@@ -314,11 +312,8 @@ package fairygui
 				handleSizeChanged();
 				if(_pivotX!=0 || _pivotY!=0)
 				{
-					if(_sizeImplType==0)
-					{
-						_displayObject.pivotX = _pivotX * _width;
-						_displayObject.pivotY = _pivotY * _height;
-					}
+					_displayObject.pivotX = _pivotX * _width;
+					_displayObject.pivotY = _pivotY * _height;
 					if(!_pivotAsAnchor)
 					{
 						if(!ignorePivot)
@@ -461,16 +456,8 @@ package fairygui
 				
 				if(_displayObject!=null)
 				{				
-					if(_sizeImplType==0)
-					{
-						_displayObject.pivotX = _pivotX * _width;
-						_displayObject.pivotY = _pivotY * _height;
-					}
-					else
-					{
-						_displayObject.pivotX = _pivotX * sourceWidth;
-						_displayObject.pivotY = _pivotY * sourceHeight;
-					}
+					_displayObject.pivotX = _pivotX * _width;
+					_displayObject.pivotY = _pivotY * _height;
 					updatePivotOffset();
 					handlePositionChanged();
 				}
@@ -1258,27 +1245,14 @@ package fairygui
 		
 		protected function handleSizeChanged():void
 		{
-			if(_displayObject!=null && _sizeImplType==1 && sourceWidth!=0 && sourceHeight!=0)
-			{
-				_displayObject.scaleX = _width/sourceWidth*_scaleX;
-				_displayObject.scaleY = _height/sourceHeight*_scaleY;
-			}
 		}
 		
 		protected function handleScaleChanged():void
 		{
 			if(_displayObject!=null)
 			{
-				if( _sizeImplType==0 || sourceWidth==0 || sourceHeight==0)
-				{
-					_displayObject.scaleX = _scaleX;
-					_displayObject.scaleY = _scaleY;
-				}
-				else
-				{
-					_displayObject.scaleX = _width/sourceWidth*_scaleX;
-					_displayObject.scaleY = _height/sourceHeight*_scaleY;
-				}
+				_displayObject.scaleX = _scaleX;
+				_displayObject.scaleY = _scaleY;
 			}
 		}
 		

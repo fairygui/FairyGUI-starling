@@ -59,7 +59,7 @@ package fairygui.display
 		
 		public function setShapeSize(width:Number, height:Number):void
 		{
-			setSize(width, height);
+			setContentSize(width, height);
 		}
 		
 		public function get fillColor():uint
