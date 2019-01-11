@@ -58,7 +58,6 @@ package fairygui.display
 			_frames = value;
 			_scale9Grid = null;
 			_scaleByTile = false;
-			_fillMethod = 0;
 			
 			if(_frames!=null)
 				_frameCount = _frames.length;
